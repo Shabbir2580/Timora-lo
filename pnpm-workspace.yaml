@@ -1,5 +1,12 @@
-pmOnFail: ignore
-
+# Delay adopting freshly published versions for supply-chain safety.
+# Next.js is excluded so its rapid releases install immediately.
+minimumReleaseAge: 1440 # minutes (24h)
 minimumReleaseAgeExclude:
   - '@next/*'
   - next
+
+# Dependencies allowed to run install/build scripts (pnpm blocks these by
+# default). Only list packages that genuinely need a native/postinstall step.
+onlyBuiltDependencies:
+  - sharp
+  - '@tailwindcss/oxide'
