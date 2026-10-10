@@ -1,41 +1,14 @@
-"use client"
 
-import { useEffect, useState } from "react"
-import { Truck, Tag, Timer } from "lucide-react"
-
-function useCountdown(seconds: number) {
-  const [remaining, setRemaining] = useState(seconds)
-  useEffect(() => {
-    const id = setInterval(() => setRemaining((r) => (r > 0 ? r - 1 : 0)), 1000)
-    return () => clearInterval(id)
-  }, [])
-  const h = Math.floor(remaining / 3600)
-    .toString()
-    .padStart(2, "0")
-  const m = Math.floor((remaining % 3600) / 60)
-    .toString()
-    .padStart(2, "0")
-  const s = (remaining % 60).toString().padStart(2, "0")
-  return `${h}:${m}:${s}`
-}
+import { Sparkles } from "lucide-react"
 
 export function AnnouncementBar() {
-  const time = useCountdown(2 * 3600 + 15 * 60 + 32)
   return (
-    <div className="bg-foreground text-background">
-      <div className="mx-auto flex max-w-7xl items-center justify-center gap-6 px-4 py-2 text-xs font-medium sm:justify-between">
-        <span className="hidden items-center gap-1.5 sm:flex">
-          <Truck className="size-3.5" aria-hidden />
-          Free delivery above ₹999
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Timer className="size-3.5" aria-hidden />
-          Flash Sale ends in <span className="tabular-nums">{time}</span>
-        </span>
-        <span className="hidden items-center gap-1.5 sm:flex">
-          <Tag className="size-3.5" aria-hidden />
-          Use TIMORA500 — ₹500 OFF
-        </span>
+    <div className="border-b border-[#c9a96e]/20 bg-[#11110f] text-[#dfc797]">
+      <div className="mx-auto flex min-h-9 max-w-[1440px] items-center justify-center gap-2 px-3 py-2 text-center sm:px-6">
+        <Sparkles className="size-3.5 shrink-0 text-[#c9a96e]" aria-hidden />
+        <p className="text-[9px] font-medium uppercase tracking-[0.14em] sm:text-[10px] sm:tracking-[0.2em]">
+          Discover thoughtful picks. Shop the Timora collection.
+        </p>
       </div>
     </div>
   )
