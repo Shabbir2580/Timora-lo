@@ -1,56 +1,102 @@
+
 import Link from "next/link"
-import { ShieldCheck, Truck, RotateCcw, Lock } from "lucide-react"
+import { Instagram, Mail, Phone, ArrowUpRight } from "lucide-react"
 
 const columns = [
   {
-    title: "Shop",
-    links: ["Headphones", "Watches", "Laptops", "Earbuds", "Speakers", "Keyboards"],
+    title: "Explore",
+    links: [
+      { label: "Shop all", href: "/products" },
+      { label: "Headphones", href: "/category/headphones" },
+      { label: "Watches", href: "/products?category=watches" },
+      { label: "New arrivals", href: "/products?sort=newest" },
+    ],
   },
   {
-    title: "Help",
-    links: ["Help Center", "Track Order", "Returns & Refunds", "Shipping", "Contact Us"],
+    title: "Your account",
+    links: [
+      { label: "Sign in", href: "/login" },
+      { label: "My orders", href: "/orders" },
+      { label: "Wishlist", href: "/wishlist" },
+      { label: "Shopping cart", href: "/cart" },
+    ],
   },
   {
-    title: "Company",
-    links: ["About Timora", "Careers", "Terms of Use", "Privacy Policy", "Sell with Timora"],
+    title: "Information",
+    links: [
+      { label: "Contact us", href: "/contact" },
+      { label: "Shipping information", href: "/shipping" },
+      { label: "Returns information", href: "/returns" },
+      { label: "Privacy policy", href: "/privacy" },
+      { label: "Terms of service", href: "/terms" },
+    ],
   },
-]
-
-const assurances = [
-  { icon: ShieldCheck, label: "100% Authentic" },
-  { icon: Truck, label: "Clear Delivery" },
-  { icon: RotateCcw, label: "Easy Returns" },
-  { icon: Lock, label: "Secure Payments" },
 ]
 
 export function Footer() {
   return (
-    <footer className="mt-8 border-t border-border bg-card">
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="mt-8 border-t border-[#c9a96e]/20 bg-[#080807] text-[#f5f1e8]">
+      <div className="mx-auto max-w-[1440px] px-5 py-12 sm:px-8 sm:py-14 lg:px-12">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:gap-12">
           <div>
-            <p className="text-2xl font-extrabold tracking-tight text-foreground">TIMORA</p>
-            <p className="mt-2 max-w-xs text-sm text-muted-foreground">
-              Better products. Better prices. Authentic electronics with genuine invoices and easy
-              returns.
+            <Link
+              href="/"
+              aria-label="Timora home"
+              className="inline-flex flex-col"
+            >
+              <span className="text-2xl font-semibold tracking-[0.19em]">
+                TIMORA<span className="text-[#c9a96e]">.</span>
+              </span>
+              <span className="mt-1 text-[8px] uppercase tracking-[0.25em] text-white/40">
+                Curated for your lifestyle
+              </span>
+            </Link>
+
+            <p className="mt-5 max-w-xs text-sm leading-7 text-white/50">
+              Discover watches, audio essentials and everyday accessories
+              selected with a focus on thoughtful design and timeless style.
             </p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {assurances.map(({ icon: Icon, label }) => (
-                <div key={label} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Icon className="size-4 text-primary" aria-hidden />
-                  {label}
-                </div>
-              ))}
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a
+                href="https://www.instagram.com/_timora_cart_/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Visit Timora on Instagram"
+                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-4 text-xs text-white/70 transition hover:border-[#c9a96e]/60 hover:text-[#dfc797]"
+              >
+                <Instagram className="size-4" aria-hidden="true" />
+                Instagram
+                <ArrowUpRight className="size-3" aria-hidden="true" />
+              </a>
             </div>
+
+            <p className="mt-5 text-xs leading-6 text-white/40">
+              Customer care
+              <br />
+              <a
+                href="tel:+919909231028"
+                className="mt-1 inline-flex items-center gap-2 text-[#d8bc88] hover:text-[#f0d9a9]"
+              >
+                <Phone className="size-3.5" aria-hidden="true" />
+                +91 99092 31028
+              </a>
+            </p>
           </div>
-          {columns.map((col) => (
-            <div key={col.title}>
-              <p className="mb-3 text-sm font-semibold text-foreground">{col.title}</p>
-              <ul className="space-y-2">
-                {col.links.map((l) => (
-                  <li key={l}>
-                    <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
-                      {l}
+
+          {columns.map((column) => (
+            <div key={column.title}>
+              <h2 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8bc88]">
+                {column.title}
+              </h2>
+              <ul className="mt-5 space-y-3">
+                {column.links.map((link) => (
+                  <li key={link.href + link.label}>
+                    <Link
+                      href={link.href}
+                      className="text-xs leading-6 text-white/50 transition hover:text-[#dfc797]"
+                    >
+                      {link.label}
                     </Link>
                   </li>
                 ))}
@@ -58,9 +104,18 @@ export function Footer() {
             </div>
           ))}
         </div>
-        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row">
-          <p>© 2026 Timora Retail Pvt. Ltd. All rights reserved.</p>
-          <p>Prices include GST · Genuine invoice with every order</p>
+
+        <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-[10px] leading-5 text-white/35 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            © {new Date().getFullYear()} Timora. All rights reserved.
+          </p>
+          <a
+            href="mailto:hello@timora.in"
+            className="inline-flex items-center gap-2 transition hover:text-[#dfc797]"
+          >
+            <Mail className="size-3.5" aria-hidden="true" />
+            Contact by email
+          </a>
         </div>
       </div>
     </footer>
