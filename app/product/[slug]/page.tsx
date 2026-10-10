@@ -1,562 +1,600 @@
-
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
-import { useParams } from "next/navigation"
-import {
-  ArrowLeft,
-  Check,
-  ChevronRight,
-  Heart,
-  Minus,
-  Plus,
-  ShieldCheck,
-  ShoppingCart,
-  Truck,
-  RotateCcw,
-  Package,
-  Star,
-} from "lucide-react"
-
+import { useMemo, useState } from "react"
 import { products } from "@/lib/data"
 import { useCart } from "@/lib/cart-context"
-import { ProductCard } from "@/components/store/product-card"
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  Check,
+  ChevronRight,
+  Headphones,
+  Heart,
+  Menu,
+  Search,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Truck,
+  Watch,
+  X,
+  Zap,
+} from "lucide-react"
 
-export default function ProductDetailsPage() {
-  const params = useParams<{ slug: string }>()
-  const product = products.find((item) => item.slug === params.slug)
+const categories = [
+  { name: "Watches", detail: "Timeless essentials", icon: Watch, href: "/products?category=watches" },
+  { name: "Headphones", detail: "Hear every detail", icon: Headphones, href: "/products?category=headphones" },
+  { name: "Laptops", detail: "Made for everyday", icon: Sparkles, href: "/products?category=laptops" },
+  { name: "New arrivals", detail: "Freshly discovered", icon: Zap, href: "/products?sort=newest" },
+]
 
-  const { addToCart, wishlist, toggleWishlist } = useCart()
+const productTones = [
+  "bg-[#e8e1d6]",
+  "bg-[#e7e5df]",
+  "bg-[#e9e1d6]",
+  "bg-[#e6e3dc]",
+  "bg-[#e5e0d7]",
+  "bg-[#e8e3db]",
+  "bg-[#e4e2dd]",
+  "bg-[#e7e0d6]",
+]
 
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [selectedColor, setSelectedColor] = useState("")
-  const [quantity, setQuantity] = useState(1)
-  const [added, setAdded] = useState(false)
-  const [activeTab, setActiveTab] = useState("description")
+const formatPrice = (price: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(price)
 
-  if (!product) {
-    return (
-      <main className="flex min-h-[65vh] flex-col items-center justify-center px-5 text-center">
-        <Package className="mb-4 size-12 text-muted-foreground" />
-        <h1 className="text-2xl font-bold">Product not found</h1>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">
-          This product may have been removed or the link may be incorrect.
-        </p>
-        <Link
-          href="/products"
-          className="mt-6 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
-        >
-          Browse all products
-        </Link>
-      </main>
-    )
-  }
+export default function HomePage() {
+  const [search, setSearch] = useState("")
+  const [activeCategory, setActiveCategory] = useState("All")
+  const { wishlist, toggleWishlist, count } = useCart()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const outOfStock = product.stock === "out_of_stock"
-  const wished = wishlist.includes(product.id)
-  const images = product.images.length > 0 ? product.images : [product.image]
-  const currentImage = images[Math.min(selectedImage, images.length - 1)]
-  const relatedProducts = products
-    .filter(
-      (item) =>
-        item.id !== product.id &&
-        item.categorySlug === product.categorySlug,
-    )
-    .slice(0, 4)
+  const filteredProducts = useMemo(() => {
+    const query = search.trim().toLowerCase()
 
-  const discount =
-    product.mrp > product.price
-      ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
-      : 0
+    return products.filter((product) => {
+      const matchesCategory =
+        activeCategory === "All" || product.category === activeCategory
+      const matchesSearch =
+        !query ||
+        product.name.toLowerCase().includes(query) ||
+        product.brand.toLowerCase().includes(query) ||
+        product.category.toLowerCase().includes(query)
 
-  function handleAddToCart() {
-    if (outOfStock) return
-
-    addToCart(
-      product,
-      selectedColor || product.colors[0] || "Default",
-      quantity,
-    )
-    setAdded(true)
-  }
+      return matchesCategory && matchesSearch
+    })
+  }, [activeCategory, search])
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
-        <nav
-          aria-label="Breadcrumb"
-          className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground"
-        >
-          <Link href="/" className="hover:text-foreground">
-            Home
-          </Link>
-          <ChevronRight className="size-3.5" />
-          <Link
-            href={`/products?category=${encodeURIComponent(product.categorySlug)}`}
-            className="hover:text-foreground"
+    <main className="min-h-screen overflow-hidden bg-[#0b0b0a] text-[#f5f1e8]">
+      {/* Announcement bar */}
+      <div className="border-b border-white/10 bg-[#c9a96e] px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.19em] text-[#17130c] sm:text-xs">
+        Discover your next favourite · Explore the Timora collection
+      </div>
+
+      {/* Navigation */}
+      <header className="relative z-30 border-b border-white/10 bg-[#0b0b0a]">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-4 py-4 sm:px-8 lg:px-12">
+          <button
+            type="button"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="rounded-full border border-white/15 p-2.5 transition hover:border-[#c9a96e] lg:hidden"
           >
-            {product.category}
+            {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
+          </button>
+
+          <Link href="/" className="group flex shrink-0 flex-col">
+            <span className="text-2xl font-semibold tracking-[0.2em] sm:text-3xl">
+              TIMORA<span className="text-[#c9a96e]">.</span>
+            </span>
+            <span className="mt-0.5 text-[8px] uppercase tracking-[0.32em] text-white/45 sm:text-[9px]">
+              Curated for your lifestyle
+            </span>
           </Link>
-          <ChevronRight className="size-3.5" />
-          <span className="max-w-48 truncate text-foreground">
-            {product.name}
-          </span>
-        </nav>
 
-        <Link
-          href="/products"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" />
-          Continue shopping
-        </Link>
+          <nav className="hidden items-center gap-8 lg:flex">
+            <Link href="/" className="text-xs text-white/80 transition hover:text-[#d8bc88]">
+              Home
+            </Link>
+            <Link href="/products" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
+              Shop all
+            </Link>
+            <Link href="/products?category=watches" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
+              Watches
+            </Link>
+            <Link href="/products?category=headphones" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
+              Headphones
+            </Link>
+            <Link href="/products?sort=newest" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
+              New arrivals
+            </Link>
+          </nav>
 
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-          <section aria-label="Product images" className="min-w-0">
-            <div className="relative aspect-square overflow-hidden rounded-2xl border border-border bg-card">
-              <Image
-                src={currentImage || "/placeholder.svg"}
-                alt={product.name}
-                fill
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-contain p-6 sm:p-10"
+          <div className="flex items-center gap-2 sm:gap-3">
+            <label className="hidden items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 focus-within:border-[#c9a96e] md:flex">
+              <Search size={15} className="text-white/45" />
+              <input
+                aria-label="Search products"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value)
+                  document.getElementById("featured-products")?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
+                }}
+                placeholder="Search collection"
+                className="w-32 bg-transparent text-xs outline-none placeholder:text-white/35 lg:w-40"
               />
+            </label>
 
-              {discount > 0 && (
-                <span className="absolute left-4 top-4 rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">
-                  SAVE {discount}%
+            <Link
+              href="/wishlist"
+              aria-label="Wishlist"
+              className="relative rounded-full border border-white/15 p-2.5 transition hover:border-[#c9a96e]"
+            >
+              <Heart size={18} />
+              {wishlist.length > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#c9a96e] px-1 text-[9px] text-black">
+                  {wishlist.length}
                 </span>
               )}
+            </Link>
 
-              {product.verified && (
-                <span className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-3 py-2 text-xs font-medium">
-                  <ShieldCheck className="size-4 text-primary" />
-                  Verified listing
+            <Link
+              href="/cart"
+              aria-label={`Shopping bag${count > 0 ? `, ${count} items` : ""}`}
+              className="relative rounded-full bg-[#c9a96e] p-2.5 text-black transition hover:bg-[#dfc797]"
+            >
+              <ShoppingBag size={18} />
+              {count > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-white px-1 text-[9px] font-semibold text-black">
+                  {count}
                 </span>
               )}
-            </div>
-
-            {images.length > 1 && (
-              <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-                {images.map((src, index) => (
-                  <button
-                    key={`${src}-${index}`}
-                    type="button"
-                    onClick={() => setSelectedImage(index)}
-                    aria-label={`View product image ${index + 1}`}
-                    aria-pressed={selectedImage === index}
-                    className={`relative size-20 shrink-0 overflow-hidden rounded-lg border bg-card sm:size-24 ${
-                      selectedImage === index
-                        ? "border-primary ring-1 ring-primary"
-                        : "border-border"
-                    }`}
-                  >
-                    <Image
-                      src={src || "/placeholder.svg"}
-                      alt={`${product.name} view ${index + 1}`}
-                      fill
-                      sizes="96px"
-                      className="object-contain p-2"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-              {product.brand}
-            </p>
-
-            <h1 className="mt-3 text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-4xl">
-              {product.name}
-            </h1>
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-sm font-semibold text-white">
-                {product.rating.toFixed(1)}
-                <Star className="size-3.5 fill-current" />
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {product.reviewCount} ratings
-              </span>
-              {product.verified && (
-                <span className="text-xs font-medium text-emerald-600">
-                  Verified listing
-                </span>
-              )}
-            </div>
-
-            <div className="my-6 border-y border-border py-5">
-              <div className="flex flex-wrap items-baseline gap-3">
-                <span className="text-3xl font-bold">
-                  {product.price.toLocaleString("en-IN", {
-                    style: "currency",
-                    currency: "INR",
-                    maximumFractionDigits: 0,
-                  })}
-                </span>
-
-                {product.mrp > product.price && (
-                  <>
-                    <span className="text-base text-muted-foreground line-through">
-                      {product.mrp.toLocaleString("en-IN", {
-                        style: "currency",
-                        currency: "INR",
-                        maximumFractionDigits: 0,
-                      })}
-                    </span>
-                    <span className="text-sm font-semibold text-emerald-600">
-                      {discount}% off
-                    </span>
-                  </>
-                )}
-              </div>
-
-              <p className="mt-2 text-xs text-muted-foreground">
-                Displayed price from the current catalogue. Final charges, if
-                any, should be confirmed at checkout.
-              </p>
-            </div>
-
-            <p className="text-sm leading-7 text-muted-foreground">
-              {product.description}
-            </p>
-
-            {product.colors.length > 0 && (
-              <div className="mt-6">
-                <p className="mb-3 text-sm font-semibold">
-                  Colour:{" "}
-                  <span className="font-normal text-muted-foreground">
-                    {selectedColor || product.colors[0]}
-                  </span>
-                </p>
-
-                <div className="flex flex-wrap gap-2">
-                  {product.colors.map((color) => {
-                    const active =
-                      (selectedColor || product.colors[0]) === color
-
-                    return (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => {
-                          setSelectedColor(color)
-                          setAdded(false)
-                        }}
-                        aria-pressed={active}
-                        className={`inline-flex min-h-10 items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors ${
-                          active
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:bg-accent"
-                        }`}
-                      >
-                        {active && <Check className="size-4 text-primary" />}
-                        {color}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
-            <div className="mt-6">
-              <p className="mb-3 text-sm font-semibold">Quantity</p>
-
-              <div className="flex items-center gap-4">
-                <div className="inline-flex h-11 items-center rounded-lg border border-border">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQuantity((value) => Math.max(1, value - 1))
-                      setAdded(false)
-                    }}
-                    disabled={quantity <= 1}
-                    aria-label="Decrease quantity"
-                    className="grid size-10 place-items-center disabled:opacity-40"
-                  >
-                    <Minus className="size-4" />
-                  </button>
-
-                  <span
-                    aria-live="polite"
-                    className="min-w-8 text-center text-sm font-semibold"
-                  >
-                    {quantity}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQuantity((value) =>
-                        Math.min(
-                          product.stock === "low_stock"
-                            ? product.stockCount ?? 1
-                            : 99,
-                          value + 1,
-                        ),
-                      )
-                      setAdded(false)
-                    }}
-                    disabled={
-                      quantity >=
-                      (product.stock === "low_stock"
-                        ? product.stockCount ?? 1
-                        : 99)
-                    }
-                    aria-label="Increase quantity"
-                    className="grid size-10 place-items-center disabled:opacity-40"
-                  >
-                    <Plus className="size-4" />
-                  </button>
-                </div>
-
-                <span
-                  className={`text-sm font-medium ${
-                    outOfStock
-                      ? "text-destructive"
-                      : product.stock === "low_stock"
-                        ? "text-amber-600"
-                        : "text-emerald-600"
-                  }`}
-                >
-                  {outOfStock
-                    ? "Out of stock"
-                    : product.stock === "low_stock"
-                      ? `Only ${product.stockCount ?? "a few"} left`
-                      : "In stock"}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-7 grid gap-3 sm:grid-cols-[1fr_auto]">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={outOfStock}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {outOfStock ? (
-                  "Currently unavailable"
-                ) : added ? (
-                  <>
-                    <Check className="size-5" />
-                    Added to cart
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="size-5" />
-                    Add to cart
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => toggleWishlist(product.id)}
-                aria-pressed={wished}
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-border px-5 py-3 text-sm font-semibold hover:bg-accent"
-              >
-                <Heart
-                  className={`size-5 ${wished ? "fill-current text-primary" : ""}`}
-                />
-                {wished ? "Saved" : "Wishlist"}
-              </button>
-            </div>
-
-            <div className="mt-7 divide-y divide-border rounded-xl border border-border">
-              <div className="flex items-start gap-3 p-4">
-                <Truck className="mt-0.5 size-5 shrink-0 text-primary" />
-                <div>
-                  <p className="text-sm font-semibold">Delivery information</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Estimated date listed: {product.deliveryBy}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Delivery dates are catalogue estimates and must be
-                    confirmed for your address.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4">
-                <RotateCcw className="mt-0.5 size-5 shrink-0 text-primary" />
-                <div>
-                  <p className="text-sm font-semibold">
-                    {product.returnDays}-day return listing
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Check the final return eligibility and conditions before
-                    placing an order.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4">
-                <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary" />
-                <div>
-                  <p className="text-sm font-semibold">Warranty</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {product.warranty}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
+            </Link>
+          </div>
         </div>
 
-        <section className="mt-14 border-t border-border pt-8 sm:mt-20">
-          <div className="flex flex-wrap gap-2 border-b border-border">
-            {[
-              { id: "description", label: "Highlights" },
-              { id: "specifications", label: "Specifications" },
-              { id: "box", label: "What's in the box" },
-              { id: "reviews", label: `Reviews (${product.reviews.length})` },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                aria-pressed={activeTab === tab.id}
-                className={`border-b-2 px-4 py-3 text-sm font-medium ${
-                  activeTab === tab.id
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        {mobileMenuOpen && (
+          <nav className="border-t border-white/10 bg-[#11110f] px-5 py-5 lg:hidden">
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-white/15 px-3 py-3">
+              <Search size={17} className="text-white/50" />
+              <input
+                aria-label="Search products"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search the collection..."
+                className="w-full bg-transparent text-sm outline-none placeholder:text-white/40"
+              />
+            </div>
+            <div className="flex flex-col">
+              {[
+                ["Home", "/"],
+                ["Shop all", "/products"],
+                ["Watches", "/products?category=watches"],
+                ["Headphones", "/products?category=headphones"],
+                ["New arrivals", "/products?sort=newest"],
+              ].map(([label, href]) => (
+                <Link
+                  key={label}
+                  href={href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="border-b border-white/10 py-3.5 text-sm text-white/75 hover:text-[#d8bc88]"
+                >
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        )}
+      </header>
 
-          <div className="py-6">
-            {activeTab === "description" && (
-              <div className="max-w-3xl">
-                <h2 className="text-lg font-semibold">Product highlights</h2>
-                <ul className="mt-4 space-y-3">
-                  {product.highlights.map((highlight) => (
-                    <li
-                      key={highlight}
-                      className="flex items-start gap-3 text-sm leading-6 text-muted-foreground"
-                    >
-                      <Check className="mt-1 size-4 shrink-0 text-primary" />
-                      {highlight}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+      {/* Hero */}
+      <section className="relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_75%_45%,rgba(173,133,66,0.13),transparent_42%)]" />
+        <div className="relative mx-auto grid max-w-[1440px] items-center gap-8 px-5 pb-14 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:grid-cols-[1fr_0.9fr] lg:gap-12 lg:px-12 lg:py-20">
+          <div className="relative z-10 max-w-2xl">
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#c9a96e]/35 bg-[#c9a96e]/5 px-3.5 py-2 text-[9px] font-medium uppercase tracking-[0.22em] text-[#d9bd8c] sm:text-[10px]">
+              <Sparkles size={13} />
+              A more considered collection
+            </div>
 
-            {activeTab === "specifications" && (
-              <div className="max-w-3xl overflow-hidden rounded-xl border border-border">
-                {product.specs.map((spec, index) => (
-                  <div
-                    key={spec.label}
-                    className={`grid grid-cols-2 gap-4 px-4 py-3 text-sm ${
-                      index % 2 === 0 ? "bg-card" : "bg-background"
-                    }`}
-                  >
-                    <span className="text-muted-foreground">{spec.label}</span>
-                    <span className="font-medium">{spec.value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <h1 className="text-[clamp(3.2rem,8vw,6.8rem)] font-light leading-[0.99] tracking-[-0.065em]">
+              Less, but
+              <br />
+              <span className="font-medium text-[#d6b77e]">exceptional.</span>
+            </h1>
 
-            {activeTab === "box" && (
-              <div className="max-w-3xl">
-                <h2 className="text-lg font-semibold">Included in the box</h2>
-                <ul className="mt-4 space-y-3">
-                  {product.box.map((item) => (
-                    <li
-                      key={item}
-                      className="flex items-center gap-3 text-sm text-muted-foreground"
-                    >
-                      <Package className="size-4 text-primary" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <p className="mt-6 max-w-md text-sm leading-7 text-white/55 sm:mt-8 sm:text-base sm:leading-8">
+              Discover thoughtfully selected watches, audio essentials and
+              everyday accessories that make every detail matter.
+            </p>
 
-            {activeTab === "reviews" && (
-              <div className="max-w-3xl space-y-4">
-                {product.reviews.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No written reviews are available yet.
-                  </p>
-                ) : (
-                  product.reviews.map((review) => (
-                    <article
-                      key={review.id}
-                      className="rounded-xl border border-border p-4 sm:p-5"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h3 className="font-semibold">{review.title}</h3>
-                        <span className="inline-flex items-center gap-1 rounded bg-emerald-600 px-2 py-1 text-xs font-semibold text-white">
-                          {review.rating} <Star className="size-3 fill-current" />
-                        </span>
-                      </div>
-
-                      <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                        {review.body}
-                      </p>
-
-                      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <span>{review.author}</span>
-                        <span>·</span>
-                        <span>{review.date}</span>
-                        {review.verified && (
-                          <span className="text-emerald-600">
-                            · Verified buyer label
-                          </span>
-                        )}
-                      </div>
-                    </article>
-                  ))
-                )}
-                <p className="text-xs text-muted-foreground">
-                  These are catalogue review entries. Customer-submitted reviews
-                  and photo uploads require a connected review system.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {relatedProducts.length > 0 && (
-          <section className="mt-12 border-t border-border pt-10 sm:mt-16">
-            <div className="mb-6 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                  YOU MAY ALSO LIKE
-                </p>
-                <h2 className="mt-2 text-2xl font-bold">
-                  More in {product.category}
-                </h2>
-              </div>
+            <div className="mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row">
               <Link
-                href={`/products?category=${encodeURIComponent(product.categorySlug)}`}
-                className="text-sm font-medium text-primary hover:underline"
+                href="/products"
+                className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#c9a96e] px-7 text-xs font-semibold uppercase tracking-[0.13em] text-[#17130c] transition hover:bg-[#dfc797]"
               >
-                View all
+                Explore collection <ArrowUpRight size={16} />
+              </Link>
+              <Link
+                href="#featured-products"
+                className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/20 px-7 text-xs font-medium uppercase tracking-[0.13em] transition hover:border-[#c9a96e] hover:text-[#d9bd8c]"
+              >
+                Discover the edit <ArrowDownRight size={16} />
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
-              {relatedProducts.map((related) => (
-                <ProductCard key={related.id} product={related} />
-              ))}
+            <div className="mt-10 grid max-w-sm grid-cols-3 border-t border-white/10 pt-6 sm:mt-14">
+              <div>
+                <p className="text-lg font-medium sm:text-xl">01</p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/40 sm:text-[10px]">
+                  Thoughtful
+                </p>
+              </div>
+              <div className="border-l border-white/10 pl-4 sm:pl-6">
+                <p className="text-lg font-medium sm:text-xl">02</p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/40 sm:text-[10px]">
+                  Timeless
+                </p>
+              </div>
+              <div className="border-l border-white/10 pl-4 sm:pl-6">
+                <p className="text-lg font-medium sm:text-xl">03</p>
+                <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/40 sm:text-[10px]">
+                  Personal
+                </p>
+              </div>
             </div>
-          </section>
+          </div>
+
+          <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
+            <div className="absolute -inset-3 rounded-[45%] bg-[#c9a96e]/5 blur-3xl" />
+            <div className="relative aspect-[4/4.5] overflow-hidden rounded-[48%_48%_8px_8px] border border-white/10 bg-[#d7cbb6]">
+              <img
+                src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1200&q=90"
+                alt="Elegant wristwatch from the Timora-inspired collection"
+                className="h-full w-full object-cover object-center transition duration-700 hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/5" />
+              <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-3 sm:bottom-8 sm:left-8 sm:right-8">
+                <div>
+                  <p className="text-[9px] uppercase tracking-[0.24em] text-[#e4c995]">
+                    The signature edit
+                  </p>
+                  <p className="mt-2 text-xl font-light tracking-wide sm:text-2xl">
+                    Everyday icons
+                  </p>
+                </div>
+                <Link
+                  href="/products"
+                  aria-label="Explore the signature collection"
+                  className="rounded-full border border-white/40 bg-black/20 p-3 backdrop-blur transition hover:bg-[#c9a96e] hover:text-black"
+                >
+                  <ArrowUpRight size={19} />
+                </Link>
+              </div>
+            </div>
+            <div className="absolute -left-2 top-8 hidden rounded-2xl border border-white/15 bg-[#151512]/90 px-4 py-3 shadow-xl backdrop-blur sm:block lg:-left-7">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[#c9a96e]" />
+                <span className="text-[10px] uppercase tracking-[0.13em] text-white/80">
+                  Curated, not crowded
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Category strip */}
+      <section className="border-y border-white/10 bg-[#10100e]">
+        <div className="mx-auto grid max-w-[1440px] grid-cols-2 sm:grid-cols-4">
+          {categories.map(({ name, detail, icon: Icon, href }, index) => (
+            <Link
+              href={href}
+              key={name}
+              className={`group flex min-h-28 items-center gap-3 px-4 py-5 transition hover:bg-white/[0.035] sm:min-h-32 sm:gap-4 sm:px-6 lg:px-9 ${
+                index % 2 === 0 ? "border-r border-white/10" : ""
+              } ${index < 2 ? "border-b border-white/10 sm:border-b-0" : ""} ${
+                index === 1 ? "sm:border-r" : ""
+              } ${index === 2 ? "sm:border-r" : ""}`}
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c9a96e]/25 text-[#d8bc88] transition group-hover:bg-[#c9a96e] group-hover:text-black sm:h-12 sm:w-12">
+                <Icon size={20} strokeWidth={1.4} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium sm:text-sm">{name}</p>
+                <p className="mt-1 text-[10px] text-white/40 sm:text-xs">{detail}</p>
+              </div>
+              <ChevronRight
+                size={15}
+                className="hidden text-white/30 transition group-hover:translate-x-1 group-hover:text-[#c9a96e] sm:block"
+              />
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Featured products */}
+      <section id="featured-products" className="scroll-mt-6 mx-auto max-w-[1440px] px-5 py-16 sm:px-8 sm:py-20 lg:px-12 lg:py-24">
+        <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8bc88]">
+              Carefully considered
+            </p>
+            <h2 className="mt-3 text-3xl font-light tracking-[-0.04em] sm:text-4xl lg:text-5xl">
+              The <span className="font-medium">edit.</span>
+            </h2>
+            <p className="mt-3 max-w-md text-xs leading-6 text-white/45 sm:text-sm">
+              A selection of standout pieces chosen for their style, simplicity
+              and everyday appeal.
+            </p>
+          </div>
+          <Link
+            href="/products"
+            className="inline-flex w-fit items-center gap-3 border-b border-[#c9a96e]/50 pb-2 text-xs text-[#dfc797] transition hover:border-[#dfc797]"
+          >
+            View the collection <ArrowRight size={15} />
+          </Link>
+        </div>
+
+        <div className="mt-7 flex gap-2 overflow-x-auto pb-2">
+          {["All", "Watches", "Headphones", "Laptops", "Earbuds"].map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setActiveCategory(category)}
+              className={`shrink-0 rounded-full border px-4 py-2.5 text-[10px] uppercase tracking-[0.1em] transition sm:px-5 ${
+                activeCategory === category
+                  ? "border-[#c9a96e] bg-[#c9a96e] text-[#17130c]"
+                  : "border-white/15 text-white/55 hover:border-white/40 hover:text-white"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-6">
+          {filteredProducts.map((product) => (
+            <article key={product.id} className="group min-w-0">
+              <div className={`relative aspect-[4/4.8] overflow-hidden rounded-xl ${productTones[Number(product.id.replace("p", "")) - 1] ?? "bg-[#e8e1d6]"}`}>
+                <Link href={`/product/${product.slug}`} className="block h-full w-full">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    loading="lazy"
+                    className="h-full w-full object-contain p-3 transition duration-700 group-hover:scale-105 sm:p-5"
+                  />
+                </Link>
+
+                {product.badges[0] && (
+                  <span className="absolute left-2 top-2 rounded-full bg-[#f4eee3]/95 px-2 py-1.5 text-[8px] font-semibold tracking-[0.09em] text-[#242018] sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px]">
+                    {product.badges[0].replaceAll("_", " ")}
+                  </span>
+                )}
+
+                <button
+                  type="button"
+                  aria-label={
+                    wishlist.includes(product.id)
+                      ? `Remove ${product.name} from wishlist`
+                      : `Add ${product.name} to wishlist`
+                  }
+                  aria-pressed={wishlist.includes(product.id)}
+                  onClick={() => toggleWishlist(product.id)}
+                  className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#191713] shadow-sm transition hover:bg-white sm:right-3 sm:top-3"
+                >
+                  <Heart
+                    size={17}
+                    fill={wishlist.includes(product.id) ? "#b45353" : "none"}
+                    className={wishlist.includes(product.id) ? "text-[#b45353]" : ""}
+                  />
+                </button>
+
+                <Link
+                  href={`/product/${product.slug}`}
+                  className="absolute bottom-3 left-3 right-3 flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#f6f1e8]/95 px-2 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#18150f] opacity-100 transition hover:bg-white sm:bottom-4 sm:left-4 sm:right-4 sm:text-[10px] lg:translate-y-3 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100"
+                >
+                  Discover item <ArrowUpRight size={13} />
+                </Link>
+              </div>
+
+              <div className="mt-4">
+                <p className="text-[9px] uppercase tracking-[0.16em] text-white/40 sm:text-[10px]">
+                  {product.category}
+                </p>
+                <Link href={`/product/${product.slug}`}>
+                  <h3 className="mt-1.5 text-xs font-medium leading-5 transition hover:text-[#dfc797] sm:text-sm">
+                    {product.name}
+                  </h3>
+                </Link>
+                <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="text-xs font-semibold sm:text-sm">
+                    {formatPrice(product.price)}
+                  </span>
+                  {product.mrp > product.price && (
+                    <span className="text-[10px] text-white/35 line-through sm:text-xs">
+                      {formatPrice(product.mrp)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="rounded-2xl border border-white/10 py-16 text-center">
+            <Search className="mx-auto text-white/30" size={28} />
+            <p className="mt-4 text-sm text-white/70">No matching products found.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("")
+                setActiveCategory("All")
+              }}
+              className="mt-4 text-xs text-[#dfc797] underline underline-offset-4"
+            >
+              Clear filters
+            </button>
+          </div>
         )}
-      </div>
+      </section>
+
+      {/* Brand statement */}
+      <section className="border-y border-white/10 bg-[#11110f]">
+        <div className="mx-auto grid max-w-[1440px] items-center gap-8 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:px-12 lg:py-24">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8bc88]">
+              The Timora philosophy
+            </p>
+            <h2 className="mt-4 max-w-xl text-3xl font-light leading-tight tracking-[-0.045em] sm:text-4xl lg:text-5xl">
+              Good design is felt in the{" "}
+              <span className="text-[#d8bc88]">details.</span>
+            </h2>
+          </div>
+          <div>
+            <p className="max-w-xl text-sm leading-7 text-white/55 sm:text-base sm:leading-8">
+              We believe everyday objects should do more than serve a purpose.
+              They should feel considered, fit your life and stay relevant
+              beyond a passing trend.
+            </p>
+            <Link
+              href="/products"
+              className="mt-7 inline-flex items-center gap-3 text-xs font-medium text-[#dfc797] transition hover:gap-4"
+            >
+              Find your next favourite <ArrowRight size={15} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Service highlights */}
+      <section className="mx-auto grid max-w-[1440px] grid-cols-1 gap-px bg-white/10 px-5 py-10 sm:grid-cols-3 sm:px-8 lg:px-12">
+        {[
+          {
+            icon: ShieldCheck,
+            title: "Shop with confidence",
+            description: "Clear product details to help you choose.",
+          },
+          {
+            icon: Truck,
+            title: "Delivery information",
+            description: "Review delivery details at checkout.",
+          },
+          {
+            icon: Check,
+            title: "Here to help",
+            description: "Contact our team whenever you need support.",
+          },
+        ].map(({ icon: Icon, title, description }) => (
+          <div key={title} className="flex items-start gap-4 bg-[#0b0b0a] px-4 py-5 sm:px-5 sm:py-7 lg:px-8">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c9a96e]/25 text-[#d8bc88]">
+              <Icon size={19} strokeWidth={1.5} />
+            </div>
+            <div>
+              <h3 className="text-xs font-medium sm:text-sm">{title}</h3>
+              <p className="mt-2 text-[11px] leading-5 text-white/45 sm:text-xs">
+                {description}
+              </p>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* Newsletter */}
+      <section className="mx-auto max-w-[1440px] px-5 py-16 sm:px-8 sm:py-20 lg:px-12 lg:py-24">
+        <div className="relative overflow-hidden rounded-2xl border border-[#c9a96e]/20 bg-[#15140f] px-5 py-10 sm:px-10 sm:py-14 lg:px-16 lg:py-16">
+          <div className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-[#c9a96e]/10 blur-3xl" />
+          <div className="relative grid items-center gap-7 lg:grid-cols-[1fr_auto] lg:gap-12">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8bc88]">
+                A note from Timora
+              </p>
+              <h2 className="mt-3 text-3xl font-light tracking-[-0.04em] sm:text-4xl">
+                Good things, occasionally.
+              </h2>
+              <p className="mt-3 max-w-lg text-xs leading-6 text-white/50 sm:text-sm">
+                Stay connected for collection updates, new arrivals and
+                carefully selected highlights.
+              </p>
+            </div>
+            <Link
+              href="/products"
+              className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#c9a96e] px-7 text-xs font-semibold uppercase tracking-[0.12em] text-[#17130c] transition hover:bg-[#dfc797]"
+            >
+              Explore Timora <ArrowUpRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/10 bg-[#080807]">
+        <div className="mx-auto grid max-w-[1440px] gap-10 px-5 py-12 sm:grid-cols-2 sm:px-8 sm:py-14 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:px-12">
+          <div>
+            <Link href="/" className="text-2xl font-semibold tracking-[0.2em]">
+              TIMORA<span className="text-[#c9a96e]">.</span>
+            </Link>
+            <p className="mt-4 max-w-xs text-xs leading-6 text-white/45">
+              A considered collection for the way you live, work and express
+              yourself.
+            </p>
+            <p className="mt-5 text-[10px] uppercase tracking-[0.16em] text-white/30">
+              Timeless style. Thoughtful choices.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8bc88]">
+              Discover
+            </h3>
+            <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
+              <Link href="/products" className="hover:text-white">Shop all</Link>
+              <Link href="/products?category=watches" className="hover:text-white">Watches</Link>
+              <Link href="/products?category=headphones" className="hover:text-white">Headphones</Link>
+              <Link href="/products?sort=newest" className="hover:text-white">New arrivals</Link>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8bc88]">
+              Your account
+            </h3>
+            <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
+              <Link href="/login" className="hover:text-white">Sign in</Link>
+              <Link href="/wishlist" className="hover:text-white">Wishlist</Link>
+              <Link href="/cart" className="hover:text-white">Shopping bag</Link>
+              <Link href="/orders" className="hover:text-white">Your orders</Link>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8bc88]">
+              Need help?
+            </h3>
+            <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
+              <Link href="/contact" className="hover:text-white">Contact us</Link>
+              <Link href="/shipping" className="hover:text-white">Shipping information</Link>
+              <Link href="/returns" className="hover:text-white">Returns information</Link>
+              <Link href="/privacy" className="hover:text-white">Privacy policy</Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-3 border-t border-white/10 px-5 py-5 text-[10px] text-white/35 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
+          <p>© {new Date().getFullYear()} Timora. All rights reserved.</p>
+          <p>Designed with intention.</p>
+        </div>
+      </footer>
     </main>
   )
 }

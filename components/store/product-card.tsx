@@ -1,10 +1,9 @@
-
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useState } from "react"
-import { Heart, ShoppingCart, Truck, Check } from "lucide-react"
+import { Check, Heart, ShoppingCart, Truck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Product } from "@/lib/data"
 import { useCart } from "@/lib/cart-context"
@@ -15,25 +14,19 @@ import { ProductBadgePill } from "./badges"
 export function ProductCard({ product }: { product: Product }) {
   const { wishlist, toggleWishlist, addToCart } = useCart()
   const [added, setAdded] = useState(false)
-
   const wished = wishlist.includes(product.id)
   const outOfStock = product.stock === "out_of_stock"
 
   function handleAddToCart() {
     if (outOfStock) return
-
     addToCart(product)
     setAdded(true)
   }
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-md">
+    <article className="group relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-md">
       <div className="relative aspect-square overflow-hidden bg-secondary">
-        <Link
-          href={`/product/${product.slug}`}
-          aria-label={`View ${product.name}`}
-          className="relative block size-full"
-        >
+        <Link href={`/product/${product.slug}`} className="relative block size-full" aria-label={`View ${product.name}`}>
           <Image
             src={product.image || "/placeholder.svg"}
             alt={product.name}
@@ -50,7 +43,6 @@ export function ProductCard({ product }: { product: Product }) {
           {product.badges.slice(0, 1).map((badge) => (
             <ProductBadgePill key={badge} badge={badge} />
           ))}
-
           {outOfStock && (
             <span className="rounded bg-foreground/80 px-2 py-0.5 text-[10px] font-bold uppercase text-background">
               Out of Stock
@@ -61,37 +53,24 @@ export function ProductCard({ product }: { product: Product }) {
         <button
           type="button"
           onClick={() => toggleWishlist(product.id)}
-          aria-label={wished ? "Remove from wishlist" : "Add to wishlist"}
+          aria-label={wished ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
           aria-pressed={wished}
           className="absolute right-2 top-2 grid size-9 place-items-center rounded-full border border-border bg-card/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <Heart
-            className={cn("size-4", wished && "fill-sale text-sale")}
-            aria-hidden="true"
-          />
+          <Heart className={cn("size-4", wished && "fill-sale text-sale")} aria-hidden />
         </button>
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-3">
-        <Link
-          href={`/product/${product.slug}`}
-          className="flex flex-1 flex-col gap-1.5"
-        >
+        <Link href={`/product/${product.slug}`} className="flex flex-1 flex-col gap-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {product.brand}
           </span>
-
           <h3 className="line-clamp-2 text-sm font-medium leading-snug text-foreground">
             {product.name}
           </h3>
-
           <Rating value={product.rating} count={product.reviewCount} />
-
-          <Price
-            price={product.price}
-            mrp={product.mrp}
-            className="mt-0.5"
-          />
+          <Price price={product.price} mrp={product.mrp} className="mt-0.5" />
         </Link>
 
         {product.stock === "low_stock" && (
@@ -103,40 +82,46 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="mt-1 space-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
           {!outOfStock ? (
             <p className="flex items-center gap-1.5">
-              <Truck className="size-3.5 text-success" aria-hidden="true" />
+              <Truck className="size-3.5 text-success" aria-hidden />
               Delivery details at checkout
-              {product.freeDelivery && (
-                <span className="text-success">· Listed free</span>
-              )}
+              {product.freeDelivery && <span className="text-success">· Listed free</span>}
             </p>
           ) : (
-            <p className="flex items-center gap-1.5">
-              <Truck className="size-3.5" aria-hidden="true" />
+            <p className="flex items-center gap-1.5 text-muted-foreground">
+              <Truck className="size-3.5" aria-hidden />
               Currently unavailable
             </p>
           )}
+          <p className="truncate">
+            {product.stock === "low_stock" ? "Limited listed stock" : outOfStock ? "Unavailable" : "Availability listed"}
+          </p>
         </div>
 
         <button
           type="button"
           onClick={handleAddToCart}
           disabled={outOfStock}
-          className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          aria-live="polite"
+          className={cn(
+            "mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50",
+            added
+              ? "border border-success/40 bg-success/10 text-foreground"
+              : "bg-primary text-primary-foreground hover:opacity-90",
+          )}
         >
           {outOfStock ? (
-            "Out of Stock"
+            "Currently unavailable"
           ) : added ? (
-            <>
-              <Check className="size-4" aria-hidden="true" />
-              Added to Cart
-            </>
+            <><Check className="size-4" aria-hidden /> Added to bag</>
           ) : (
-            <>
-              <ShoppingCart className="size-4" aria-hidden="true" />
-              Add to Cart
-            </>
+            <><ShoppingCart className="size-4" aria-hidden /> Add to bag</>
           )}
         </button>
+        {added && (
+          <Link href="/cart" className="text-center text-xs font-semibold text-primary underline underline-offset-4 hover:opacity-80">
+            View shopping bag
+          </Link>
+        )}
       </div>
     </article>
   )
