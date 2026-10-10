@@ -1,14 +1,6 @@
-
 "use client"
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react"
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import type { Product } from "./data"
 
 export interface CartLine {
@@ -21,61 +13,21 @@ interface CartState {
   lines: CartLine[]
   wishlist: string[]
   addToCart: (product: Product, variant?: string, quantity?: number) => void
-  removeFromCart: (id: string) => void
-  setQuantity: (id: string, quantity: number) => void
+  removeFromCart: (id: string, variant?: string) => void
+  setQuantity: (id: string, quantity: number, variant?: string) => void
   toggleWishlist: (id: string) => void
   count: number
   subtotal: number
 }
 
-interface StoredCart {
-  lines: CartLine[]
-  wishlist: string[]
-}
-
-const STORAGE_KEY = "timora-cart-v1"
-
 const CartContext = createContext<CartState | null>(null)
 
-function readStoredCart(): StoredCart {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-
-    if (!raw) {
-      return { lines: [], wishlist: [] }
-    }
-
-    const parsed: unknown = JSON.parse(raw)
-
-    if (!parsed || typeof parsed !== "object") {
-      return { lines: [], wishlist: [] }
-    }
-
-    const stored = parsed as Partial<StoredCart>
-
-    const lines = Array.isArray(stored.lines)
-      ? stored.lines.filter(
-          (line): line is CartLine =>
-            !!line &&
-            typeof line === "object" &&
-            !!line.product &&
-            typeof line.product.id === "string" &&
-            typeof line.variant === "string" &&
-            Number.isInteger(line.quantity) &&
-            line.quantity > 0,
-        )
-      : []
-
-    const wishlist = Array.isArray(stored.wishlist)
-      ? stored.wishlist.filter(
-          (id): id is string => typeof id === "string",
-        )
-      : []
-
-    return { lines, wishlist: [...new Set(wishlist)] }
-  } catch {
-    return { lines: [], wishlist: [] }
+function maxQuantity(product: Product) {
+  if (product.stock === "out_of_stock") return 0
+  if (product.stock === "low_stock" && typeof product.stockCount === "number") {
+    return Math.max(1, product.stockCount)
   }
+  return 99
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -83,86 +35,74 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [wishlist, setWishlist] = useState<string[]>([])
   const [hydrated, setHydrated] = useState(false)
 
-  // Restore saved data after the component mounts in the browser.
   useEffect(() => {
-    const stored = readStoredCart()
-    setLines(stored.lines)
-    setWishlist(stored.wishlist)
-    setHydrated(true)
+    try {
+      const saved = window.localStorage.getItem("timora-shopping-state-v1")
+      if (saved) {
+        const parsed = JSON.parse(saved) as { lines?: CartLine[]; wishlist?: string[] }
+        if (Array.isArray(parsed.lines)) {
+          setLines(parsed.lines.filter((line) =>
+            line && line.product && typeof line.product.id === "string" &&
+            typeof line.variant === "string" && Number.isFinite(line.quantity) && line.quantity > 0,
+          ))
+        }
+        if (Array.isArray(parsed.wishlist)) {
+          setWishlist(parsed.wishlist.filter((id) => typeof id === "string"))
+        }
+      }
+    } catch (error) {
+      console.warn("Timora saved cart could not be restored.", error)
+    } finally {
+      setHydrated(true)
+    }
   }, [])
 
-  // Never overwrite saved data until the initial restore has completed.
   useEffect(() => {
     if (!hydrated) return
-
     try {
-      const stored: StoredCart = { lines, wishlist }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
-    } catch {
-      // The cart remains usable for this session if storage is unavailable.
+      window.localStorage.setItem("timora-shopping-state-v1", JSON.stringify({ lines, wishlist }))
+    } catch (error) {
+      console.warn("Timora cart could not be saved in this browser.", error)
     }
-  }, [lines, wishlist, hydrated])
+  }, [hydrated, lines, wishlist])
 
-  function addToCart(
-    product: Product,
-    variant = product.colors[0] ?? "Default",
-    quantity = 1,
-  ) {
-    if (!Number.isInteger(quantity) || quantity < 1) return
-
-    setLines((previous) => {
-      const existing = previous.find(
-        (line) =>
-          line.product.id === product.id && line.variant === variant,
-      )
-
+  function addToCart(product: Product, variant = product.colors[0] ?? "Default", quantity = 1) {
+    const limit = maxQuantity(product)
+    if (limit === 0) return
+    const safeQuantity = Math.min(limit, Math.max(1, Math.floor(quantity)))
+    setLines((prev) => {
+      const existing = prev.find((line) => line.product.id === product.id && line.variant === variant)
       if (existing) {
-        return previous.map((line) =>
-          line.product.id === product.id && line.variant === variant
-            ? { ...line, quantity: line.quantity + quantity }
-            : line,
-        )
+        return prev.map((line) => line === existing
+          ? { ...line, product, quantity: Math.min(limit, line.quantity + safeQuantity) }
+          : line)
       }
-
-      return [...previous, { product, variant, quantity }]
+      return [...prev, { product, variant, quantity: safeQuantity }]
     })
   }
 
-  function removeFromCart(id: string) {
-    setLines((previous) =>
-      previous.filter((line) => line.product.id !== id),
-    )
+  function removeFromCart(id: string, variant?: string) {
+    setLines((prev) => prev.filter((line) =>
+      line.product.id !== id || (variant !== undefined && line.variant !== variant),
+    ))
   }
 
-  function setQuantity(id: string, quantity: number) {
-    if (!Number.isInteger(quantity) || quantity < 1) return
-
-    setLines((previous) =>
-      previous.map((line) =>
-        line.product.id === id ? { ...line, quantity } : line,
-      ),
-    )
+  function setQuantity(id: string, quantity: number, variant?: string) {
+    setLines((prev) => prev.map((line) => {
+      const matches = line.product.id === id && (variant === undefined || line.variant === variant)
+      if (!matches) return line
+      const limit = maxQuantity(line.product)
+      return { ...line, quantity: Math.min(limit || 1, Math.max(1, Math.floor(quantity))) }
+    }).filter((line) => maxQuantity(line.product) > 0))
   }
 
   function toggleWishlist(id: string) {
-    setWishlist((previous) =>
-      previous.includes(id)
-        ? previous.filter((item) => item !== id)
-        : [...previous, id],
-    )
+    setWishlist((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
-  const count = useMemo(
-    () => lines.reduce((total, line) => total + line.quantity, 0),
-    [lines],
-  )
-
+  const count = useMemo(() => lines.reduce((total, line) => total + line.quantity, 0), [lines])
   const subtotal = useMemo(
-    () =>
-      lines.reduce(
-        (total, line) => total + line.product.price * line.quantity,
-        0,
-      ),
+    () => lines.reduce((total, line) => total + line.product.price * line.quantity, 0),
     [lines],
   )
 
@@ -177,19 +117,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     subtotal,
   }
 
-  return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
-  )
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>
 }
 
 export function useCart() {
-  const context = useContext(CartContext)
-
-  if (!context) {
-    throw new Error("useCart must be used within CartProvider")
-  }
-
-  return context
+  const ctx = useContext(CartContext)
+  if (!ctx) throw new Error("useCart must be used within CartProvider")
+  return ctx
 }
