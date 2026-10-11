@@ -578,7 +578,7 @@ export default function CheckoutPage() {
 
                 <div className="mt-4 overflow-hidden rounded-xl border border-border bg-white p-3">
                   <Image
-                    src="/payment/timora-upi-qr.png"
+                    src="https://raw.githubusercontent.com/Shabbir2580/Timora-lo/main/public/payment/timora-upi-qr.png"
                     alt="Timora merchant UPI payment QR code"
                     width={480}
                     height={480}
