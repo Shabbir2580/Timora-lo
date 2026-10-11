@@ -64,8 +64,8 @@ const emptyAddress: AddressForm = {
   addressLabel: "Home",
 }
 
-const QR_IMAGE_URL =
-  "https://raw.githubusercontent.com/Shabbir2580/Timora-lo/main/public/payment/timora-upi-qr.png"
+// Serve the QR image from this app's own public folder instead of relying on GitHub Raw.
+const QR_IMAGE_URL = "/payment/timora-upi-qr.png"
 
 function formatPrice(amount: number) {
   return amount.toLocaleString("en-IN", {
