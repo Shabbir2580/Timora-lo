@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useCallback, useEffect, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -91,9 +91,12 @@ function toAddressForm(address: Address): AddressForm {
 
 export default function CheckoutPage() {
   const { lines, count, subtotal } = useCart()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   const [submitted, setSubmitted] = useState(false)
+  const [submittingOrder, setSubmittingOrder] = useState(false)
+  const [submitError, setSubmitError] = useState("")
+  const [orderId, setOrderId] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("upi")
 
@@ -119,6 +122,8 @@ export default function CheckoutPage() {
       [field]: value,
     }))
     setSubmitted(false)
+    setSubmitError("")
+    setOrderId(null)
     setAddressMessage("")
   }
 
@@ -375,25 +380,103 @@ export default function CheckoutPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    setSubmitError("")
 
     if (lines.length === 0) return
 
+    if (!form.fullName.trim()) {
+      setSubmitError("Enter the customer's full name.")
+      return
+    }
+
     if (!/^[6-9]\d{9}$/.test(form.phone.trim())) {
-      alert("Enter a valid 10-digit Indian mobile number.")
+      setSubmitError("Enter a valid 10-digit Indian mobile number.")
       return
     }
 
     if (!/^\d{6}$/.test(form.pincode.trim())) {
-      alert("Enter a valid 6-digit PIN code.")
+      setSubmitError("Enter a valid 6-digit PIN code.")
       return
     }
 
-    if (userId && addressEditorOpen) {
-      const saved = await saveAddress()
-      if (!saved) return
+    if (!form.address.trim() || !form.city.trim() || !form.state.trim()) {
+      setSubmitError("Complete all required delivery address fields.")
+      return
     }
 
-    setSubmitted(true)
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setSubmitError("Enter a valid email address.")
+      return
+    }
+
+    // Guest customers can prepare a WhatsApp request, but the API requires
+    // an authenticated account before it can save an order in Supabase.
+    if (!userId) {
+      if (paymentMethod === "whatsapp") {
+        setOrderId(null)
+        setSubmitted(true)
+        return
+      }
+
+      setSubmitError("Please sign in before creating an order and continuing to UPI payment.")
+      return
+    }
+
+    setSubmittingOrder(true)
+
+    try {
+      if (addressEditorOpen) {
+        const saved = await saveAddress()
+        if (!saved) return
+      }
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: lines.map((line) => ({
+            productId: line.product.id,
+            variant: line.variant,
+            quantity: line.quantity,
+          })),
+          customerName: form.fullName.trim(),
+          customerEmail: email.trim(),
+          customerPhone: form.phone.trim(),
+          address: form.address.trim(),
+          landmark: form.landmark.trim() || undefined,
+          city: form.city.trim(),
+          state: form.state.trim(),
+          pincode: form.pincode.trim(),
+          deliveryNote: form.deliveryNote.trim() || undefined,
+          paymentProvider: paymentMethod === "upi" ? "upi_qr" : "whatsapp",
+        }),
+      })
+
+      const result = (await response.json().catch(() => ({}))) as {
+        orderId?: string
+        error?: string
+        message?: string
+      }
+
+      if (!response.ok || !result.orderId) {
+        throw new Error(
+          result.error || "We couldn't create your order. Please try again.",
+        )
+      }
+
+      setOrderId(result.orderId)
+      setSubmitted(true)
+    } catch (error) {
+      console.error("Checkout order creation failed:", error)
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't create your order. Please try again.",
+      )
+      setSubmitted(false)
+    } finally {
+      setSubmittingOrder(false)
+    }
   }
 
   const inputClass =
@@ -404,6 +487,7 @@ export default function CheckoutPage() {
 
   const whatsappMessage = [
     "Hello Timora! I would like to place an order.",
+    orderId ? `Order reference: ${orderId}` : "",
     "",
     "CUSTOMER DETAILS",
     `Name: ${form.fullName.trim()}`,
@@ -514,6 +598,12 @@ export default function CheckoutPage() {
           <p className="mb-5 text-sm text-muted-foreground">{profileMessage}</p>
         )}
 
+        {submitError && (
+          <div role="alert" className="mb-6 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+            {submitError}
+          </div>
+        )}
+
         {submitted && (
           <div
             role="status"
@@ -522,11 +612,11 @@ export default function CheckoutPage() {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-amber-600" />
               <div>
-                <h2 className="font-semibold">Delivery details validated</h2>
+                <h2 className="font-semibold">{orderId ? "Order created successfully" : "Ready to continue on WhatsApp"}</h2>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Your details passed validation. Your order is not confirmed,
-                  and payment has not been verified. Continue with your
-                  selected payment or WhatsApp option below.
+                  {orderId
+                    ? `Order reference: ${orderId}. Your order is saved with payment pending. It is not confirmed for dispatch, and payment has not been verified.`
+                    : "Your details are ready to send to Timora. No database order was created because you are not signed in. Review the WhatsApp message before sending it."}
                 </p>
               </div>
             </div>
@@ -899,6 +989,8 @@ export default function CheckoutPage() {
                     onChange={() => {
                       setPaymentMethod("upi")
                       setSubmitted(false)
+                      setSubmitError("")
+                      setOrderId(null)
                     }}
                     className="mt-1 accent-current"
                   />
@@ -928,6 +1020,8 @@ export default function CheckoutPage() {
                     onChange={() => {
                       setPaymentMethod("whatsapp")
                       setSubmitted(false)
+                      setSubmitError("")
+                      setOrderId(null)
                     }}
                     className="mt-1 accent-current"
                   />
@@ -950,20 +1044,23 @@ export default function CheckoutPage() {
                 aria-hidden="true"
               />
               <p className="text-xs leading-5 text-muted-foreground">
-                Saved addresses are linked to your signed-in account. This
-                checkout does not yet create a database order or verify
-                payment. Do not dispatch an order until payment and stock
-                have been independently verified.
+                Saved addresses are linked to your signed-in account.
+                Orders are saved in Supabase for signed-in customers. Payment
+                remains pending until independently verified. Do not dispatch
+                an order until payment and stock have been verified.
               </p>
             </div>
 
             <button
               type="submit"
-              className="min-h-12 w-full rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              disabled={submittingOrder}
+              className="min-h-12 w-full rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {paymentMethod === "upi"
-                ? "Continue to UPI payment"
-                : "Prepare WhatsApp order"}
+              {submittingOrder
+                ? "Creating order…"
+                : paymentMethod === "upi"
+                  ? "Create order and continue to UPI"
+                  : "Create order / prepare WhatsApp"}
             </button>
           </form>
 
@@ -1054,7 +1151,7 @@ export default function CheckoutPage() {
 
                 <div className="mt-4 overflow-hidden rounded-xl border border-border bg-white p-3">
                   <img
-                    src={"https://raw.githubusercontent.com/Shabbir2580/Timora-lo/refs/heads/main/public/payment/timora-upi-qr.png?token=GHSAT0AAAAAAEL4XKSND65BFMQXYNBARTXU2WLHP3Q"}
+                    src={QR_IMAGE_URL}
                     alt="Timora merchant UPI payment QR code"
                     width={480}
                     height={480}
@@ -1062,6 +1159,11 @@ export default function CheckoutPage() {
                   />
                 </div>
 
+                {orderId && (
+                  <p className="mt-3 break-all text-center text-xs text-muted-foreground">
+                    Order reference: {orderId}
+                  </p>
+                )}
                 <p className="mt-3 text-center text-sm font-semibold">
                   Cart subtotal: {formatPrice(subtotal)}
                 </p>
