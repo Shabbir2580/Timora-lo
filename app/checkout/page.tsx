@@ -23,7 +23,7 @@ import {
 import { useCart } from "@/lib/cart-context"
 import { createClient } from "@/lib/supabase/client"
 
-type PaymentMethod = "upi" | "whatsapp"
+type PaymentMethod = "upi" | "whatsapp" | "cod"
 
 type Address = {
   id: string
@@ -418,7 +418,11 @@ export default function CheckoutPage() {
         return
       }
 
-      setSubmitError("Please sign in before creating an order and continuing to UPI payment.")
+      setSubmitError(
+        paymentMethod === "cod"
+          ? "Please sign in before placing a COD order."
+          : "Please sign in before creating an order and continuing to UPI payment.",
+      )
       return
     }
 
@@ -448,7 +452,7 @@ export default function CheckoutPage() {
           state: form.state.trim(),
           pincode: form.pincode.trim(),
           deliveryNote: form.deliveryNote.trim() || undefined,
-          paymentProvider: paymentMethod === "upi" ? "upi_qr" : "whatsapp",
+          paymentProvider: paymentMethod === "upi" ? "upi_qr" : paymentMethod === "cod" ? "cod" : "whatsapp",
         }),
       })
 
@@ -514,7 +518,9 @@ export default function CheckoutPage() {
     "",
     paymentMethod === "upi"
       ? "I intend to pay using the Timora UPI QR code. Please confirm availability and the final amount."
-      : "Please confirm product availability, shipping charges, and payment instructions.",
+      : paymentMethod === "cod"
+        ? "I would like to request Cash on Delivery. I understand this order requires approval before dispatch."
+        : "Please confirm product availability, shipping charges, and payment instructions.",
     "",
     "Please confirm my order details before dispatch.",
   ]
@@ -1035,7 +1041,43 @@ export default function CheckoutPage() {
                     </span>
                   </span>
                 </label>
+
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors sm:col-span-2 ${
+                    paymentMethod === "cod"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-accent/40"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cod"
+                    checked={paymentMethod === "cod"}
+                    onChange={() => {
+                      setPaymentMethod("cod")
+                      setSubmitted(false)
+                      setSubmitError("")
+                      setOrderId(null)
+                    }}
+                    className="mt-1 accent-current"
+                  />
+                  <span>
+                    <span className="flex items-center gap-2 font-semibold">
+                      <Truck className="size-4" aria-hidden="true" />
+                      Cash on Delivery (COD)
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                      Request COD. Your order must be approved by Timora admin or an authorized employee before dispatch.
+                    </span>
+                  </span>
+                </label>
               </div>
+              {paymentMethod === "cod" && (
+                <p className="mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm leading-6">
+                  COD orders are not confirmed immediately. Admin or authorized employee approval is required before the order can proceed to dispatch.
+                </p>
+              )}
             </section>
 
             <div className="flex items-start gap-3 rounded-xl border border-border p-4">
@@ -1060,7 +1102,9 @@ export default function CheckoutPage() {
                 ? "Creating order…"
                 : paymentMethod === "upi"
                   ? "Create order and continue to UPI"
-                  : "Create order / prepare WhatsApp"}
+                  : paymentMethod === "cod"
+                    ? "Place COD Order — Awaiting Approval"
+                    : "Create order / prepare WhatsApp"}
             </button>
           </form>
 
@@ -1188,6 +1232,26 @@ export default function CheckoutPage() {
                 <p className="mt-2 text-center text-xs text-muted-foreground">
                   After payment, send your order details to arrange
                   confirmation.
+                </p>
+              </section>
+            )}
+
+            {submitted && paymentMethod === "cod" && orderId && (
+              <section
+                aria-labelledby="cod-order-heading"
+                className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-5 sm:p-6"
+              >
+                <div className="flex items-center gap-2">
+                  <Truck className="size-5 text-primary" aria-hidden="true" />
+                  <h2 id="cod-order-heading" className="text-lg font-bold">
+                    COD request submitted
+                  </h2>
+                </div>
+                <p className="mt-2 break-all text-sm text-muted-foreground">
+                  Order reference: {orderId}
+                </p>
+                <p className="mt-3 text-sm leading-6">
+                  Your COD order is awaiting approval by Timora admin or an authorized employee. It is not confirmed for dispatch, and no payment has been collected.
                 </p>
               </section>
             )}

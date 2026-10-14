@@ -5,7 +5,7 @@ import { products as sampleProducts } from "@/lib/data";
 
 export const runtime = "nodejs";
 
-type PaymentProvider = "upi_qr" | "whatsapp";
+type PaymentProvider = "upi_qr" | "whatsapp" | "cod";
 
 type RequestItem = {
   productId: string;
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!["upi_qr", "whatsapp"].includes(paymentProvider)) {
+    if (!["upi_qr", "whatsapp", "cod"].includes(paymentProvider)) {
       return errorResponse("Please select a valid payment method.");
     }
 
@@ -336,8 +336,10 @@ payment_status: "pending",
         success: true,
         orderId: order.id,
         message:
-          "Order created. Payment and stock still need verification before dispatch.",
-        orderStatus: "pending",
+          paymentProvider === "cod"
+            ? "COD order created and awaiting admin or authorized employee approval. Do not dispatch until approved."
+            : "Order created. Payment and stock still need verification before dispatch.",
+        orderStatus: "pending_payment",
         paymentStatus: "pending",
         subtotalPaise,
         shippingPaise,
