@@ -185,14 +185,11 @@ export function Navbar() {
                   <ChevronDown className="size-4 -rotate-90 text-[#c9a96e]/70" />
                 </Link>
               ))}
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex min-h-12 items-center justify-between px-2 text-sm text-white/75 transition hover:text-[#dfc797]"
-              >
-                My Account
-                <ChevronDown className="size-4 -rotate-90 text-[#c9a96e]/70" />
-              </Link>
+              
+<div className="border-t border-white/[0.07] px-2 py-3">
+  <AccountMenu />
+</div>
+
             </div>
           </nav>
         )}
