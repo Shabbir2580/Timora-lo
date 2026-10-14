@@ -161,6 +161,8 @@ export function Navbar() {
                 </span>
               )}
             </Link>
+
+            <AccountMenu compact />
           </div>
         </div>
 
@@ -186,10 +188,6 @@ export function Navbar() {
                 </Link>
               ))}
               
-<div className="border-t border-white/[0.07] px-2 py-3">
-  <AccountMenu />
-</div>
-
             </div>
           </nav>
         )}
