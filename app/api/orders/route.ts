@@ -289,8 +289,8 @@ export async function POST(request: Request) {
         subtotal_paise: subtotalPaise,
         shipping_paise: shippingPaise,
         total_paise: totalPaise,
-        order_status: "pending",
-        payment_status: "pending",
+        order_status: "pending_payment",
+payment_status: "pending",
         payment_provider: paymentProvider,
         payment_reference: null,
       })
