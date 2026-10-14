@@ -100,7 +100,7 @@ export function Navbar() {
           </Link>
 
           <div className="ml-1">
-            <AccountMenu loggedIn />
+            <AccountMenu />
           </div>
         </div>
       </div>
