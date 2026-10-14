@@ -34,14 +34,9 @@ const STORAGE_KEY = "timora-shopping-state-v1"
 const DEFAULT_MAX_QUANTITY = 99
 
 function maxQuantity(product: Product): number {
-  if (product.stock === "out_of_stock") {
-    return 0
-  }
+  if (product.stock === "out_of_stock") return 0
 
-  if (
-    product.stock === "low_stock" &&
-    typeof product.stockCount === "number"
-  ) {
+  if (typeof product.stockCount === "number") {
     return Math.max(0, Math.floor(product.stockCount))
   }
 
@@ -52,38 +47,22 @@ function isValidQuantity(quantity: number): boolean {
   return Number.isFinite(quantity) && quantity > 0
 }
 
-function getCurrentProduct(id: string): Product | undefined {
-  return products.find((product) => product.id === id)
-}
-
-function normalizeQuantity(
-  product: Product,
-  quantity: number,
-): number {
+function normalizeQuantity(product: Product, quantity: number): number {
   const limit = maxQuantity(product)
 
-  if (limit === 0 || !isValidQuantity(quantity)) {
-    return 0
-  }
+  if (limit === 0 || !isValidQuantity(quantity)) return 0
 
   return Math.min(limit, Math.max(1, Math.floor(quantity)))
 }
 
-function normalizeVariant(
-  product: Product,
-  variant: string,
-): string {
-  if (product.colors.includes(variant)) {
-    return variant
-  }
+function normalizeVariant(product: Product, variant: string): string {
+  if (product.colors?.includes(variant)) return variant
 
-  return product.colors[0] ?? "Default"
+  return product.colors?.[0] ?? "Default"
 }
 
 function restoreCartLine(value: unknown): CartLine | null {
-  if (!value || typeof value !== "object") {
-    return null
-  }
+  if (!value || typeof value !== "object") return null
 
   const saved = value as Partial<CartLine>
 
@@ -91,40 +70,30 @@ function restoreCartLine(value: unknown): CartLine | null {
     !saved.product ||
     typeof saved.product !== "object" ||
     typeof saved.product.id !== "string" ||
+    typeof saved.product.name !== "string" ||
+    typeof saved.product.slug !== "string" ||
+    typeof saved.product.price !== "number" ||
     typeof saved.variant !== "string" ||
     !isValidQuantity(saved.quantity as number)
   ) {
     return null
   }
 
-  const product = getCurrentProduct(saved.product.id)
+  // Keep the saved product itself. Database products are not in lib/data.ts.
+  const product = saved.product as Product
+  const quantity = normalizeQuantity(product, saved.quantity as number)
 
-  if (!product) {
-    return null
-  }
-
-  const quantity = normalizeQuantity(
-    product,
-    saved.quantity as number,
-  )
-
-  if (quantity === 0) {
-    return null
-  }
-
-  const variant = normalizeVariant(product, saved.variant)
+  if (quantity === 0) return null
 
   return {
     product,
-    variant,
+    variant: normalizeVariant(product, saved.variant),
     quantity,
   }
 }
 
 function restoreWishlist(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return []
-  }
+  if (!Array.isArray(value)) return []
 
   const validIds = new Set(products.map((product) => product.id))
 
@@ -138,11 +107,7 @@ function restoreWishlist(value: unknown): string[] {
   )
 }
 
-export function CartProvider({
-  children,
-}: {
-  children: ReactNode
-}) {
+export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([])
   const [wishlist, setWishlist] = useState<string[]>([])
   const [hydrated, setHydrated] = useState(false)
@@ -155,64 +120,47 @@ export function CartProvider({
         const parsed: unknown = JSON.parse(saved)
 
         if (parsed && typeof parsed === "object") {
-          const state = parsed as {
-            lines?: unknown
-            wishlist?: unknown
-          }
+          const state = parsed as { lines?: unknown; wishlist?: unknown }
 
           if (Array.isArray(state.lines)) {
-            const restoredLines = state.lines
+            const restored = state.lines
               .map(restoreCartLine)
-              .filter(
-                (line): line is CartLine => line !== null,
+              .filter((line): line is CartLine => line !== null)
+
+            const merged = restored.reduce<CartLine[]>((result, line) => {
+              const existing = result.find(
+                (item) =>
+                  item.product.id === line.product.id &&
+                  item.variant === line.variant,
               )
 
-            const mergedLines = restoredLines.reduce<CartLine[]>(
-              (result, line) => {
-                const existing = result.find(
-                  (item) =>
-                    item.product.id === line.product.id &&
-                    item.variant === line.variant,
+              if (existing) {
+                existing.quantity = normalizeQuantity(
+                  line.product,
+                  existing.quantity + line.quantity,
                 )
+              } else {
+                result.push({ ...line })
+              }
 
-                if (existing) {
-                  const quantity = normalizeQuantity(
-                    line.product,
-                    existing.quantity + line.quantity,
-                  )
+              return result.filter((item) => item.quantity > 0)
+            }, [])
 
-                  if (quantity > 0) {
-                    existing.quantity = quantity
-                  }
-                } else {
-                  result.push({ ...line })
-                }
-
-                return result
-              },
-              [],
-            )
-
-            setLines(mergedLines)
+            setLines(merged)
           }
 
           setWishlist(restoreWishlist(state.wishlist))
         }
       }
     } catch (error) {
-      console.warn(
-        "Timora saved cart could not be restored.",
-        error,
-      )
+      console.warn("Timora saved cart could not be restored.", error)
     } finally {
       setHydrated(true)
     }
   }, [])
 
   useEffect(() => {
-    if (!hydrated) {
-      return
-    }
+    if (!hydrated) return
 
     try {
       window.localStorage.setItem(
@@ -220,133 +168,84 @@ export function CartProvider({
         JSON.stringify({ lines, wishlist }),
       )
     } catch (error) {
-      console.warn(
-        "Timora cart could not be saved in this browser.",
-        error,
-      )
+      console.warn("Timora cart could not be saved in this browser.", error)
     }
   }, [hydrated, lines, wishlist])
 
   function addToCart(
     product: Product,
-    variant = product.colors[0] ?? "Default",
+    variant = product.colors?.[0] ?? "Default",
     quantity = 1,
   ) {
-    const currentProduct = getCurrentProduct(product.id)
+    // Accept either a sample product or a product returned by Supabase.
+    if (!product || typeof product.id !== "string" || !product.id) return
 
-    if (!currentProduct) {
-      return
-    }
+    const safeVariant = normalizeVariant(product, variant)
+    const safeQuantity = normalizeQuantity(product, quantity)
 
-    const safeVariant = normalizeVariant(
-      currentProduct,
-      variant,
-    )
-
-    const safeQuantity = normalizeQuantity(
-      currentProduct,
-      quantity,
-    )
-
-    if (safeQuantity === 0) {
-      return
-    }
+    if (safeQuantity === 0) return
 
     setLines((previous) => {
       const existing = previous.find(
         (line) =>
-          line.product.id === currentProduct.id &&
+          line.product.id === product.id &&
           line.variant === safeVariant,
       )
 
       if (existing) {
         const updatedQuantity = normalizeQuantity(
-          currentProduct,
+          product,
           existing.quantity + safeQuantity,
         )
 
         if (updatedQuantity === 0) {
           return previous.filter(
             (line) =>
-              line.product.id !== currentProduct.id ||
+              line.product.id !== product.id ||
               line.variant !== safeVariant,
           )
         }
 
         return previous.map((line) =>
-          line.product.id === currentProduct.id &&
-          line.variant === safeVariant
+          line.product.id === product.id && line.variant === safeVariant
             ? {
                 ...line,
-                product: currentProduct,
+                product,
                 quantity: updatedQuantity,
               }
             : line,
         )
       }
 
-      return [
-        ...previous,
-        {
-          product: currentProduct,
-          variant: safeVariant,
-          quantity: safeQuantity,
-        },
-      ]
+      return [...previous, { product, variant: safeVariant, quantity: safeQuantity }]
     })
   }
 
-  function removeFromCart(
-    id: string,
-    variant?: string,
-  ) {
+  function removeFromCart(id: string, variant?: string) {
     setLines((previous) =>
       previous.filter(
         (line) =>
           line.product.id !== id ||
-          (variant !== undefined &&
-            line.variant !== variant),
+          (variant !== undefined && line.variant !== variant),
       ),
     )
   }
 
-  function setQuantity(
-    id: string,
-    quantity: number,
-    variant?: string,
-  ) {
-    const currentProduct = getCurrentProduct(id)
-
-    if (!currentProduct) {
-      removeFromCart(id, variant)
-      return
-    }
-
-    if (!isValidQuantity(quantity)) {
-      return
-    }
+  function setQuantity(id: string, quantity: number, variant?: string) {
+    if (!isValidQuantity(quantity)) return
 
     setLines((previous) =>
       previous
         .map((line) => {
           const matches =
             line.product.id === id &&
-            (variant === undefined ||
-              line.variant === variant)
+            (variant === undefined || line.variant === variant)
 
-          if (!matches) {
-            return line
-          }
-
-          const updatedQuantity = normalizeQuantity(
-            currentProduct,
-            quantity,
-          )
+          if (!matches) return line
 
           return {
             ...line,
-            product: currentProduct,
-            quantity: updatedQuantity,
+            quantity: normalizeQuantity(line.product, quantity),
           }
         })
         .filter((line) => line.quantity > 0),
@@ -354,9 +253,8 @@ export function CartProvider({
   }
 
   function toggleWishlist(id: string) {
-    if (!getCurrentProduct(id)) {
-      return
-    }
+    // Wishlist still supports the existing sample products.
+    if (!products.some((product) => product.id === id)) return
 
     setWishlist((previous) =>
       previous.includes(id)
@@ -366,19 +264,14 @@ export function CartProvider({
   }
 
   const count = useMemo(
-    () =>
-      lines.reduce(
-        (total, line) => total + line.quantity,
-        0,
-      ),
+    () => lines.reduce((total, line) => total + line.quantity, 0),
     [lines],
   )
 
   const subtotal = useMemo(
     () =>
       lines.reduce(
-        (total, line) =>
-          total + line.product.price * line.quantity,
+        (total, line) => total + line.product.price * line.quantity,
         0,
       ),
     [lines],
@@ -406,9 +299,7 @@ export function useCart() {
   const context = useContext(CartContext)
 
   if (!context) {
-    throw new Error(
-      "useCart must be used within CartProvider",
-    )
+    throw new Error("useCart must be used within CartProvider")
   }
 
   return context
