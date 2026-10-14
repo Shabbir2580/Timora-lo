@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
@@ -15,6 +14,7 @@ import {
   ShieldCheck,
   LogOut,
   Search,
+  ClipboardList,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -491,14 +491,23 @@ export default function AdminProductsPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={startNewProduct}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-5 text-sm font-semibold text-[#17130c] transition hover:bg-[#e6c85c]"
-          >
-            <Plus className="size-4" />
-            Add product
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link
+              href="/admin/orders"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d4af37]/40 px-5 text-sm font-medium text-[#e4c878] transition hover:bg-[#d4af37]/10"
+            >
+              <ClipboardList className="size-4" />
+              COD orders
+            </Link>
+            <button
+              type="button"
+              onClick={startNewProduct}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-5 text-sm font-semibold text-[#17130c] transition hover:bg-[#e6c85c]"
+            >
+              <Plus className="size-4" />
+              Add product
+            </button>
+          </div>
         </div>
 
         <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-3">
