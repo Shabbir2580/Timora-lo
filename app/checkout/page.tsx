@@ -13,6 +13,7 @@ import {
   MessageCircle,
   QrCode,
   ShoppingBag,
+  Package,
   Truck,
   Plus,
   Pencil,
@@ -624,6 +625,15 @@ export default function CheckoutPage() {
                     ? `Order reference: ${orderId}. Your order is saved with payment pending. It is not confirmed for dispatch, and payment has not been verified.`
                     : "Your details are ready to send to Timora. No database order was created because you are not signed in. Review the WhatsApp message before sending it."}
                 </p>
+                {orderId && (
+                  <Link
+                    href="/orders"
+                    className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                  >
+                    <Package className="size-4" aria-hidden="true" />
+                    View My Orders
+                  </Link>
+                )}
               </div>
             </div>
           </div>
