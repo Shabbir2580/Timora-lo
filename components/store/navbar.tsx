@@ -6,10 +6,10 @@ import { useState } from "react"
 import {
   Heart,
   ShoppingCart,
-  Package,
   Menu,
   X,
   ChevronDown,
+  Package,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import { SearchBar } from "./search-bar"
@@ -70,11 +70,10 @@ export function Navbar() {
         <div className="flex shrink-0 items-center gap-1">
           <Link
             href="/orders"
-            aria-label="My orders"
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c9a96e]/30 px-3 text-sm text-white/75 transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c9a96e]/30 px-3 text-sm font-medium text-white/80 transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
           >
             <Package className="size-[18px]" aria-hidden="true" />
-            <span className="hidden xl:inline">My Orders</span>
+            <span>My Orders</span>
           </Link>
           <Link
             href="/wishlist"
@@ -147,7 +146,7 @@ export function Navbar() {
           <div className="flex shrink-0 items-center gap-1">
             <Link
               href="/orders"
-              aria-label="My orders"
+              aria-label="My Orders"
               title="My Orders"
               className="grid size-10 place-items-center rounded-full border border-[#c9a96e]/30 text-white/80 transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
             >
