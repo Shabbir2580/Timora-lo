@@ -33,7 +33,7 @@ const links = [
   { href: "/account/settings", label: "Settings", icon: Settings },
 ]
 
-export function AccountMenu() {
+export function AccountMenu({ compact = false }: { compact?: boolean }) {
   const router = useRouter()
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [sessionChecked, setSessionChecked] = useState(false)
@@ -110,10 +110,16 @@ export function AccountMenu() {
     return (
       <Link
         href="/login"
-        className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c9a96e]/40 px-3 text-sm font-medium text-[#f5f1e8] transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
+        aria-label="Login or sign up"
+        title="Login / Sign Up"
+        className={
+          compact
+            ? "grid size-10 place-items-center rounded-full border border-[#c9a96e]/40 text-[#f5f1e8] transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
+            : "inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c9a96e]/40 px-3 text-sm font-medium text-[#f5f1e8] transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
+        }
       >
         <User className="size-[18px]" aria-hidden="true" />
-        <span>Login / Sign Up</span>
+        {!compact && <span>Login / Sign Up</span>}
       </Link>
     )
   }
