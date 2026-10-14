@@ -1,0 +1,391 @@
+"use client"
+
+import { useCallback, useEffect, useState, type FormEvent } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import {
+  ArrowLeft,
+  ShieldCheck,
+  Users,
+  UserPlus,
+  UserMinus,
+  RefreshCw,
+  LogOut,
+  LockKeyhole,
+  Mail,
+  AlertCircle,
+  CheckCircle2,
+  LoaderCircle,
+} from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+
+type StaffMember = {
+  user_id: string
+  email: string
+  role: "admin" | "employee" | string
+  created_at: string
+}
+
+function friendlyError(error: unknown) {
+  if (error instanceof Error) return error.message
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String((error as { message: unknown }).message)
+  }
+  return "Something went wrong. Please try again."
+}
+
+export default function AdminEmployeesPage() {
+  const router = useRouter()
+  const [checkingAccess, setCheckingAccess] = useState(true)
+  const [authorized, setAuthorized] = useState(false)
+  const [staff, setStaff] = useState<StaffMember[]>([])
+  const [email, setEmail] = useState("")
+  const [loadingStaff, setLoadingStaff] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [error, setError] = useState("")
+  const [notice, setNotice] = useState("")
+
+  const loadStaff = useCallback(async () => {
+    setLoadingStaff(true)
+    setError("")
+    try {
+      const supabase = createClient()
+      const { data, error: listError } = await supabase.rpc("list_staff_members")
+      if (listError) throw listError
+      setStaff((data ?? []) as StaffMember[])
+    } catch (err) {
+      setError(`Could not load staff members: ${friendlyError(err)}`)
+    } finally {
+      setLoadingStaff(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    async function checkAccess() {
+      try {
+        const supabase = createClient()
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser()
+
+        if (authError || !user) {
+          router.replace("/login?next=%2Fadmin%2Femployees")
+          return
+        }
+
+        const { data: role, error: roleError } = await supabase
+          .from("staff_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle()
+
+        if (roleError) throw roleError
+        if (role?.role !== "admin") {
+          router.replace("/")
+          return
+        }
+
+        if (active) {
+          setAuthorized(true)
+          await loadStaff()
+        }
+      } catch (err) {
+        if (active) setError(`Could not verify admin access: ${friendlyError(err)}`)
+      } finally {
+        if (active) setCheckingAccess(false)
+      }
+    }
+
+    void checkAccess()
+    return () => {
+      active = false
+    }
+  }, [router, loadStaff])
+
+  async function addEmployee(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const targetEmail = email.trim().toLowerCase()
+    if (!targetEmail) {
+      setError("Enter the employee's registered Timora account email.")
+      return
+    }
+
+    setSaving(true)
+    setError("")
+    setNotice("")
+    try {
+      const supabase = createClient()
+      const { error: actionError } = await supabase.rpc("manage_staff_role", {
+        p_email: targetEmail,
+        p_action: "add",
+      })
+      if (actionError) throw actionError
+      setEmail("")
+      setNotice(`Employee access enabled for ${targetEmail}.`)
+      await loadStaff()
+    } catch (err) {
+      setError(`Could not add employee: ${friendlyError(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function removeEmployee(member: StaffMember) {
+    if (member.role !== "employee") return
+    const confirmed = window.confirm(
+      `Remove employee access for ${member.email}? They will no longer be authorized as Timora staff.`
+    )
+    if (!confirmed) return
+
+    setRemovingId(member.user_id)
+    setError("")
+    setNotice("")
+    try {
+      const supabase = createClient()
+      const { error: actionError } = await supabase.rpc("manage_staff_role", {
+        p_email: member.email,
+        p_action: "remove",
+      })
+      if (actionError) throw actionError
+      setNotice(`Employee access removed for ${member.email}.`)
+      await loadStaff()
+    } catch (err) {
+      setError(`Could not remove employee: ${friendlyError(err)}`)
+    } finally {
+      setRemovingId(null)
+    }
+  }
+
+  async function signOut() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.replace("/login")
+    router.refresh()
+  }
+
+  if (checkingAccess) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#0b0b0a] text-[#d4af37]">
+        <div className="flex items-center gap-3 text-sm">
+          <LoaderCircle className="size-5 animate-spin" />
+          Verifying admin access...
+        </div>
+      </main>
+    )
+  }
+
+  if (!authorized) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-[#0b0b0a] px-5 text-[#f8f8f8]">
+        <div className="max-w-md text-center">
+          <ShieldCheck className="mx-auto mb-4 size-10 text-[#d4af37]" />
+          <h1 className="text-xl font-semibold">Admin access required</h1>
+          <p className="mt-2 text-sm text-white/60">
+            Only an authorized Timora administrator can manage employees.
+          </p>
+          {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+          <Link
+            href="/"
+            className="mt-5 inline-flex min-h-10 items-center rounded-full border border-[#d4af37]/40 px-4 py-2 text-sm text-[#e4c878]"
+          >
+            Return to Timora
+          </Link>
+        </div>
+      </main>
+    )
+  }
+
+  return (
+    <main className="min-h-screen bg-[#0b0b0a] text-[#f8f8f8]">
+      <header className="sticky top-0 z-20 border-b border-[#d4af37]/20 bg-[#0b0b0a]/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link
+              href="/admin"
+              aria-label="Back to admin dashboard"
+              className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 hover:border-[#d4af37]/50"
+            >
+              <ArrowLeft className="size-4" />
+            </Link>
+            <div className="min-w-0">
+              <p className="text-lg font-semibold tracking-[0.18em]">
+                TIMORA<span className="text-[#d4af37]">.</span>
+              </p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">
+                Employee management
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={signOut}
+            className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-white/70 hover:border-[#d4af37]/40 hover:text-[#e4c878]"
+          >
+            <LogOut className="size-4" />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
+        </div>
+      </header>
+
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#d4af37]/25 bg-[#d4af37]/5 px-3 py-1.5 text-xs text-[#e4c878]">
+              <ShieldCheck className="size-4" />
+              Admin-only controls
+            </div>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              Employee <span className="text-[#d4af37]">Management</span>
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">
+              Authorize registered Timora users to help handle COD orders. Employees cannot manage staff or grant themselves admin access.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadStaff()}
+            disabled={loadingStaff}
+            className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-full border border-white/15 px-4 text-sm text-white/75 hover:border-[#d4af37]/50 disabled:opacity-50 sm:self-auto"
+          >
+            <RefreshCw className={`size-4 ${loadingStaff ? "animate-spin" : ""}`} />
+            Refresh list
+          </button>
+        </div>
+
+        {error && (
+          <div role="alert" className="mb-5 flex items-start gap-3 rounded-xl border border-red-400/25 bg-red-400/10 p-4 text-sm text-red-200">
+            <AlertCircle className="mt-0.5 size-5 shrink-0" />
+            <p className="break-words">{error}</p>
+          </div>
+        )}
+        {notice && (
+          <div role="status" className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-400/25 bg-emerald-400/10 p-4 text-sm text-emerald-200">
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0" />
+            <p className="break-words">{notice}</p>
+          </div>
+        )}
+
+        <section className="mb-8 rounded-2xl border border-[#d4af37]/20 bg-white/[0.025] p-5 sm:p-7">
+          <div className="mb-5 flex items-start gap-3">
+            <div className="grid size-11 shrink-0 place-items-center rounded-xl border border-[#d4af37]/25 bg-[#d4af37]/10 text-[#d4af37]">
+              <UserPlus className="size-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Add an employee</h2>
+              <p className="mt-1 text-sm leading-5 text-white/50">
+                The person must already have a Timora account. Enter the same email they use to sign in.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={addEmployee} className="flex flex-col gap-3 sm:flex-row">
+            <label className="relative min-w-0 flex-1">
+              <span className="sr-only">Registered employee email</span>
+              <Mail className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-white/35" />
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="employee@example.com"
+                autoComplete="email"
+                required
+                className="min-h-12 w-full rounded-xl border border-white/10 bg-black/30 pl-11 pr-4 text-sm outline-none transition placeholder:text-white/30 focus:border-[#d4af37]/60"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={saving || !email.trim()}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#d4af37] px-5 text-sm font-semibold text-black transition hover:bg-[#e4c878] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {saving ? <LoaderCircle className="size-4 animate-spin" /> : <UserPlus className="size-4" />}
+              {saving ? "Adding..." : "Authorize employee"}
+            </button>
+          </form>
+          <p className="mt-3 text-xs leading-5 text-white/40">
+            Access is granted immediately. Only authorize people you trust.
+          </p>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-5 py-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <div className="grid size-10 place-items-center rounded-xl bg-white/5 text-[#d4af37]">
+                <Users className="size-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold">Authorized staff</h2>
+                <p className="text-xs text-white/45">
+                  {staff.length} {staff.length === 1 ? "account" : "accounts"} with staff access
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {loadingStaff && staff.length === 0 ? (
+            <div className="flex items-center justify-center gap-3 px-5 py-12 text-sm text-white/55">
+              <LoaderCircle className="size-5 animate-spin text-[#d4af37]" />
+              Loading staff...
+            </div>
+          ) : staff.length === 0 ? (
+            <div className="px-5 py-12 text-center">
+              <Users className="mx-auto mb-3 size-8 text-white/25" />
+              <p className="font-medium">No staff accounts found</p>
+              <p className="mt-1 text-sm text-white/45">Refresh the list or try again.</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-white/[0.07]">
+              {staff.map((member) => (
+                <li key={member.user_id} className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="grid size-10 shrink-0 place-items-center rounded-full border border-[#d4af37]/20 bg-[#d4af37]/[0.08] text-[#d4af37]">
+                      {member.role === "admin" ? <ShieldCheck className="size-5" /> : <Users className="size-5" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="break-all text-sm font-medium">{member.email || "Email unavailable"}</p>
+                      <p className="mt-1 text-xs text-white/40">
+                        Added {new Date(member.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 sm:justify-end">
+                    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${member.role === "admin" ? "border-[#d4af37]/35 bg-[#d4af37]/10 text-[#e4c878]" : "border-sky-400/20 bg-sky-400/10 text-sky-200"}`}>
+                      {member.role === "admin" ? "Administrator" : member.role === "employee" ? "Employee" : member.role}
+                    </span>
+                    {member.role === "employee" ? (
+                      <button
+                        type="button"
+                        onClick={() => void removeEmployee(member)}
+                        disabled={removingId === member.user_id}
+                        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-red-400/25 px-3 text-xs text-red-200 transition hover:bg-red-400/10 disabled:opacity-50"
+                      >
+                        {removingId === member.user_id ? <LoaderCircle className="size-4 animate-spin" /> : <UserMinus className="size-4" />}
+                        Remove access
+                      </button>
+                    ) : (
+                      <span className="inline-flex min-h-10 items-center gap-2 px-3 text-xs text-white/35">
+                        <LockKeyhole className="size-4" />
+                        Protected
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <div className="mt-6 flex flex-col gap-2 text-xs leading-5 text-white/40 sm:flex-row sm:items-center sm:justify-between">
+          <p>Employee permissions are enforced by Supabase database functions.</p>
+          <Link href="/admin/orders" className="text-[#e4c878] hover:underline">
+            Go to COD Orders →
+          </Link>
+        </div>
+      </div>
+    </main>
+  )
+}
+
