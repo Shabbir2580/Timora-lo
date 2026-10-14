@@ -16,7 +16,6 @@ import {
   Search,
   ClipboardList,
   Users,
-  UserCog,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
