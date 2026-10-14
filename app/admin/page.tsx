@@ -501,13 +501,7 @@ export default function AdminProductsPage() {
               <Users className="size-4" />
               Employee management
             </Link>
-            <Link
-              href="/admin/employees#staff-roles"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/15 px-5 text-sm font-medium text-white/80 transition hover:border-[#d4af37]/40 hover:text-[#e4c878]"
-            >
-              <UserCog className="size-4" />
-              Manage staff roles
-            </Link>
+            
             <Link
               href="/admin/orders"
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d4af37]/40 px-5 text-sm font-medium text-[#e4c878] transition hover:bg-[#d4af37]/10"
