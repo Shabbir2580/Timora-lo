@@ -14,6 +14,8 @@ import {
   Search,
   ShieldCheck,
   ShoppingBag,
+  Package,
+  UserRound,
   Sparkles,
   Truck,
   Watch,
@@ -176,6 +178,23 @@ export default function HomePage() {
             </label>
 
             <Link
+              href="/orders"
+              aria-label="My Orders"
+              title="My Orders"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c9a96e]/35 px-3 py-2.5 text-xs text-white/80 transition hover:border-[#c9a96e] hover:text-[#dfc797]"
+            >
+              <Package size={18} />
+              <span className="hidden sm:inline">My Orders</span>
+            </Link>
+            <Link
+              href="/login"
+              aria-label="Login or sign up"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 text-xs text-white/80 transition hover:border-[#c9a96e] hover:text-[#dfc797]"
+            >
+              <UserRound size={18} />
+              <span className="hidden sm:inline">Login / Sign Up</span>
+            </Link>
+            <Link
               href="/wishlist"
               aria-label="Wishlist"
               className="relative rounded-full border border-white/15 p-2.5 transition hover:border-[#c9a96e]"
@@ -212,6 +231,8 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col">
               {[
+                ["Login / Sign Up", "/login"],
+                ["My Orders", "/orders"],
                 ["Home", "/"],
                 ["Shop all", "/products"],
                 ["Watches", "/products?category=watches"],
