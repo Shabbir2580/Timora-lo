@@ -119,7 +119,7 @@ export function AccountMenu({ compact = false }: { compact?: boolean }) {
         }
       >
         <User className="size-[18px]" aria-hidden="true" />
-        {!compact && <span>Login / Sign Up</span>}
+        <span className={compact ? "hidden sm:inline text-xs" : ""}>Login / Sign Up</span>
       </Link>
     )
   }
