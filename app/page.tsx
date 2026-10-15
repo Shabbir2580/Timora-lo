@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
+import type { User } from "@supabase/supabase-js"
 import { useCart } from "@/lib/cart-context"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -20,6 +21,7 @@ import {
   ShoppingBag,
   Package,
   UserRound,
+  LogOut,
   Sparkles,
   Truck,
   Watch,
@@ -62,7 +64,45 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
   const [catalogueFallback, setCatalogueFallback] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [cursorPosition, setCursorPosition] = useState({ x: -100, y: -100, visible: false })
   const { wishlist, toggleWishlist } = useCart()
+
+  useEffect(() => {
+    const supabase = createClient()
+    let active = true
+    supabase.auth.getUser().then(({ data }) => {
+      if (active) { setUser(data.user); setAuthChecked(true) }
+    }).catch(() => { if (active) setAuthChecked(true) })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setUser(session?.user ?? null)
+    })
+    return () => { active = false; subscription.unsubscribe() }
+  }, [])
+
+  useEffect(() => {
+    if (window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    let frame = 0
+    const move = (event: PointerEvent) => {
+      if (frame) cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => setCursorPosition({ x: event.clientX, y: event.clientY, visible: true }))
+    }
+    const leave = () => setCursorPosition((current) => ({ ...current, visible: false }))
+    window.addEventListener("pointermove", move, { passive: true })
+    document.addEventListener("pointerleave", leave)
+    return () => { window.removeEventListener("pointermove", move); document.removeEventListener("pointerleave", leave); if (frame) cancelAnimationFrame(frame) }
+  }, [])
+
+  async function handleHomeSignOut() {
+    const supabase = createClient()
+    const { error } = await supabase.auth.signOut()
+    if (error) return
+    setUser(null)
+    setAccountMenuOpen(false)
+    router.refresh()
+  }
 
   useEffect(() => {
     let active = true
@@ -130,7 +170,7 @@ export default function HomePage() {
   }, [activeCategory, search, featuredProducts])
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#0b0b0a] text-[#f5f1e8]">
+    <main className="min-h-screen overflow-hidden bg-[#0b0b0a] text-[#f5f1e8]">\n      <div aria-hidden="true" className={`timora-cursor-ring ${cursorPosition.visible ? "is-visible" : ""}`} style={{ left: cursorPosition.x, top: cursorPosition.y }} />
       {/* Announcement bar */}
       <div className="border-b border-white/10 bg-[#c9a96e] px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.19em] text-[#17130c] sm:text-xs">
         Discover your next favourite · Explore the Timora collection
@@ -219,14 +259,24 @@ export default function HomePage() {
               <Package size={18} />
               <span className="hidden sm:inline">My Orders</span>
             </Link>
-            <Link
-              href="/login"
-              aria-label="Login or sign up"
-              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 text-xs text-white/80 transition hover:border-[#c9a96e] hover:text-[#dfc797]"
-            >
-              <UserRound size={18} />
-              <span className="hidden sm:inline">Login / Sign Up</span>
-            </Link>
+            {!authChecked ? (
+              <span className="inline-flex size-10 items-center justify-center text-[#c9a96e]" aria-label="Checking account"><UserRound size={18} /></span>
+            ) : user ? (
+              <div className="relative">
+                <button type="button" onClick={() => setAccountMenuOpen((open) => !open)} aria-expanded={accountMenuOpen} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c9a96e]/40 px-3 py-2.5 text-xs text-[#dfc797] transition hover:bg-[#c9a96e]/10">
+                  <UserRound size={18} /><span className="hidden max-w-28 truncate sm:inline">{(user.user_metadata?.full_name as string | undefined) || user.email?.split("@")[0] || "My account"}</span>
+                </button>
+                {accountMenuOpen && <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-xl border border-[#c9a96e]/25 bg-[#11110f] p-2 shadow-xl">
+                  <Link href="/orders" onClick={() => setAccountMenuOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm text-white/80 hover:bg-[#c9a96e]/10 hover:text-[#dfc797]">My orders</Link>
+                  <Link href="/wishlist" onClick={() => setAccountMenuOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm text-white/80 hover:bg-[#c9a96e]/10 hover:text-[#dfc797]">Wishlist</Link>
+                  <button type="button" onClick={() => void handleHomeSignOut()} className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-200 hover:bg-red-400/10">Sign out</button>
+                </div>}
+              </div>
+            ) : (
+              <Link href="/login" aria-label="Login or sign up" className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 text-xs text-white/80 transition hover:border-[#c9a96e] hover:text-[#dfc797]">
+                <UserRound size={18} /><span className="hidden sm:inline">Login / Sign Up</span>
+              </Link>
+            )}
             <Link
               href="/wishlist"
               aria-label="Wishlist"
@@ -282,7 +332,7 @@ export default function HomePage() {
             </form>
             <div className="flex flex-col">
               {[
-                ["Login / Sign Up", "/login"],
+                ...(user ? [["My Account", "/orders"]] : [["Login / Sign Up", "/login"]]),
                 ["My Orders", "/orders"],
                 ["Home", "/"],
                 ["Shop all", "/products"],

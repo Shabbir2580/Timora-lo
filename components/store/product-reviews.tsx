@@ -72,14 +72,14 @@ export function ProductReviews({ productId, productName }: { productId: string; 
           </div>
           <aside className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
             <h3 className="font-semibold">Write a review</h3>
-            {!userId ? <p className="mt-2 text-sm leading-6 text-white/55">Sign in with the account used for your order to submit a verified-purchase review.</p> : <form onSubmit={submitReview} className="mt-4 space-y-3">
+            {!userId ? <p className="mt-2 text-sm leading-6 text-white/55">Sign in with the account used for your order to submit a verified-purchase review.</p> : <><p className="mt-2 text-sm leading-6 text-white/55">Reviews are reserved for verified purchases. You can submit a review after your order has been delivered and payment is complete.</p><form onSubmit={submitReview} className="mt-4 space-y-3">
               <label className="block text-xs text-white/60">Rating<select value={rating} onChange={(event) => setRating(Number(event.target.value))} className="mt-1.5 min-h-10 w-full rounded-lg border border-white/10 bg-[#0b0b0a] px-3 text-sm text-white outline-none focus:border-[#c9a96e]">{[5,4,3,2,1].map((value) => <option key={value} value={value}>{value} star{value === 1 ? "" : "s"}</option>)}</select></label>
               <label className="block text-xs text-white/60">Title<input required minLength={1} maxLength={100} value={title} onChange={(event) => setTitle(event.target.value)} className="mt-1.5 min-h-10 w-full rounded-lg border border-white/10 bg-[#0b0b0a] px-3 text-sm text-white outline-none focus:border-[#c9a96e]" placeholder="Summarize your experience"/></label>
               <label className="block text-xs text-white/60">Your review<textarea required minLength={5} maxLength={2000} rows={4} value={body} onChange={(event) => setBody(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-[#0b0b0a] px-3 py-2 text-sm text-white outline-none focus:border-[#c9a96e]" placeholder="What should other shoppers know?"/></label>
               {error && <p role="alert" className="rounded-lg border border-red-300/20 bg-red-300/5 p-2 text-xs text-red-200">{error}</p>}
               {notice && <p role="status" className="rounded-lg border border-emerald-300/20 bg-emerald-300/5 p-2 text-xs text-emerald-200">{notice}</p>}
               <button disabled={sending} type="submit" className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-[#d4af37] px-4 text-sm font-semibold text-[#17130c] disabled:opacity-50"><Send className="size-4"/>{sending ? "Submitting…" : "Submit review"}</button>
-            </form>}
+            </form></>}
             {!userId && <Link href="/login?next=%2Forders" className="mt-4 inline-flex min-h-10 items-center justify-center rounded-full border border-[#c9a96e]/35 px-4 text-sm text-[#dfc797] hover:bg-[#c9a96e]/10">Sign in to review</Link>}
           </aside>
         </div>
