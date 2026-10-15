@@ -406,3 +406,42 @@ img {
   }
   .home-image-zoom { transform: none; }
 }
+
+
+/* Richer storefront interactions: elegant hover depth, clear focus, and no layout shift. */
+.home-hero {
+  isolation: isolate;
+}
+.home-hero-image {
+  border-radius: 46% 46% 1.25rem 1.25rem;
+  overflow: hidden;
+}
+.home-floating-fragrance {
+  animation: timora-card-float 6s ease-in-out infinite;
+}
+.home-floating-fragrance:focus-visible {
+  outline: 2px solid var(--timora-gold-bright);
+  outline-offset: 4px;
+}
+.home-reveal {
+  will-change: opacity, transform;
+}
+.home-reveal-delay-2 {
+  animation-delay: 160ms;
+}
+.home-reveal a.group img {
+  will-change: transform;
+}
+.home-reveal a.group:focus-visible {
+  outline: 2px solid var(--timora-gold-bright);
+  outline-offset: 4px;
+}
+@keyframes timora-card-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-floating-fragrance {
+    animation: none !important;
+  }
+}
