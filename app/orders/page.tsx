@@ -38,6 +38,8 @@ type CustomerOrder = {
   pincode: string
   subtotal_paise: number
   shipping_paise: number
+  discount_paise: number
+  coupon_code: string | null
   total_paise: number
   order_status: string
   payment_status: string
@@ -97,11 +99,14 @@ function StatusTimeline({ order }: { order: CustomerOrder }) {
   }
 
   if (waiting) {
+    const isCod = order.payment_provider === "cod"
     return (
       <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/5 p-4">
-        <p className="font-medium text-amber-200">Awaiting order approval</p>
+        <p className="font-medium text-amber-200">{isCod ? "Awaiting COD approval" : "Payment pending"}</p>
         <p className="mt-1 text-sm text-white/55">
-          Your order has been received. We’ll update the status once it is approved.
+          {isCod
+            ? "Your COD request has been received. Timora staff must approve it before processing or dispatch."
+            : "Your order is saved, but payment has not been verified. The order will not be dispatched until payment is confirmed."}
         </p>
       </div>
     )
@@ -144,6 +149,8 @@ export default function CustomerOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [userName, setUserName] = useState("")
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [notice, setNotice] = useState("")
 
   const loadOrders = useCallback(async () => {
     setLoading(true)
@@ -166,7 +173,7 @@ export default function CustomerOrdersPage() {
       const { data, error: ordersError } = await supabase
         .from("orders")
         .select(
-          "id,customer_id,customer_name,address,landmark,city,state,pincode,subtotal_paise,shipping_paise,total_paise,order_status,payment_status,payment_provider,tracking_number,courier_name,shipped_at,delivered_at,cod_rejection_reason,created_at,updated_at",
+          "id,customer_id,customer_name,address,landmark,city,state,pincode,subtotal_paise,shipping_paise,discount_paise,coupon_code,total_paise,order_status,payment_status,payment_provider,tracking_number,courier_name,shipped_at,delivered_at,cod_rejection_reason,created_at,updated_at",
         )
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false })
@@ -199,6 +206,24 @@ export default function CustomerOrdersPage() {
       setLoading(false)
     }
   }, [router])
+
+  async function cancelPendingOrder(orderId: string) {
+    if (!window.confirm("Cancel this unpaid pending order? Its stock reservation will be released.")) return
+    setCancellingId(orderId)
+    setError("")
+    setNotice("")
+    try {
+      const supabase = createClient()
+      const { error: rpcError } = await supabase.rpc("cancel_my_pending_order", { p_order_id: orderId })
+      if (rpcError) throw rpcError
+      setNotice("Order cancelled. Its stock reservation has been released.")
+      await loadOrders()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not cancel this order.")
+    } finally {
+      setCancellingId(null)
+    }
+  }
 
   useEffect(() => {
     void loadOrders()
@@ -237,6 +262,8 @@ export default function CustomerOrdersPage() {
             Refresh orders
           </button>
         </div>
+
+        {notice && <div role="status" className="mt-6 rounded-xl border border-emerald-300/20 bg-emerald-300/5 p-4 text-sm text-emerald-200">{notice}</div>}
 
         {error && (
           <div role="alert" className="mt-6 flex gap-2 rounded-xl border border-red-400/25 bg-red-400/5 p-4 text-sm text-red-200">
@@ -338,6 +365,7 @@ export default function CustomerOrdersPage() {
                           <div className="flex justify-between gap-3 text-white/55">
                             <span>Subtotal</span><span>{formatPrice(order.subtotal_paise)}</span>
                           </div>
+                          {order.discount_paise > 0 && <div className="flex justify-between gap-3 text-emerald-200"><span>Discount {order.coupon_code ? `(${order.coupon_code})` : ""}</span><span>−{formatPrice(order.discount_paise)}</span></div>}
                           <div className="flex justify-between gap-3 text-white/55">
                             <span>Shipping</span><span>{formatPrice(order.shipping_paise)}</span>
                           </div>
@@ -350,6 +378,8 @@ export default function CustomerOrdersPage() {
                         </div>
                       </aside>
                     </div>
+
+                    {order.order_status === "pending_payment" && order.payment_status === "pending" && <div className="mt-5 flex flex-col gap-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs leading-5 text-white/60">This order is still pending. You may cancel it if you no longer want to proceed.</p><button type="button" disabled={cancellingId === order.id} onClick={() => void cancelPendingOrder(order.id)} className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-full border border-red-300/25 px-4 text-sm text-red-200 hover:bg-red-300/10 disabled:opacity-50">{cancellingId === order.id ? "Cancelling…" : "Cancel pending order"}</button></div>}
 
                     <div className="mt-5 rounded-xl border border-white/[0.07] p-4">
                       <h2 className="flex items-center gap-2 text-sm font-semibold">
