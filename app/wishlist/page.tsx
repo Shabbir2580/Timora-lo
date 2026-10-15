@@ -18,6 +18,7 @@ type DatabaseProduct = {
   category: string | null
   image_url: string | null
   images: string[] | null
+  tags: string[] | null
   stock: number
   is_active: boolean
 }
@@ -46,6 +47,7 @@ function toProduct(row: DatabaseProduct): Product {
     image,
     images: row.images?.length ? row.images : [image],
     badges,
+    tags: Array.isArray(row.tags) ? row.tags.filter((tag): tag is string => typeof tag === "string") : [],
     verified: false,
     stock,
     stockCount,
@@ -77,7 +79,7 @@ export default function WishlistPage() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from("products")
-        .select("id,name,slug,description,price,compare_at_price,category,image_url,images,stock,is_active")
+        .select("id,name,slug,description,price,compare_at_price,category,image_url,images,tags,stock,is_active")
         .eq("is_active", true)
 
       if (error) throw error
