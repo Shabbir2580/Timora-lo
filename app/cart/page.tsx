@@ -10,6 +10,7 @@ import {
   Trash2,
   ArrowRight,
   ShieldCheck,
+  Trash2,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import { formatINR } from "@/lib/format"
@@ -21,6 +22,7 @@ export default function CartPage() {
     count,
     removeFromCart,
     setQuantity,
+    clearCart,
   } = useCart()
 
   return (
@@ -34,9 +36,23 @@ export default function CartPage() {
           Shopping bag
         </h1>
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          {count} item{count === 1 ? "" : "s"} in your bag
-        </p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {count} item{count === 1 ? "" : "s"} in your bag
+          </p>
+          {lines.length > 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("Remove every item from your shopping bag?")) clearCart()
+              }}
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-border px-3 text-xs text-muted-foreground transition hover:border-red-300/30 hover:text-red-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              <Trash2 className="size-3.5" aria-hidden="true" />
+              Clear bag
+            </button>
+          )}
+        </div>
       </div>
 
       {!lines.length ? (
