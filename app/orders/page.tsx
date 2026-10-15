@@ -15,6 +15,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { InvoiceButton } from "@/components/store/invoice-button"
 
 type OrderItem = {
   id: string
@@ -298,7 +299,8 @@ export default function CustomerOrdersPage() {
                       <p className="mt-1 break-all font-mono text-sm text-white/85">{order.id}</p>
                       <p className="mt-2 text-xs text-white/45">Placed {formatDate(order.created_at)}</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <InvoiceButton order={order} />
                       <span className="rounded-full border border-[#d4af37]/25 bg-[#d4af37]/[0.07] px-3 py-1.5 text-xs capitalize text-[#e4c878]">
                         {statusLabel}
                       </span>
