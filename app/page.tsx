@@ -619,6 +619,58 @@ export default function HomePage() {
         )}
       </section>
 
+      {/* Merchandising collections */}
+      {[
+        { title: "Best sellers", eyebrow: "Customer favourites", description: "Standout pieces worth coming back to.", matches: ["best seller", "bestseller", "best-seller"] },
+        { title: "Trending now", eyebrow: "The current edit", description: "Fresh finds selected for your everyday rotation.", matches: ["trending", "trending now", "popular"] },
+      ].map((collection) => {
+        const collectionProducts = featuredProducts.filter((product) =>
+          (product.tags ?? []).some((tag) => collection.matches.includes(tag.trim().toLowerCase()))
+        ).slice(0, 4)
+
+        if (collectionProducts.length === 0) return null
+
+        return (
+          <section key={collection.title} aria-label={collection.title} className="border-t border-white/10 bg-[#0d0d0b]">
+            <div className="mx-auto max-w-[1440px] px-5 py-14 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8bc88]">{collection.eyebrow}</p>
+                  <h2 className="mt-2 text-3xl font-light tracking-[-0.04em] sm:text-4xl">{collection.title}</h2>
+                  <p className="mt-2 text-xs leading-6 text-white/45 sm:text-sm">{collection.description}</p>
+                </div>
+                <Link href="/products" className="inline-flex w-fit items-center gap-2 border-b border-[#c9a96e]/50 pb-2 text-xs text-[#dfc797] transition hover:gap-3">
+                  Explore collection <ArrowRight size={15} />
+                </Link>
+              </div>
+              <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+                {collectionProducts.map((product) => (
+                  <article key={product.id} className="group min-w-0">
+                    <div className="relative aspect-[4/4.8] overflow-hidden rounded-xl bg-[#e8e1d6]">
+                      <Link href={`/product/${product.slug}`} className="block size-full">
+                        <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover transition duration-700 group-hover:scale-105" />
+                      </Link>
+                      <span className="absolute left-2 top-2 rounded-full border border-[#c9a96e]/45 bg-[#0b0b0a]/90 px-2 py-1 text-[8px] font-semibold uppercase tracking-wide text-[#e5cb91] sm:left-3 sm:top-3 sm:text-[9px]">
+                        {collection.title === "Best sellers" ? "BEST SELLER" : "TRENDING"}
+                      </span>
+                      <button type="button" onClick={() => toggleWishlist(product.id)} aria-label={wishlist.includes(product.id) ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`} aria-pressed={wishlist.includes(product.id)} className="absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-white/90 text-[#191713] transition hover:bg-white sm:right-3 sm:top-3">
+                        <Heart size={17} fill={wishlist.includes(product.id) ? "#b45353" : "none"} className={wishlist.includes(product.id) ? "text-[#b45353]" : ""} />
+                      </button>
+                    </div>
+                    <div className="mt-3">
+                      <p className="text-[9px] uppercase tracking-[0.16em] text-white/40 sm:text-[10px]">{product.category}</p>
+                      <Link href={`/product/${product.slug}`}><h3 className="mt-1.5 line-clamp-2 text-xs font-medium leading-5 transition hover:text-[#dfc797] sm:text-sm">{product.name}</h3></Link>
+                      <div className="mt-2 flex flex-wrap items-center gap-2"><span className="text-xs font-semibold sm:text-sm">{formatPrice(product.price)}</span>{product.oldPrice && <span className="text-[10px] text-white/35 line-through sm:text-xs">{formatPrice(product.oldPrice)}</span>}</div>
+                      <p className={`mt-2 text-[10px] sm:text-xs ${product.stock <= 0 ? "text-red-300/80" : product.stock <= 5 ? "text-amber-200/80" : "text-white/35"}`}>{product.stock <= 0 ? "Currently unavailable" : product.stock <= 5 ? `Only ${product.stock} left in stock` : "In stock"}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        )
+      })}
+
       {/* Brand statement */}
       <section className="border-y border-white/10 bg-[#11110f]">
         <div className="mx-auto grid max-w-[1440px] items-center gap-8 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:px-12 lg:py-24">
