@@ -683,7 +683,7 @@ export default function HomePage() {
           </div>
           <p className="max-w-sm text-xs leading-6 text-white/45 sm:text-sm">A closer look at the details, textures and everyday essentials that shape your personal style.</p>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           <Link href="/products?category=watches" className="group relative col-span-2 aspect-[16/9] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15] lg:col-span-1 lg:aspect-[4/5]">
             <Image src="https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=1000&q=85" alt="Close-up of a classic wristwatch" fill sizes="(max-width: 1024px) 90vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
