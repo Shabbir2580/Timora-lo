@@ -167,7 +167,7 @@ begin
     raise exception 'Only administrators can review submitted work.';
   end if;
 
-  if p_decision not in ('approve', 'request_changes') then
+  if p_decision is null or p_decision not in ('approve', 'request_changes') then
     raise exception 'Invalid review decision.';
   end if;
 
