@@ -1,64 +1,42 @@
+import { ShieldCheck, Truck, RotateCcw, Headphones } from "lucide-react"
 
-import {
-  Headphones,
-  SearchCheck,
-  ShoppingBag,
-  Sparkles,
-  ShieldCheck,
-} from "lucide-react"
-
-const items = [
-  {
-    icon: SearchCheck,
-    title: "Explore thoughtfully",
-    description: "Discover products across our collection.",
-  },
-  {
-    icon: ShoppingBag,
-    title: "Easy to browse",
-    description: "Find details to help you choose.",
-  },
+const reasons = [
   {
     icon: ShieldCheck,
-    title: "Shop informed",
-    description: "Review product information before ordering.",
+    title: "Only genuine products",
+    body: "Every item is sourced from verified suppliers and ships with a genuine GST invoice.",
+  },
+  {
+    icon: Truck,
+    title: "Delivery you can plan around",
+    body: "See an exact delivery date before you buy — no vague estimates.",
+  },
+  {
+    icon: RotateCcw,
+    title: "Returns without the runaround",
+    body: "7-day returns on eligible items for damaged, wrong or defective products.",
   },
   {
     icon: Headphones,
-    title: "Customer support",
-    description: "Get in touch when you need assistance.",
-  },
-  {
-    icon: Sparkles,
-    title: "A considered collection",
-    description: "Style, utility and everyday essentials.",
+    title: "Real support",
+    body: "Track orders, raise a ticket and get clear answers from the Timora team.",
   },
 ]
 
-export function TrustStrip() {
+export function WhyTimora() {
   return (
-    <section
-      aria-label="The Timora shopping experience"
-      className="border-y border-[#c9a96e]/20 bg-[#11110f]"
-    >
-      <div className="mx-auto grid max-w-[1440px] grid-cols-2 gap-px bg-[#302c24] sm:grid-cols-3 lg:grid-cols-5">
-        {items.map(({ icon: Icon, title, description }) => (
-          <div
-            key={title}
-            className="flex min-h-28 items-start gap-3 bg-[#11110f] px-4 py-5 sm:min-h-32 sm:items-center sm:px-5 lg:px-6"
-          >
-            <span className="grid size-10 shrink-0 place-items-center rounded-full border border-[#c9a96e]/25 bg-[#c9a96e]/5 text-[#d8bc88]">
-              <Icon className="size-[18px]" aria-hidden="true" />
+    <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <h2 className="mb-5 text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+        Why shop with Timora
+      </h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {reasons.map(({ icon: Icon, title, body }) => (
+          <div key={title} className="rounded-lg border border-border bg-card p-5">
+            <span className="grid size-10 place-items-center rounded-lg bg-primary/10 text-primary">
+              <Icon className="size-5" aria-hidden />
             </span>
-
-            <div className="min-w-0">
-              <h2 className="text-xs font-medium leading-5 text-[#f5f1e8] sm:text-sm">
-                {title}
-              </h2>
-              <p className="mt-1 text-[10px] leading-5 text-[#b0aaa0] sm:text-xs">
-                {description}
-              </p>
-            </div>
+            <h3 className="mt-3 text-sm font-semibold text-foreground">{title}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{body}</p>
           </div>
         ))}
       </div>
