@@ -88,6 +88,8 @@ export default function AdminProductsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState<ProductForm>(emptyForm)
   const [search, setSearch] = useState("")
+  const [tagFilter, setTagFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
 
@@ -449,13 +451,27 @@ export default function AdminProductsPage() {
     router.refresh()
   }
 
+  const availableTags = Array.from(
+    new Set(products.flatMap((product) => product.tags ?? []))
+  ).sort((a, b) => a.localeCompare(b))
+
   const filteredProducts = products.filter((product) => {
     const term = search.toLowerCase().trim()
-    return (
+    const matchesSearch =
       product.name.toLowerCase().includes(term) ||
       product.slug.toLowerCase().includes(term) ||
-      product.category.toLowerCase().includes(term)
-    )
+      product.category.toLowerCase().includes(term) ||
+      (product.tags ?? []).some((tag) => tag.toLowerCase().includes(term))
+    const matchesTag =
+      tagFilter === "all" ||
+      (product.tags ?? []).some((tag) => tag.toLowerCase() === tagFilter.toLowerCase())
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "active" && product.is_active) ||
+      (statusFilter === "hidden" && !product.is_active) ||
+      (statusFilter === "low-stock" && product.stock > 0 && product.stock <= 5) ||
+      (statusFilter === "out-of-stock" && product.stock <= 0)
+    return matchesSearch && matchesTag && matchesStatus
   })
 
   if (checkingAccess) {
@@ -802,16 +818,45 @@ export default function AdminProductsPage() {
         <section className="mt-8">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-medium">Product catalogue</h2>
-            <div className="flex gap-2">
-              <label className="flex min-h-10 flex-1 items-center gap-2 rounded-full border border-white/10 bg-[#11110f] px-3 sm:w-64 sm:flex-none">
-                <Search className="size-4 text-white/40" />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <label className="flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-[#11110f] px-3 sm:w-64">
+                <Search className="size-4 shrink-0 text-white/40" />
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search products"
-                  aria-label="Search products"
+                  placeholder="Search name, category or tag"
+                  aria-label="Search products by name, category, or tag"
                   className="w-full bg-transparent text-sm outline-none placeholder:text-white/35"
                 />
+              </label>
+              <label className="flex min-h-10 items-center rounded-full border border-white/10 bg-[#11110f] px-3">
+                <span className="sr-only">Filter by tag</span>
+                <select
+                  value={tagFilter}
+                  onChange={(event) => setTagFilter(event.target.value)}
+                  aria-label="Filter products by tag"
+                  className="max-w-36 bg-transparent text-xs text-white/75 outline-none"
+                >
+                  <option value="all" className="bg-[#11110f]">All tags</option>
+                  {availableTags.map((tag) => (
+                    <option key={tag} value={tag} className="bg-[#11110f]">{tag}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex min-h-10 items-center rounded-full border border-white/10 bg-[#11110f] px-3">
+                <span className="sr-only">Filter product status</span>
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value)}
+                  aria-label="Filter products by stock and visibility"
+                  className="max-w-36 bg-transparent text-xs text-white/75 outline-none"
+                >
+                  <option value="all" className="bg-[#11110f]">All status</option>
+                  <option value="active" className="bg-[#11110f]">Active</option>
+                  <option value="hidden" className="bg-[#11110f]">Hidden</option>
+                  <option value="low-stock" className="bg-[#11110f]">Low stock</option>
+                  <option value="out-of-stock" className="bg-[#11110f]">Out of stock</option>
+                </select>
               </label>
               <button
                 type="button"
@@ -832,9 +877,9 @@ export default function AdminProductsPage() {
               <div className="p-10 text-center">
                 <Package className="mx-auto size-8 text-[#d4af37]/60" />
                 <p className="mt-3 text-sm text-white/70">
-                  {search ? "No matching products found." : "No database products yet."}
+                  {search || tagFilter !== "all" || statusFilter !== "all" ? "No products match these filters." : "No database products yet."}
                 </p>
-                {!search && (
+                {!search && tagFilter === "all" && statusFilter === "all" && (
                   <p className="mt-1 text-xs text-white/40">
                     Your existing sample products are still in the code. Add a database product here to begin.
                   </p>
