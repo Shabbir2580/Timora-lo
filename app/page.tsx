@@ -658,6 +658,34 @@ export default function HomePage() {
         )
       })}
 
+      {/* Editorial image collection */}
+      <section className="home-reveal mx-auto max-w-[1440px] px-5 py-12 sm:px-8 sm:py-16 lg:px-12 lg:py-20">
+        <div className="mb-7 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8bc88]">Objects with character</p>
+            <h2 className="mt-3 text-3xl font-light tracking-[-0.04em] sm:text-4xl">Made to be <span className="text-[#d8bc88]">noticed.</span></h2>
+          </div>
+          <p className="max-w-sm text-xs leading-6 text-white/45 sm:text-sm">A closer look at the details, textures and everyday essentials that shape your personal style.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+          <Link href="/products?category=watches" className="group relative col-span-2 aspect-[16/9] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15] lg:col-span-1 lg:aspect-[4/5]">
+            <Image src="https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=1000&q=85" alt="Close-up of a classic wristwatch" fill sizes="(max-width: 1024px) 90vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+            <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">The finishing touch</p><p className="mt-1 text-lg font-light sm:text-2xl">Watches</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Explore collection <ArrowUpRight size={13} /></span></div>
+          </Link>
+          <Link href="/products?category=headphones" className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15]">
+            <Image src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=85" alt="Premium audio headphones" fill sizes="(max-width: 640px) 45vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+            <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">Sound, considered</p><p className="mt-1 text-lg font-light sm:text-2xl">Audio</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Find your sound <ArrowUpRight size={13} /></span></div>
+          </Link>
+          <Link href="/products?category=accessories" className="group relative col-span-2 aspect-[16/9] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15] lg:col-span-1 lg:aspect-[4/5]">
+            <Image src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1000&q=85" alt="Elegant everyday bag accessory" fill sizes="(max-width: 1024px) 90vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+            <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">The finishing touch</p><p className="mt-1 text-lg font-light sm:text-2xl">Accessories</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Explore details <ArrowUpRight size={13} /></span></div>
+          </Link>
+        </div>
+      </section>
+
       {/* Brand statement */}
       <section className="home-reveal border-y border-white/10 bg-[#11110f]">
         <div className="mx-auto grid max-w-[1440px] items-center gap-8 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:px-12 lg:py-24">
