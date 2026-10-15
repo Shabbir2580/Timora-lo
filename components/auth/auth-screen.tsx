@@ -141,6 +141,12 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   async function handleGoogleSignIn() {
     setError("")
     setNotice("")
+
+    if (!isLogin && !acceptedTerms) {
+      setError("Please accept the Terms of Service and Privacy Policy.")
+      return
+    }
+
     setLoading(true)
 
     try {
