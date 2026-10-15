@@ -62,7 +62,7 @@ begin
     raise exception 'invalid customer';
   end if;
 
-  if p_payment_provider not in ('upi_qr', 'whatsapp', 'cod') then
+  if p_payment_provider is null or p_payment_provider not in ('upi_qr', 'whatsapp', 'cod') then
     raise exception 'invalid payment provider';
   end if;
 
@@ -92,6 +92,12 @@ begin
 
   select count(*) into v_item_count from jsonb_array_elements(p_items);
   if v_item_count < 1 then raise exception 'invalid item list'; end if;
+  if v_item_count <> (
+    select count(distinct (value->>'productId')::uuid)
+    from jsonb_array_elements(p_items)
+  ) then
+    raise exception 'duplicate product lines are not allowed';
+  end if;
 
   -- Validate and calculate from the locked live catalogue, never client prices.
   for v_item in select value from jsonb_array_elements(p_items)
