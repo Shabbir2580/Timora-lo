@@ -45,6 +45,11 @@ export function ProductCard({ product }: { product: Product }) {
           {product.badges.slice(0, 1).map((badge) => (
             <ProductBadgePill key={badge} badge={badge} />
           ))}
+          {(product.tags ?? []).slice(0, 2).map((tag) => (
+            <span key={tag} className="max-w-28 truncate rounded border border-[#c9a96e]/35 bg-[#0b0b0a]/90 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[#e5cb91] shadow-sm" title={tag}>
+              {tag}
+            </span>
+          ))}
           {isPreview && (
             <span className="rounded bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold uppercase text-black">
               Preview only
