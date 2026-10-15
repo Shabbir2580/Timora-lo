@@ -301,6 +301,7 @@ export default function CustomerOrdersPage() {
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <InvoiceButton order={order} />
+                      <Link href={`/orders/${order.id}`} className="inline-flex min-h-9 items-center justify-center rounded-full border border-white/15 px-3 text-xs text-white/70 transition hover:border-[#d4af37]/40 hover:text-[#e4c878]">Order details</Link>
                       <span className="rounded-full border border-[#d4af37]/25 bg-[#d4af37]/[0.07] px-3 py-1.5 text-xs capitalize text-[#e4c878]">
                         {statusLabel}
                       </span>
