@@ -99,7 +99,7 @@ export default async function ProductsPage({
   try {
     const supabase = await createClient()
     const { data, error } = await supabase
-      .from("available_products")
+     .from("products")
       .select(
         "id, name, slug, description, price, compare_at_price, category, image_url, images, available_stock, is_active",
       )
