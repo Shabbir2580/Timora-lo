@@ -65,7 +65,7 @@ export default function AdminOrdersPage() {
   const [workingId, setWorkingId] = useState<string | null>(null)
   const [rejectingOrder, setRejectingOrder] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState("")
-  const [filter, setFilter] = useState<"awaiting" | "all" | "cod" | "payment">("awaiting")
+  const [filter, setFilter] = useState<"awaiting" | "all" | "cod" | "payment">("all")
   const [search, setSearch] = useState("")
   const [trackingNumber, setTrackingNumber] = useState("")
   const [courierName, setCourierName] = useState("")
@@ -352,7 +352,7 @@ export default function AdminOrdersPage() {
 
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#d4af37]">Order management</p><h1 className="mt-2 text-3xl font-medium sm:text-4xl">All Orders</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">Manage order review, payment verification, dispatch, tracking and COD collection. Only mark payment received after checking the actual funds.</p></div>
+          <div><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#d4af37]">Order management</p><h1 className="mt-2 text-3xl font-medium sm:text-4xl">All Orders</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">Showing all orders by default. The summary cards count every order in the database; use the filters to narrow the list. Delete unwanted test orders to remove them from all order views.</p></div>
           <div className="flex flex-wrap gap-2">
             {([ ["awaiting","Awaiting review"], ["payment","Payment pending"], ["cod","COD orders"], ["all","All orders"] ] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`min-h-10 rounded-full px-4 text-xs font-medium ${filter === value ? "bg-[#d4af37] text-[#17130c]" : "border border-white/15 text-white/65"}`}>{label}</button>)}
           </div>
