@@ -343,10 +343,10 @@ export default function HomePage() {
       </header>
 
       {/* Hero */}
-      <section className="relative">
+      <section className="relative home-hero">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_75%_45%,rgba(173,133,66,0.13),transparent_42%)]" />
         <div className="relative mx-auto grid max-w-[1440px] items-center gap-8 px-5 pb-14 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:grid-cols-[1fr_0.9fr] lg:gap-12 lg:px-12 lg:py-20">
-          <div className="relative z-10 max-w-2xl">
+          <div className="relative z-10 max-w-2xl home-reveal">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#c9a96e]/35 bg-[#c9a96e]/5 px-3.5 py-2 text-[9px] font-medium uppercase tracking-[0.22em] text-[#d9bd8c] sm:text-[10px]">
               <Sparkles size={13} />
               A more considered collection
@@ -400,16 +400,16 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
+          <div className="relative mx-auto w-full max-w-xl home-reveal home-reveal-delay-2 lg:max-w-none">
             <div className="absolute -inset-3 rounded-[45%] bg-[#c9a96e]/5 blur-3xl" />
-            <div className="relative aspect-[4/4.5] overflow-hidden rounded-[48%_48%_8px_8px] border border-white/10 bg-[#d7cbb6]">
+            <div className="home-hero-image relative aspect-[4/4.5] overflow-hidden rounded-[48%_48%_8px_8px] border border-white/10 bg-[#d7cbb6]">
               <Image
                 src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1200&q=90"
                 alt="Elegant wristwatch from the Timora-inspired collection"
                 fill
                 priority
                 sizes="(max-width: 1024px) 90vw, 45vw"
-                className="object-cover object-center transition duration-700 hover:scale-105"
+                className="home-image-zoom object-cover object-center transition duration-700 hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/5" />
               <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-3 sm:bottom-8 sm:left-8 sm:right-8">
@@ -443,7 +443,7 @@ export default function HomePage() {
       </section>
 
       {/* Category strip */}
-      <section className="border-y border-white/10 bg-[#10100e]">
+      <section className="home-reveal border-y border-white/10 bg-[#10100e]">
         <div className="mx-auto grid max-w-[1440px] grid-cols-2 sm:grid-cols-4">
           {categories.map(({ name, detail, icon: Icon, href }, index) => (
             <Link
@@ -472,7 +472,7 @@ export default function HomePage() {
       </section>
 
       {/* Featured products */}
-      <section id="featured-products" className="scroll-mt-6 mx-auto max-w-[1440px] px-5 py-16 sm:px-8 sm:py-20 lg:px-12 lg:py-24">
+      <section id="featured-products" className="home-reveal scroll-mt-6 mx-auto max-w-[1440px] px-5 py-16 sm:px-8 sm:py-20 lg:px-12 lg:py-24">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
             <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8bc88]">
@@ -658,7 +658,7 @@ export default function HomePage() {
       })}
 
       {/* Brand statement */}
-      <section className="border-y border-white/10 bg-[#11110f]">
+      <section className="home-reveal border-y border-white/10 bg-[#11110f]">
         <div className="mx-auto grid max-w-[1440px] items-center gap-8 px-5 py-14 sm:px-8 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:px-12 lg:py-24">
           <div>
             <p className="text-[10px] uppercase tracking-[0.25em] text-[#d8bc88]">
@@ -719,7 +719,7 @@ export default function HomePage() {
       </section>
 
       {/* Newsletter */}
-      <section className="mx-auto max-w-[1440px] px-5 py-16 sm:px-8 sm:py-20 lg:px-12 lg:py-24">
+      <section className="home-reveal mx-auto max-w-[1440px] px-5 py-16 sm:px-8 sm:py-20 lg:px-12 lg:py-24">
         <div className="relative overflow-hidden rounded-2xl border border-[#c9a96e]/20 bg-[#15140f] px-5 py-10 sm:px-10 sm:py-14 lg:px-16 lg:py-16">
           <div className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-[#c9a96e]/10 blur-3xl" />
           <div className="relative grid items-center gap-7 lg:grid-cols-[1fr_auto] lg:gap-12">
