@@ -12,7 +12,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://v0-timora.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://timora-by-sk.vercel.app"),
   title: "Timora | Timeless Style. Modern Shopping.",
   description:
     "Discover watches, audio essentials, and lifestyle accessories at Timora. Explore our curated collection and find your next favourite.",
