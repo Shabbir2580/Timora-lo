@@ -1231,8 +1231,8 @@ export default function CheckoutPage() {
                 </div>
 
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Scan your merchant QR code with your UPI app. Confirm the
-                  final amount with Timora if shipping or other charges apply.
+                  Scan the merchant QR code with your UPI app. Check the payable
+                  amount below against the server-calculated order total before paying.
                 </p>
 
                 <div className="mt-4 overflow-hidden rounded-xl border border-border bg-white p-3">
@@ -1251,7 +1251,7 @@ export default function CheckoutPage() {
                   </p>
                 )}
                 <p className="mt-3 text-center text-sm font-semibold">
-                  Cart subtotal: {formatPrice(serverTotals ? serverTotals.subtotalPaise / 100 : displaySubtotal)}
+                  {serverTotals ? "Payable amount (including shipping and discount)" : "Estimated cart subtotal (final amount calculated at order creation)"}: {formatPrice(serverTotals ? serverTotals.totalPaise / 100 : displaySubtotal)}
                 </p>
 
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">

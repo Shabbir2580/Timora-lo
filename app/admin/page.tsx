@@ -252,6 +252,14 @@ export default function AdminProductsPage() {
       }
     }
 
+    const existingImages = editingId
+      ? products.find((product) => product.id === editingId)?.images ?? []
+      : []
+    const mainImage = form.image_url.trim()
+    const preservedImages = mainImage
+      ? Array.from(new Set([mainImage, ...existingImages]))
+      : existingImages
+
     const payload = {
       name: form.name.trim(),
       slug,
@@ -259,8 +267,8 @@ export default function AdminProductsPage() {
       price,
       compare_at_price: compareAtPrice,
       category: form.category.trim() || "Accessories",
-      image_url: form.image_url.trim(),
-      images: form.image_url.trim() ? [form.image_url.trim()] : [],
+      image_url: mainImage || (existingImages[0] ?? ""),
+      images: preservedImages,
       stock,
       is_active: form.is_active,
       updated_at: new Date().toISOString(),

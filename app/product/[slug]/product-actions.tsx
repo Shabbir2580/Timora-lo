@@ -16,6 +16,6 @@ export function ProductActions({ product }: { product: Product }) {
   return <div className="mt-7 flex flex-col gap-3 sm:flex-row">
     <button type="button" disabled={unavailable} onClick={() => { addToCart(product); setAdded(true) }} className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-[#c9a96e] px-5 font-semibold text-[#17130c] transition hover:bg-[#dfc797] disabled:cursor-not-allowed disabled:opacity-50">{isPreview ? <>Preview listing only</> : added ? <><Check size={18}/> Added to bag</> : <><ShoppingBag size={18}/> Add to bag</>}</button>
     <button type="button" onClick={() => toggleWishlist(product.id)} disabled={isPreview} aria-pressed={saved} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/15 px-5 transition hover:border-[#c9a96e] disabled:cursor-not-allowed disabled:opacity-50" aria-label={saved ? "Remove from wishlist" : "Add to wishlist"}><Heart size={18} className={saved ? "fill-[#c9a96e] text-[#c9a96e]" : ""}/>{saved ? "Saved" : "Wishlist"}</button>
-    {added && <Link href="/cart" className="sr-only">View cart</Link>}
+    {added && <Link href="/cart" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#c9a96e]/50 px-5 font-medium text-[#dfc797] transition hover:bg-[#c9a96e]/10"><ShoppingBag size={18}/> View cart</Link>}
   </div>
 }

@@ -33,14 +33,17 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [remember, setRemember] = useState(true)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [error, setError] = useState(
     searchParams.get("error") === "confirmation_failed"
       ? "Confirmation failed or the link expired. Please try again."
       : "",
   )
-  const [notice, setNotice] = useState("")
+  const [notice, setNotice] = useState(
+    searchParams.get("password_reset") === "success"
+      ? "Your password has been updated. Sign in with your new password."
+      : "",
+  )
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -138,6 +141,12 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   async function handleGoogleSignIn() {
     setError("")
     setNotice("")
+
+    if (!isLogin && !acceptedTerms) {
+      setError("Please accept the Terms of Service and Privacy Policy.")
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -419,17 +428,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 </div>
               )}
 
-              {isLogin ? (
-                <label className="flex cursor-pointer items-center gap-2.5 py-1 text-xs text-[#77776f]">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={(event) => setRemember(event.target.checked)}
-                    className="h-4 w-4 accent-[#92713a]"
-                  />
-                  Keep me signed in
-                </label>
-              ) : (
+              {!isLogin && (
                 <label className="flex cursor-pointer items-start gap-2.5 py-1 text-xs leading-5 text-[#77776f]">
                   <input
                     type="checkbox"

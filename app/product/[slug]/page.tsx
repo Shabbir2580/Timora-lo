@@ -1,11 +1,10 @@
-
-import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, ShieldCheck, Truck } from "lucide-react"
 import type { Product, ProductBadge, StockState } from "@/lib/data"
 import { createClient } from "@/lib/supabase/server"
 import { ProductActions } from "./product-actions"
+import { ProductGallery } from "./product-gallery"
 import { ProductReviews } from "@/components/store/product-reviews"
 
 export const dynamic = "force-dynamic"
@@ -56,7 +55,7 @@ function toProduct(row: DatabaseProduct): Product {
     rating: 0,
     reviewCount: 0,
     image,
-    images: row.images?.length ? row.images : [image],
+    images: Array.from(new Set([image, ...(row.images ?? [])].filter(Boolean))),
     badges,
     verified: false,
     stock,
@@ -113,37 +112,10 @@ export default async function ProductDetailPage({
         </Link>
 
         <div className="mt-7 grid gap-8 lg:grid-cols-2 lg:gap-14">
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#f1eee7]">
-            <div className="relative aspect-square w-full">
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                priority
-                sizes="(max-width: 768px) 100vw, 50vw"
-                className="object-contain p-8 sm:p-14"
-              />
-            </div>
-
-            {product.images.length > 1 && (
-              <div className="grid grid-cols-4 gap-2 p-3 sm:p-4">
-                {product.images.slice(0, 4).map((image, index) => (
-                  <div
-                    key={`${image}-${index}`}
-                    className="relative aspect-square overflow-hidden rounded-lg bg-white"
-                  >
-                    <Image
-                      src={image}
-                      alt={`${product.name} image ${index + 1}`}
-                      fill
-                      sizes="120px"
-                      className="object-contain p-2"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ProductGallery
+            images={product.images.length ? product.images : [product.image]}
+            productName={product.name}
+          />
 
           <section className="flex flex-col justify-center">
             <p className="text-xs uppercase tracking-[0.25em] text-[#c9a96e]">
