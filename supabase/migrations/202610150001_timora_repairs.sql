@@ -68,7 +68,7 @@ do $block$
 declare p record;
 begin
   for p in select policyname, tablename from pg_policies
-    where schemaname = 'public' and tablename in ('orders','order_items') and cmd = 'INSERT'
+    where schemaname = 'public' and tablename in ('orders','order_items') and cmd in ('INSERT','ALL')
   loop
     execute format('drop policy if exists %I on public.%I', p.policyname, p.tablename);
   end loop;
@@ -119,7 +119,7 @@ begin
     or coalesce(p_pincode,'') !~ '^[0-9]{6}$'
   then raise exception 'invalid customer details'; end if;
   if p_payment_provider not in ('upi_qr','whatsapp','cod') then raise exception 'invalid payment provider'; end if;
-  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 50 then
+  if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 50 then
     raise exception 'invalid items';
   end if;
 
@@ -318,10 +318,13 @@ as $function$
 declare v_email text := lower(trim(coalesce(p_email,''))); v_rows integer;
 begin
   if v_email !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' or length(v_email) > 254 then raise exception 'invalid email'; end if;
-  insert into public.newsletter_subscribers(email) values (v_email) on conflict (email) do update set is_active = true;
+  insert into public.newsletter_subscribers(email) values (v_email) on conflict (email) do nothing;
   get diagnostics v_rows = row_count;
-  if v_rows = 0 then return 'already_subscribed'; end if;
-  return 'subscribed';
+  if v_rows = 1 then return 'subscribed'; end if;
+  update public.newsletter_subscribers set is_active = true where email = v_email and is_active = false;
+  get diagnostics v_rows = row_count;
+  if v_rows = 1 then return 'subscribed'; end if;
+  return 'already_subscribed';
 end
 $function$;
 
