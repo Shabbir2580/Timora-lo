@@ -202,6 +202,9 @@ export default function HomePage() {
             <Link href="/products?category=headphones" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
               Audio
             </Link>
+            <Link href="/products?category=attar" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
+              Attar
+            </Link>
             <Link href="/products?sort=newest" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
               New arrivals
             </Link>
@@ -330,6 +333,7 @@ export default function HomePage() {
                 ["Shop all", "/products"],
                 ["Watches", "/products?category=watches"],
                 ["Audio", "/products?category=headphones"],
+                ["Attar & Ittar", "/products?category=attar"],
                 ["New arrivals", "/products?sort=newest"],
               ].map(([label, href]) => (
                 <Link
@@ -680,10 +684,15 @@ export default function HomePage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
             <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">Sound, considered</p><p className="mt-1 text-lg font-light sm:text-2xl">Audio</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Find your sound <ArrowUpRight size={13} /></span></div>
           </Link>
-          <Link href="/products?category=accessories" className="group relative col-span-2 aspect-[16/9] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15] lg:col-span-1 lg:aspect-[4/5]">
+          <Link href="/products?category=accessories" className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15]">
             <Image src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1000&q=85" alt="Elegant everyday bag accessory" fill sizes="(max-width: 1024px) 90vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
             <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">The finishing touch</p><p className="mt-1 text-lg font-light sm:text-2xl">Accessories</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Explore details <ArrowUpRight size={13} /></span></div>
+          </Link>
+          <Link href="/products?category=attar" className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15]">
+            <Image src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=900&q=85" alt="Amber attar fragrance bottle" fill sizes="(max-width: 640px) 45vw, 25vw" className="object-cover transition duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+            <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">A scent of your own</p><p className="mt-1 text-lg font-light sm:text-2xl">Attar & Ittar</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Explore fragrance <ArrowUpRight size={13} /></span></div>
           </Link>
         </div>
       </section>
@@ -800,6 +809,7 @@ export default function HomePage() {
               <Link href="/products" className="hover:text-white">Shop all</Link>
               <Link href="/products?category=watches" className="hover:text-white">Watches</Link>
               <Link href="/products?category=headphones" className="hover:text-white">Audio</Link>
+              <Link href="/products?category=attar" className="hover:text-white">Attar & Ittar</Link>
               <Link href="/products?sort=newest" className="hover:text-white">New arrivals</Link>
             </div>
           </div>
