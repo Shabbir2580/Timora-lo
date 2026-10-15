@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ArrowLeft, Banknote, CheckCircle2, Clock3, CreditCard, LogOut, PackageCheck, RefreshCw, Search, ShieldCheck, Truck, XCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { InvoiceButton } from "@/components/store/invoice-button"
 
 type OrderItem = {
   id: string
@@ -288,7 +289,7 @@ export default function AdminOrdersPage() {
             return <article key={order.id} className="overflow-hidden rounded-2xl border border-white/10 bg-[#11110f]">
               <div className="flex flex-col gap-3 border-b border-white/[0.08] p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                 <div><div className="flex flex-wrap items-center gap-2"><h2 className="font-semibold">Order #{order.id.slice(0, 8).toUpperCase()}</h2><span className={`rounded-full px-2.5 py-1 text-[10px] ${awaiting ? "bg-amber-300/10 text-amber-200" : order.order_status === "cancelled" ? "bg-red-400/10 text-red-300" : "bg-emerald-400/10 text-emerald-300"}`}>{awaiting ? "Awaiting approval" : order.order_status.replaceAll("_", " ")}</span><span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/55">{(order.payment_provider || "unknown").replaceAll("_", " ")}</span><span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/55">Payment: {order.payment_status}</span></div><p className="mt-2 text-xs text-white/40">Placed {new Date(order.created_at).toLocaleString("en-IN")}</p></div>
-                <div className="text-left sm:text-right"><p className="text-xl font-semibold text-[#e4c878]">{money(order.total_paise)}</p><p className="mt-1 text-xs text-white/45">Subtotal {money(order.subtotal_paise)} · Discount {money(order.discount_paise || 0)} · Shipping {money(order.shipping_paise)}{order.coupon_code ? ` · ${order.coupon_code}` : ""}</p></div>
+                <div className="flex flex-col items-start gap-3 sm:items-end"><div className="text-left sm:text-right"><p className="text-xl font-semibold text-[#e4c878]">{money(order.total_paise)}</p><p className="mt-1 text-xs text-white/45">Subtotal {money(order.subtotal_paise)} · Discount {money(order.discount_paise || 0)} · Shipping {money(order.shipping_paise)}{order.coupon_code ? ` · ${order.coupon_code}` : ""}</p></div><InvoiceButton order={order} admin /></div>
               </div>
               <div className="grid gap-5 p-4 sm:grid-cols-2 sm:p-5">
                 <div><h3 className="text-xs font-semibold uppercase tracking-wider text-[#d4af37]">Customer & delivery</h3><p className="mt-3 text-sm font-medium">{order.customer_name}</p><p className="mt-1 break-all text-xs text-white/60">{order.customer_email}</p><p className="mt-1 text-xs text-white/60">{order.customer_phone}</p><p className="mt-3 text-sm leading-6 text-white/75">{order.address}{order.landmark ? `, ${order.landmark}` : ""}<br />{order.city}, {order.state} — {order.pincode}</p>{order.delivery_note && <p className="mt-2 text-xs text-white/45">Note: {order.delivery_note}</p>}</div>
