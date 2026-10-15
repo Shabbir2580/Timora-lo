@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
-  Activity, ArrowRight, BadgePercent, Boxes, CheckCircle2, ChevronRight, Clock3,
+  Activity, ArrowRight, BadgePercent, Boxes, CheckCircle2, ChevronRight, ClipboardList, Clock3,
   LayoutDashboard, LogOut, Package, RefreshCw, ShieldCheck,
   ShoppingBag, Star, Users, Wallet, AlertTriangle,
 } from "lucide-react"
@@ -214,6 +214,7 @@ export default function AdminDashboardPage() {
     { title: "Reviews & ratings", desc: "Review submissions and moderation", href: "/admin/reviews", icon: Star, adminOnly: false, tag: "Moderation" },
     { title: "Coupons & offers", desc: "Discounts, expiry dates and usage limits", href: "/admin/coupons", icon: BadgePercent, adminOnly: true, tag: `${metrics.coupons} coupons` },
     { title: "Employee access", desc: "Authorize staff and manage roles", href: "/admin/employees", icon: Users, adminOnly: true, tag: `${metrics.employees} employees` },
+    { title: "Assigned work", desc: "Assign tasks and track employee progress", href: "/admin/tasks", icon: ClipboardList, adminOnly: false, tag: "Task board" },
   ].filter((item) => role === "admin" || !item.adminOnly)
 
   return (
