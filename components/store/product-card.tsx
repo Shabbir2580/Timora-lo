@@ -15,10 +15,12 @@ export function ProductCard({ product }: { product: Product }) {
   const { wishlist, toggleWishlist, addToCart } = useCart()
   const [added, setAdded] = useState(false)
   const wished = wishlist.includes(product.id)
+  const isLiveProduct = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(product.id)
+  const isPreview = !isLiveProduct
   const outOfStock = product.stock === "out_of_stock"
 
   function handleAddToCart() {
-    if (outOfStock) return
+    if (outOfStock || isPreview) return
     addToCart(product)
     setAdded(true)
   }
@@ -43,7 +45,12 @@ export function ProductCard({ product }: { product: Product }) {
           {product.badges.slice(0, 1).map((badge) => (
             <ProductBadgePill key={badge} badge={badge} />
           ))}
-          {outOfStock && (
+          {isPreview && (
+            <span className="rounded bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold uppercase text-black">
+              Preview only
+            </span>
+          )}
+          {outOfStock && !isPreview && (
             <span className="rounded bg-foreground/80 px-2 py-0.5 text-[10px] font-bold uppercase text-background">
               Out of Stock
             </span>
@@ -53,9 +60,10 @@ export function ProductCard({ product }: { product: Product }) {
         <button
           type="button"
           onClick={() => toggleWishlist(product.id)}
-          aria-label={wished ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+          disabled={isPreview}
+          aria-label={isPreview ? `${product.name} is a preview item` : wished ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
           aria-pressed={wished}
-          className="absolute right-2 top-2 grid size-9 place-items-center rounded-full border border-border bg-card/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="absolute right-2 top-2 grid size-9 place-items-center rounded-full border border-border bg-card/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Heart className={cn("size-4", wished && "fill-sale text-sale")} aria-hidden />
         </button>
@@ -80,7 +88,11 @@ export function ProductCard({ product }: { product: Product }) {
         )}
 
         <div className="mt-1 space-y-1 border-t border-border pt-2 text-xs text-muted-foreground">
-          {!outOfStock ? (
+          {isPreview ? (
+            <p className="flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+              Preview listing — not available to order
+            </p>
+          ) : !outOfStock ? (
             <p className="flex items-center gap-1.5">
               <Truck className="size-3.5 text-success" aria-hidden />
               Delivery details at checkout
@@ -100,7 +112,7 @@ export function ProductCard({ product }: { product: Product }) {
         <button
           type="button"
           onClick={handleAddToCart}
-          disabled={outOfStock}
+          disabled={outOfStock || isPreview}
           aria-live="polite"
           className={cn(
             "mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50",
@@ -109,7 +121,9 @@ export function ProductCard({ product }: { product: Product }) {
               : "bg-primary text-primary-foreground hover:opacity-90",
           )}
         >
-          {outOfStock ? (
+          {isPreview ? (
+            "Preview only"
+          ) : outOfStock ? (
             "Currently unavailable"
           ) : added ? (
             <><Check className="size-4" aria-hidden /> Added to bag</>

@@ -1,7 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import Image from "next/image"
+import { useEffect, useMemo, useState } from "react"
+import { products as catalogueProducts } from "@/lib/data"
+import { useCart } from "@/lib/cart-context"
+import { createClient } from "@/lib/supabase/client"
 import {
   ArrowDownRight,
   ArrowRight,
@@ -25,57 +29,22 @@ import {
 
 const categories = [
   { name: "Watches", detail: "Timeless essentials", icon: Watch, href: "/products?category=watches" },
-  { name: "Audio", detail: "Hear every detail", icon: Headphones, href: "/products?category=audio" },
+  { name: "Headphones", detail: "Hear every detail", icon: Headphones, href: "/products?category=headphones" },
   { name: "Accessories", detail: "The finishing touch", icon: Sparkles, href: "/products?category=accessories" },
   { name: "New arrivals", detail: "Freshly discovered", icon: Zap, href: "/products?sort=newest" },
 ]
 
-const products = [
-  {
-    id: "watch-01",
-    name: "Chronograph Classic",
-    category: "Watches",
-    price: 12999,
-    oldPrice: 15999,
-    badge: "BESTSELLER",
-    image:
-      "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=900&q=85",
-    tone: "bg-[#e8e1d6]",
-  },
-  {
-    id: "audio-01",
-    name: "Studio Wireless",
-    category: "Audio",
-    price: 8999,
-    oldPrice: 10999,
-    badge: "POPULAR",
-    image:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=85",
-    tone: "bg-[#e7e5df]",
-  },
-  {
-    id: "bag-01",
-    name: "Everyday Leather",
-    category: "Accessories",
-    price: 7999,
-    oldPrice: null,
-    badge: "CURATED",
-    image:
-      "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=900&q=85",
-    tone: "bg-[#e9e1d6]",
-  },
-  {
-    id: "watch-02",
-    name: "Minimalist Gold",
-    category: "Watches",
-    price: 9999,
-    oldPrice: null,
-    badge: "NEW ARRIVAL",
-    image:
-      "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=900&q=85",
-    tone: "bg-[#e6e3dc]",
-  },
-]
+const sampleFeaturedProducts = catalogueProducts.map((product, index) => ({
+  id: product.id,
+  slug: product.slug,
+  name: product.name,
+  category: product.category,
+  price: product.price,
+  oldPrice: product.mrp > product.price ? product.mrp : null,
+  badge: product.badges[0] ?? "CURATED",
+  image: product.image,
+  tone: ["bg-[#e8e1d6]", "bg-[#e7e5df]", "bg-[#e9e1d6]", "bg-[#e6e3dc]"][index % 4],
+}))
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("en-IN", {
@@ -87,15 +56,62 @@ const formatPrice = (price: number) =>
 export default function HomePage() {
   const [search, setSearch] = useState("")
   const [activeCategory, setActiveCategory] = useState("All")
-  const [wishlist, setWishlist] = useState<string[]>([])
+  const [featuredProducts, setFeaturedProducts] = useState(sampleFeaturedProducts)
+  const [catalogueFallback, setCatalogueFallback] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { wishlist, toggleWishlist } = useCart()
+
+  useEffect(() => {
+    let active = true
+    async function loadFeaturedProducts() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase.from("available_products")
+          .select("id,name,slug,category,price,compare_at_price,image_url,images,available_stock,created_at")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(8)
+        if (error) throw error
+        if (!active) return
+        if (data?.length) {
+          setFeaturedProducts(data.map((row, index) => {
+            const price = Number(row.price)
+            const compareAt = row.compare_at_price == null ? price : Number(row.compare_at_price)
+            return {
+              id: row.id,
+              slug: row.slug,
+              name: row.name,
+              category: row.category || "Accessories",
+              price,
+              oldPrice: compareAt > price ? compareAt : null,
+              badge: compareAt > price ? "SALE" : "CURATED",
+              image: row.image_url || row.images?.[0] || "/timora/watch.png",
+              tone: ["bg-[#e8e1d6]", "bg-[#e7e5df]", "bg-[#e9e1d6]", "bg-[#e6e3dc]"][index % 4],
+            }
+          }))
+          setCatalogueFallback(false)
+        } else {
+          setCatalogueFallback(true)
+        }
+      } catch (error) {
+        console.error("Homepage catalogue lookup failed:", error)
+        if (active) setCatalogueFallback(true)
+      }
+    }
+    void loadFeaturedProducts()
+    return () => { active = false }
+  }, [])
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase()
 
-    return products.filter((product) => {
+    return featuredProducts.filter((product) => {
+      const categoryName = product.category.trim().toLowerCase()
       const matchesCategory =
-        activeCategory === "All" || product.category === activeCategory
+        activeCategory === "All" ||
+        categoryName === activeCategory.toLowerCase() ||
+        (activeCategory === "Headphones" && ["headphones", "earbuds", "speakers", "audio", "audio accessories"].includes(categoryName)) ||
+        (activeCategory === "Accessories" && ["accessories", "keyboards", "lifestyle accessories"].includes(categoryName))
       const matchesSearch =
         !query ||
         product.name.toLowerCase().includes(query) ||
@@ -103,15 +119,7 @@ export default function HomePage() {
 
       return matchesCategory && matchesSearch
     })
-  }, [activeCategory, search])
-
-  function toggleWishlist(id: string) {
-    setWishlist((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id],
-    )
-  }
+  }, [activeCategory, search, featuredProducts])
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#0b0b0a] text-[#f5f1e8]">
@@ -151,7 +159,7 @@ export default function HomePage() {
             <Link href="/products?category=watches" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
               Watches
             </Link>
-            <Link href="/products?category=audio" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
+            <Link href="/products?category=headphones" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
               Audio
             </Link>
             <Link href="/products?sort=newest" className="text-xs text-white/60 transition hover:text-[#d8bc88]">
@@ -236,7 +244,7 @@ export default function HomePage() {
                 ["Home", "/"],
                 ["Shop all", "/products"],
                 ["Watches", "/products?category=watches"],
-                ["Audio", "/products?category=audio"],
+                ["Audio", "/products?category=headphones"],
                 ["New arrivals", "/products?sort=newest"],
               ].map(([label, href]) => (
                 <Link
@@ -314,10 +322,13 @@ export default function HomePage() {
           <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
             <div className="absolute -inset-3 rounded-[45%] bg-[#c9a96e]/5 blur-3xl" />
             <div className="relative aspect-[4/4.5] overflow-hidden rounded-[48%_48%_8px_8px] border border-white/10 bg-[#d7cbb6]">
-              <img
+              <Image
                 src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1200&q=90"
                 alt="Elegant wristwatch from the Timora-inspired collection"
-                className="h-full w-full object-cover object-center transition duration-700 hover:scale-105"
+                fill
+                priority
+                sizes="(max-width: 1024px) 90vw, 45vw"
+                className="object-cover object-center transition duration-700 hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/5" />
               <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-3 sm:bottom-8 sm:left-8 sm:right-8">
@@ -393,6 +404,7 @@ export default function HomePage() {
               A selection of standout pieces chosen for their style, simplicity
               and everyday appeal.
             </p>
+            {catalogueFallback && <p role="status" className="mt-3 max-w-xl rounded-lg border border-amber-300/20 bg-amber-300/[0.05] px-3 py-2 text-xs leading-5 text-amber-100/70">Showing preview products because no live catalogue items could be loaded. Preview listings must be added to the Supabase catalogue before they can be ordered.</p>}
           </div>
           <Link
             href="/products"
@@ -403,7 +415,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-7 flex gap-2 overflow-x-auto pb-2">
-          {["All", "Watches", "Audio", "Accessories"].map((category) => (
+          {["All", "Watches", "Headphones", "Accessories"].map((category) => (
             <button
               key={category}
               type="button"
@@ -423,12 +435,13 @@ export default function HomePage() {
           {filteredProducts.map((product) => (
             <article key={product.id} className="group min-w-0">
               <div className={`relative aspect-[4/4.8] overflow-hidden rounded-xl ${product.tone}`}>
-                <Link href={`/product/${product.id}`} className="block h-full w-full">
-                  <img
+                <Link href={`/product/${product.slug}`} className="block h-full w-full">
+                  <Image
                     src={product.image}
                     alt={product.name}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover transition duration-700 group-hover:scale-105"
                   />
                 </Link>
 
@@ -454,7 +467,7 @@ export default function HomePage() {
                 </button>
 
                 <Link
-                  href={`/product/${product.id}`}
+                  href={`/product/${product.slug}`}
                   className="absolute bottom-3 left-3 right-3 flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#f6f1e8]/95 px-2 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#18150f] opacity-100 transition hover:bg-white sm:bottom-4 sm:left-4 sm:right-4 sm:text-[10px] lg:translate-y-3 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100"
                 >
                   Discover item <ArrowUpRight size={13} />
@@ -465,7 +478,7 @@ export default function HomePage() {
                 <p className="text-[9px] uppercase tracking-[0.16em] text-white/40 sm:text-[10px]">
                   {product.category}
                 </p>
-                <Link href={`/product/${product.id}`}>
+                <Link href={`/product/${product.slug}`}>
                   <h3 className="mt-1.5 text-xs font-medium leading-5 transition hover:text-[#dfc797] sm:text-sm">
                     {product.name}
                   </h3>
@@ -614,7 +627,7 @@ export default function HomePage() {
             <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
               <Link href="/products" className="hover:text-white">Shop all</Link>
               <Link href="/products?category=watches" className="hover:text-white">Watches</Link>
-              <Link href="/products?category=audio" className="hover:text-white">Audio</Link>
+              <Link href="/products?category=headphones" className="hover:text-white">Audio</Link>
               <Link href="/products?sort=newest" className="hover:text-white">New arrivals</Link>
             </div>
           </div>
@@ -637,7 +650,7 @@ export default function HomePage() {
             </h3>
             <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
               <Link href="/contact" className="hover:text-white">Contact us</Link>
-              <Link href="/shipping" className="hover:text-white">Shipping information</Link>
+              <Link href="/shippings" className="hover:text-white">Shipping information</Link>
               <Link href="/returns" className="hover:text-white">Returns information</Link>
               <Link href="/privacy" className="hover:text-white">Privacy policy</Link>
             </div>

@@ -25,7 +25,7 @@ const columns = [
     title: "Information",
     links: [
       { label: "Contact us", href: "/contact" },
-      { label: "Shipping information", href: "/shipping" },
+      { label: "Shipping information", href: "/shippings" },
       { label: "Returns information", href: "/returns" },
       { label: "Privacy policy", href: "/privacy" },
       { label: "Terms of service", href: "/terms" },
@@ -109,13 +109,10 @@ export function Footer() {
           <p>
             © {new Date().getFullYear()} Timora. All rights reserved.
           </p>
-          <a
-            href="mailto:hello@timora.in"
-            className="inline-flex items-center gap-2 transition hover:text-[#dfc797]"
-          >
+          <Link href="/contact" className="inline-flex items-center gap-2 transition hover:text-[#dfc797]">
             <Mail className="size-3.5" aria-hidden="true" />
-            Contact by email
-          </a>
+            Contact support
+          </Link>
         </div>
       </div>
     </footer>

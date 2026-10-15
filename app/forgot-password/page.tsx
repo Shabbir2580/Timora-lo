@@ -3,6 +3,7 @@
 
 import { useState, type FormEvent } from "react"
 import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
 import {
   ArrowLeft,
   ArrowRight,
@@ -16,18 +17,24 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("")
   const [submitted, setSubmitted] = useState(false)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")
     setSubmitted(false)
-
-    if (!email.trim()) {
-      setError("Please enter your email address.")
-      return
-    }
-
-    // Password-reset email delivery requires a real authentication backend.
-    setSubmitted(true)
+    if (!email.trim()) { setError("Please enter your email address."); return }
+    setLoading(true)
+    try {
+      const supabase = createClient()
+      const redirectTo = `${window.location.origin}/auth/callback?next=/reset-password`
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo })
+      if (error) throw error
+      setSubmitted(true)
+    } catch (error) {
+      console.error("Password recovery request failed:", error)
+      setError("We couldn't send a recovery email. Check the email address and Supabase email/redirect settings, then try again.")
+    } finally { setLoading(false) }
   }
 
   return (
@@ -146,9 +153,10 @@ export default function ForgotPasswordPage() {
 
                   <button
                     type="submit"
+                    disabled={loading}
                     className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#1b1d18] px-4 text-sm font-medium text-white transition hover:bg-[#34372d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ad8d50] focus-visible:ring-offset-2"
                   >
-                    Continue
+                    {loading ? "Sending…" : "Send recovery email"}
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </button>
                 </form>
@@ -164,13 +172,11 @@ export default function ForgotPasswordPage() {
                 </p>
 
                 <h2 className="font-serif text-3xl font-normal tracking-tight sm:text-4xl">
-                  Email captured.
+                  Check your inbox
                 </h2>
 
                 <p className="mt-4 text-sm leading-7 text-[#77776f]">
-                  The recovery interface is ready, but password-reset emails
-                  are not configured yet. No email has been sent and your
-                  password has not been changed.
+                  If an account exists for this address, a password-reset link has been sent. Open the email and follow the link to choose a new password.
                 </p>
 
                 <button

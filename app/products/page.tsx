@@ -16,6 +16,7 @@ type ProductsPageProps = {
     q?: string
     deals?: string
     category?: string
+    sort?: string
   }>
 }
 
@@ -29,7 +30,7 @@ type DatabaseProduct = {
   category: string
   image_url: string
   images: string[] | null
-  stock: number
+  available_stock: number
   is_active: boolean
 }
 
@@ -40,7 +41,7 @@ function toProduct(row: DatabaseProduct): Product {
   const mrp = row.compare_at_price == null
     ? price
     : Number(row.compare_at_price)
-  const stockCount = Number(row.stock)
+  const stockCount = Number(row.available_stock)
   const image = row.image_url || "/timora/watch.png"
 
   const stock: StockState =
@@ -71,7 +72,7 @@ function toProduct(row: DatabaseProduct): Product {
     stock,
     stockCount,
     deliveryBy: "Check delivery at checkout",
-    freeDelivery: true,
+    freeDelivery: false,
     returnDays: 7,
     colors: [],
     highlights: [],
@@ -90,6 +91,7 @@ export default async function ProductsPage({
   const query = (params.q ?? "").trim().toLowerCase()
   const dealsOnly = params.deals === "1"
   const categorySlug = (params.category ?? "").trim().toLowerCase()
+  const sort = (params.sort ?? "newest").trim().toLowerCase()
 
   let databaseProducts: Product[] = []
   let databaseError = false
@@ -97,9 +99,9 @@ export default async function ProductsPage({
   try {
     const supabase = await createClient()
     const { data, error } = await supabase
-      .from("products")
+      .from("available_products")
       .select(
-        "id, name, slug, description, price, compare_at_price, category, image_url, images, stock, is_active",
+        "id, name, slug, description, price, compare_at_price, category, image_url, images, available_stock, is_active",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false })
@@ -115,12 +117,10 @@ export default async function ProductsPage({
     databaseError = true
   }
 
-  // Database products take precedence over sample products with the same slug.
-  const databaseSlugs = new Set(databaseProducts.map((product) => product.slug))
-  const allProducts = [
-    ...databaseProducts,
-    ...sampleProducts.filter((product) => !databaseSlugs.has(product.slug)),
-  ]
+  // Never mix mock products into a live catalogue. Preview products are only a fallback
+  // when the database catalogue is empty or unavailable; the order API rejects mock stock.
+  const usingSampleProducts = databaseProducts.length === 0
+  const allProducts = usingSampleProducts ? sampleProducts : databaseProducts
 
   const selectedCategory = categories.find(
     (category) => category.slug.toLowerCase() === categorySlug,
@@ -150,6 +150,12 @@ export default async function ProductsPage({
 
     return matchesQuery && matchesDeals && matchesCategory
   })
+
+  const sortedProducts = [...filteredProducts]
+  if (sort === "price-asc") sortedProducts.sort((a, b) => a.price - b.price)
+  else if (sort === "price-desc") sortedProducts.sort((a, b) => b.price - a.price)
+  else if (sort === "name") sortedProducts.sort((a, b) => a.name.localeCompare(b.name))
+  // The database query is newest-first and sample products follow it, so newest is the default order.
 
   const heading = selectedCategory
     ? selectedCategory.name
@@ -198,13 +204,11 @@ export default async function ProductsPage({
           </div>
         </section>
 
-        {databaseError && (
-          <p
-            role="status"
-            className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
-          >
-            We couldn't refresh the database catalogue. Existing sample products
-            are shown; recently added products may be missing. Please try again later.
+        {usingSampleProducts && (
+          <p role="status" className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-amber-100">
+            {databaseError
+              ? "The live catalogue could not be reached. Preview products are shown; live stock and prices cannot be verified right now. Please try again later."
+              : "These are preview products only. Add active products in the admin catalogue before accepting live orders."}
           </p>
         )}
 
@@ -241,7 +245,7 @@ export default async function ProductsPage({
           </div>
         </section>
 
-        {query || dealsOnly || categorySlug ? (
+        {query || dealsOnly || categorySlug || sort !== "newest" ? (
           <div className="mb-6">
             <Link
               href="/products"
@@ -253,12 +257,25 @@ export default async function ProductsPage({
           </div>
         ) : null}
 
-        {filteredProducts.length > 0 ? (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">Sort products</p>
+          <form action="/products" method="get" className="flex flex-wrap items-center gap-2">
+            {query && <input type="hidden" name="q" value={params.q} />}
+            {dealsOnly && <input type="hidden" name="deals" value="1" />}
+            {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
+            <label htmlFor="product-sort" className="sr-only">Sort products</label>
+            <select id="product-sort" name="sort" defaultValue={sort} onChange={(event) => event.currentTarget.form?.requestSubmit()} className="min-h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">
+              <option value="newest">Newest first</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="name">Name: A to Z</option>
+            </select>
+          </form>
+        </div>
+
+        {sortedProducts.length > 0 ? (
           <section
             aria-label="Products"
             className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4"
           >
-            {filteredProducts.map((product) => (
+            {sortedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </section>
