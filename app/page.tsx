@@ -159,7 +159,8 @@ export default function HomePage() {
   }, [activeCategory, search, featuredProducts])
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#0b0b0a] text-[#f5f1e8]">\n      {/* Announcement bar */}
+    <main className="min-h-screen overflow-hidden bg-[#0b0b0a] text-[#f5f1e8]">
+      {/* Announcement bar */}
       <div className="border-b border-white/10 bg-[#c9a96e] px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.19em] text-[#17130c] sm:text-xs">
         Discover your next favourite · Explore the Timora collection
       </div>
