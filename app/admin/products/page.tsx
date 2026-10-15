@@ -423,8 +423,8 @@ export default function AdminProductsPage() {
         .eq("user_id", user.id)
         .maybeSingle()
 
-      if (roleError || !staff || staff.role !== "admin") {
-        setError("Only an administrator can permanently delete products.")
+      if (roleError || !staff || !["admin", "employee"].includes(staff.role)) {
+        setError("Only authorized Timora staff can permanently delete products.")
         return
       }
 
@@ -965,7 +965,7 @@ export default function AdminProductsPage() {
                             >
                               {product.is_active ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                             </button>
-                            {role === "admin" && (<button
+                            {(role === "admin" || role === "employee") && (<button
                               type="button"
                               onClick={() => void deleteProduct(product)}
                               aria-label={`Delete ${product.name}`}
