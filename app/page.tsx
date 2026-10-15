@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Headphones,
   Heart,
+  Droplets,
   Menu,
   Search,
   ShieldCheck,
@@ -34,6 +35,7 @@ const categories = [
   { name: "Headphones", detail: "Hear every detail", icon: Headphones, href: "/products?category=headphones" },
   { name: "Accessories", detail: "The finishing touch", icon: Sparkles, href: "/products?category=accessories" },
   { name: "New arrivals", detail: "Freshly discovered", icon: Zap, href: "/products?sort=newest" },
+  { name: "Attar & Ittar", detail: "Fragrance, made personal", icon: Droplets, href: "/products?category=attar" },
 ]
 
 type FeaturedProduct = {
@@ -148,7 +150,8 @@ export default function HomePage() {
         activeCategory === "All" ||
         categoryName === activeCategory.toLowerCase() ||
         (activeCategory === "Headphones" && ["headphones", "earbuds", "speakers", "audio", "audio accessories"].includes(categoryName)) ||
-        (activeCategory === "Accessories" && ["accessories", "keyboards", "lifestyle accessories"].includes(categoryName))
+        (activeCategory === "Accessories" && ["accessories", "keyboards", "lifestyle accessories"].includes(categoryName)) ||
+        (activeCategory === "Attar" && ["attar", "ittar", "attar & ittar", "fragrance", "perfume oils"].includes(categoryName))
       const matchesSearch =
         !query ||
         product.name.toLowerCase().includes(query) ||
@@ -350,18 +353,17 @@ export default function HomePage() {
           <div className="relative z-10 max-w-2xl home-reveal">
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#c9a96e]/35 bg-[#c9a96e]/5 px-3.5 py-2 text-[9px] font-medium uppercase tracking-[0.22em] text-[#d9bd8c] sm:text-[10px]">
               <Sparkles size={13} />
-              A more considered collection
+              THE ART OF EVERYDAY LUXURY
             </div>
 
             <h1 className="text-[clamp(3.2rem,8vw,6.8rem)] font-light leading-[0.99] tracking-[-0.065em]">
-              Less, but
+              Your style.
               <br />
-              <span className="font-medium text-[#d6b77e]">exceptional.</span>
+              <span className="font-medium text-[#d6b77e]">Your signature.</span>
             </h1>
 
             <p className="mt-6 max-w-md text-sm leading-7 text-white/55 sm:mt-8 sm:text-base sm:leading-8">
-              Discover thoughtfully selected watches, audio essentials and
-              everyday accessories that make every detail matter.
+              Discover statement watches, immersive audio, considered accessories and soulful attar fragrances — curated to make everyday moments feel unmistakably yours.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row">
@@ -419,7 +421,7 @@ export default function HomePage() {
                     The signature edit
                   </p>
                   <p className="mt-2 text-xl font-light tracking-wide sm:text-2xl">
-                    Everyday icons
+                    Details that stay with you
                   </p>
                 </div>
                 <Link
@@ -445,7 +447,7 @@ export default function HomePage() {
 
       {/* Category strip */}
       <section className="home-reveal border-y border-white/10 bg-[#10100e]">
-        <div className="mx-auto grid max-w-[1440px] grid-cols-2 sm:grid-cols-4">
+        <div className="mx-auto grid max-w-[1440px] grid-cols-2 sm:grid-cols-3 xl:grid-cols-5">
           {categories.map(({ name, detail, icon: Icon, href }, index) => (
             <Link
               href={href}
@@ -497,7 +499,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-7 flex gap-2 overflow-x-auto pb-2">
-          {["All", "Watches", "Headphones", "Accessories"].map((category) => (
+          {["All", "Watches", "Headphones", "Accessories", "Attar"].map((category) => (
             <button
               key={category}
               type="button"
