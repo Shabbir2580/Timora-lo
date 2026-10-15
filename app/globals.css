@@ -249,7 +249,7 @@
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.7);
-  transition: left 230ms cubic-bezier(0.22, 1, 0.36, 1), top 230ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease, transform 180ms ease;
+  transition: left 400ms cubic-bezier(0.22, 1, 0.36, 1), top 400ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease, transform 180ms ease;
   box-shadow: 0 0 14px rgba(201, 169, 110, 0.22);
 }
 .timora-cursor-ring.is-visible {
