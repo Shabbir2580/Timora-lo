@@ -17,6 +17,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 
 const links = [
+  { href: "/account", label: "My Account", icon: User },
   { href: "/orders", label: "My Orders", icon: Package },
   { href: "/wishlist", label: "Wishlist", icon: Heart },
   { href: "/returns", label: "Returns", icon: RotateCcw },
