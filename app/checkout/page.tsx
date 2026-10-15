@@ -21,7 +21,7 @@ import {
   Star,
   LogIn,
 } from "lucide-react"
-import { useCart } from "@/lib/cart-context"
+import { useCart, type CartLine } from "@/lib/cart-context"
 import { createClient } from "@/lib/supabase/client"
 
 type PaymentMethod = "upi" | "whatsapp" | "cod"
@@ -91,13 +91,16 @@ function toAddressForm(address: Address): AddressForm {
 }
 
 export default function CheckoutPage() {
-  const { lines, count, subtotal } = useCart()
+  const { lines, count, subtotal, clearCart } = useCart()
   const supabase = useMemo(() => createClient(), [])
 
   const [submitted, setSubmitted] = useState(false)
   const [submittingOrder, setSubmittingOrder] = useState(false)
   const [submitError, setSubmitError] = useState("")
   const [orderId, setOrderId] = useState<string | null>(null)
+  const [serverTotals, setServerTotals] = useState<{ subtotalPaise: number; shippingPaise: number; discountPaise: number; totalPaise: number } | null>(null)
+  const [couponCode, setCouponCode] = useState("")
+  const [submittedOrderLines, setSubmittedOrderLines] = useState<CartLine[] | null>(null)
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("upi")
 
@@ -114,10 +117,15 @@ export default function CheckoutPage() {
   const [addressMessage, setAddressMessage] = useState("")
   const [profileMessage, setProfileMessage] = useState("")
 
+  const displayLines = submittedOrderLines ?? lines
+  const displayCount = displayLines.reduce((sum, line) => sum + line.quantity, 0)
+  const displaySubtotal = displayLines.reduce((sum, line) => sum + line.product.price * line.quantity, 0)
+
   const updateField = (
     field: keyof AddressForm,
     value: string,
   ) => {
+    if (orderId) return
     setForm((previous) => ({
       ...previous,
       [field]: value,
@@ -125,6 +133,7 @@ export default function CheckoutPage() {
     setSubmitted(false)
     setSubmitError("")
     setOrderId(null)
+    setServerTotals(null)
     setAddressMessage("")
   }
 
@@ -415,6 +424,7 @@ export default function CheckoutPage() {
     if (!userId) {
       if (paymentMethod === "whatsapp") {
         setOrderId(null)
+    setServerTotals(null)
         setSubmitted(true)
         return
       }
@@ -454,6 +464,7 @@ export default function CheckoutPage() {
           pincode: form.pincode.trim(),
           deliveryNote: form.deliveryNote.trim() || undefined,
           paymentProvider: paymentMethod === "upi" ? "upi_qr" : paymentMethod === "cod" ? "cod" : "whatsapp",
+          couponCode: couponCode.trim().toUpperCase() || undefined,
         }),
       })
 
@@ -461,6 +472,10 @@ export default function CheckoutPage() {
         orderId?: string
         error?: string
         message?: string
+        subtotalPaise?: number
+        shippingPaise?: number
+        discountPaise?: number
+        totalPaise?: number
       }
 
       if (!response.ok || !result.orderId) {
@@ -470,6 +485,11 @@ export default function CheckoutPage() {
       }
 
       setOrderId(result.orderId)
+      setSubmittedOrderLines(lines.map((line) => ({ ...line, product: { ...line.product } })))
+      clearCart()
+      if (Number.isFinite(result.subtotalPaise) && Number.isFinite(result.shippingPaise) && Number.isFinite(result.totalPaise)) {
+        setServerTotals({ subtotalPaise: Number(result.subtotalPaise), shippingPaise: Number(result.shippingPaise), discountPaise: Number(result.discountPaise ?? 0), totalPaise: Number(result.totalPaise) })
+      }
       setSubmitted(true)
     } catch (error) {
       console.error("Checkout order creation failed:", error)
@@ -508,14 +528,16 @@ export default function CheckoutPage() {
       : "",
     "",
     "ORDER ITEMS",
-    ...lines.map(
+    ...displayLines.map(
       (line) =>
         `${line.product.name} | Option: ${line.variant} | Qty: ${line.quantity} | ${formatPrice(line.product.price * line.quantity)}`,
     ),
     "",
-    `Total items: ${count}`,
-    `Subtotal: ${formatPrice(subtotal)}`,
-    "Shipping: To be confirmed",
+    `Total items: ${displayCount}`,
+    `Subtotal: ${formatPrice(serverTotals ? serverTotals.subtotalPaise / 100 : displaySubtotal)}`,
+    ...(serverTotals && serverTotals.discountPaise > 0 ? [`Discount: -${formatPrice(serverTotals.discountPaise / 100)}`] : []),
+    `Shipping: ${serverTotals ? formatPrice(serverTotals.shippingPaise / 100) : "To be confirmed"}`,
+    ...(serverTotals ? [`Order total: ${formatPrice(serverTotals.totalPaise / 100)}`] : []),
     "",
     paymentMethod === "upi"
       ? "I intend to pay using the Timora UPI QR code. Please confirm availability and the final amount."
@@ -531,7 +553,7 @@ export default function CheckoutPage() {
   const whatsappUrl =
     `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
 
-  if (lines.length === 0) {
+  if (lines.length === 0 && !submittedOrderLines) {
     return (
       <main className="flex min-h-[65vh] flex-col items-center justify-center bg-background px-5 text-center text-foreground">
         <div className="mb-5 grid size-16 place-items-center rounded-full bg-secondary">
@@ -1003,10 +1025,12 @@ export default function CheckoutPage() {
                     value="upi"
                     checked={paymentMethod === "upi"}
                     onChange={() => {
+                      if (orderId) return
                       setPaymentMethod("upi")
                       setSubmitted(false)
                       setSubmitError("")
                       setOrderId(null)
+    setServerTotals(null)
                     }}
                     className="mt-1 accent-current"
                   />
@@ -1034,10 +1058,12 @@ export default function CheckoutPage() {
                     value="whatsapp"
                     checked={paymentMethod === "whatsapp"}
                     onChange={() => {
+                      if (orderId) return
                       setPaymentMethod("whatsapp")
                       setSubmitted(false)
                       setSubmitError("")
                       setOrderId(null)
+    setServerTotals(null)
                     }}
                     className="mt-1 accent-current"
                   />
@@ -1065,10 +1091,12 @@ export default function CheckoutPage() {
                     value="cod"
                     checked={paymentMethod === "cod"}
                     onChange={() => {
+                      if (orderId) return
                       setPaymentMethod("cod")
                       setSubmitted(false)
                       setSubmitError("")
                       setOrderId(null)
+    setServerTotals(null)
                     }}
                     className="mt-1 accent-current"
                   />
@@ -1105,7 +1133,7 @@ export default function CheckoutPage() {
 
             <button
               type="submit"
-              disabled={submittingOrder}
+              disabled={submittingOrder || Boolean(orderId) || (count === 0 && !submittedOrderLines)}
               className="min-h-12 w-full rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submittingOrder
@@ -1123,7 +1151,7 @@ export default function CheckoutPage() {
               <h2 className="text-lg font-bold">Order summary</h2>
 
               <div className="mt-5 space-y-4">
-                {lines.map((line) => (
+                {displayLines.map((line) => (
                   <div
                     key={`${line.product.id}-${line.variant}`}
                     className="flex gap-3"
@@ -1152,30 +1180,34 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
+              <div className="mt-5 rounded-xl border border-border bg-background/60 p-3">
+                <label htmlFor="coupon-code" className="text-sm font-medium">Coupon code</label>
+                <div className="mt-2 flex gap-2"><input id="coupon-code" value={couponCode} onChange={(event) => setCouponCode(event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 40))} disabled={Boolean(orderId)} maxLength={40} placeholder="Enter code" className="min-h-10 min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-sm uppercase outline-none focus:border-ring disabled:opacity-60"/><span className="inline-flex items-center rounded-lg border border-border px-3 text-xs text-muted-foreground">{serverTotals ? serverTotals.discountPaise > 0 ? "Applied" : couponCode ? "Checked" : "—" : "Validated at checkout"}</span></div>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">Coupon validity, minimum spend and usage limits are checked securely by the server when you place the order.</p>
+              </div>
+
               <div className="mt-5 space-y-3 border-t border-border pt-5 text-sm">
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">
-                    Items ({count})
+                    Items ({displayCount})
                   </span>
-                  <span>{formatPrice(subtotal)}</span>
+                  <span>{formatPrice(serverTotals ? serverTotals.subtotalPaise / 100 : displaySubtotal)}</span>
                 </div>
+                {serverTotals && serverTotals.discountPaise > 0 && <div className="flex justify-between gap-4 text-emerald-700 dark:text-emerald-300"><span>Coupon {couponCode ? `(${couponCode})` : "discount"}</span><span>−{formatPrice(serverTotals.discountPaise / 100)}</span></div>}
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span className="text-right text-xs text-muted-foreground">
-                    To be confirmed
-                  </span>
+                  <span>{serverTotals ? formatPrice(serverTotals.shippingPaise / 100) : "Calculated at order creation"}</span>
                 </div>
                 <div className="flex justify-between gap-4 border-t border-border pt-4">
-                  <span className="font-semibold">Subtotal before shipping</span>
+                  <span className="font-semibold">{serverTotals ? "Server-verified order total" : "Estimated subtotal"}</span>
                   <span className="text-lg font-bold">
-                    {formatPrice(subtotal)}
+                    {formatPrice(serverTotals ? serverTotals.totalPaise / 100 : displaySubtotal)}
                   </span>
                 </div>
               </div>
 
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                Final payable amount may include shipping, taxes, and
-                discounts. This is not a confirmed order total.
+                {serverTotals ? "The order total was calculated by the server from current catalogue prices. Your cart has been cleared to prevent accidental duplicate orders. Payment remains pending until independently verified." : "This is an estimate based on your saved cart. The server rechecks current prices and stock when you place the order."}
               </p>
 
               <Link
@@ -1219,7 +1251,7 @@ export default function CheckoutPage() {
                   </p>
                 )}
                 <p className="mt-3 text-center text-sm font-semibold">
-                  Cart subtotal: {formatPrice(subtotal)}
+                  Cart subtotal: {formatPrice(serverTotals ? serverTotals.subtotalPaise / 100 : displaySubtotal)}
                 </p>
 
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">
