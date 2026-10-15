@@ -100,9 +100,7 @@ export default async function ProductsPage({
     const supabase = await createClient()
     const { data, error } = await supabase
      .from("products")
-      .select(
-        "id, name, slug, description, price, compare_at_price, category, image_url, images, available_stock, is_active",
-      )
+      .select("id,name,slug,description,price,compare_at_price,category,image_url,images,stock,is_active")
       .eq("is_active", true)
       .order("created_at", { ascending: false })
 
