@@ -5,6 +5,7 @@ Audit basis: source review of the `main` branch and the current `fix/timora-repa
 ## Priority 0 — release blockers
 
 - [ ] Apply and test `supabase/migrations/202610150001_timora_repairs.sql` in a non-production Supabase environment first. The app's order flow depends on the RPC functions in this migration. Do not deploy the app branch before the migration is verified.
+- [ ] Enable Supabase `pg_cron` and run `supabase/schedule_expired_orders.sql`; otherwise pending orders can hold reserved stock indefinitely. Verify the scheduled job is present.
 - [ ] Exercise order creation with real database products and check that the server-calculated subtotal, shipping, coupon discount, and total match the checkout UI.
 - [ ] Verify stock is reserved once and restored once for cancellation, expiry, and rejected COD orders.
 - [ ] Verify staff-only permissions for payment verification, COD decisions, product edits, and review moderation.
