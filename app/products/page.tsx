@@ -41,7 +41,7 @@ function toProduct(row: DatabaseProduct): Product {
   const mrp = row.compare_at_price == null
     ? price
     : Number(row.compare_at_price)
-  const stockCount = Number(row.available_stock)
+  const stockCount = Number(row.stock)
   const image = row.image_url || "/timora/watch.png"
 
   const stock: StockState =
