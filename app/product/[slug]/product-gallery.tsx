@@ -5,10 +5,11 @@ import { useState } from "react"
 
 type ProductGalleryProps = {
   images: string[]
+  videos?: string[]
   productName: string
 }
 
-export function ProductGallery({ images, productName }: ProductGalleryProps) {
+export function ProductGallery({ images, videos = [], productName }: ProductGalleryProps) {
   const uniqueImages = Array.from(new Set(images.filter((image) => typeof image === "string" && image.trim())))
   const galleryImages = uniqueImages.length ? uniqueImages : ["/placeholder.svg"]
   const [activeImage, setActiveImage] = useState(galleryImages[0])
@@ -50,6 +51,22 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
             </button>
           ))}
         </div>
+      )}
+
+      {videos.length > 0 && (
+        <section className="mt-6" aria-label={`${productName} product videos`}>
+          <h2 className="mb-3 text-sm font-semibold text-white/80">Product videos</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {videos.slice(0, 2).map((video, index) => (
+              <div key={video} className="overflow-hidden rounded-xl border border-white/10 bg-black">
+                <video controls preload="metadata" playsInline className="aspect-video w-full" aria-label={`${productName} video ${index + 1}`}>
+                  <source src={video} />
+                  Your browser does not support embedded video.
+                </video>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
     </section>
   )
