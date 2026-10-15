@@ -81,20 +81,20 @@ export default function AdminDashboardPage() {
       const recent = (recentOrders.data ?? []) as OrderRow[]
       const productList = (productRows.data ?? []) as ProductRow[]
       const customerIds = new Set((customerRows.data ?? []).map((row) => row.customer_id).filter(Boolean))
-      // Revenue is calculated from all paid orders, not from the recent-orders preview.
-      const paidRows = await supabase.from("orders").select("total_paise").eq("payment_status", "paid")
-      if (paidRows.error) throw paidRows.error
-      const paidRevenue = (paidRows.data ?? []).reduce((sum, row) => sum + Number(row.total_paise || 0), 0)
-
+      // Owner-only financial and staff metrics are not queried for employees.
+      let paidRevenue = 0
       let coupons = 0
       let employees = 0
       if (currentRole === "admin") {
-        const [couponCount, staffRows] = await Promise.all([
+        const [paidRows, couponCount, staffRows] = await Promise.all([
+          supabase.from("orders").select("total_paise").eq("payment_status", "paid"),
           supabase.from("coupons").select("id", { count: "exact", head: true }),
           supabase.from("staff_roles").select("user_id,role"),
         ])
+        if (paidRows.error) throw paidRows.error
         if (couponCount.error) throw couponCount.error
         if (staffRows.error) throw staffRows.error
+        paidRevenue = (paidRows.data ?? []).reduce((sum, row) => sum + Number(row.total_paise || 0), 0)
         coupons = couponCount.count ?? 0
         employees = (staffRows.data ?? []).filter((staff) => staff.role === "employee").length
       }
@@ -173,7 +173,7 @@ export default function AdminDashboardPage() {
 
   const metricCards = [
     { label: "Total orders", value: metrics.orders.toLocaleString("en-IN"), hint: `${metrics.pending} awaiting payment`, icon: ShoppingBag, color: "text-sky-300", tint: "bg-sky-300/10" },
-    { label: "Paid revenue", value: money(metrics.revenue), hint: "Recorded paid orders", icon: Wallet, color: "text-emerald-300", tint: "bg-emerald-300/10" },
+    ...(role === "admin" ? [{ label: "Paid revenue", value: money(metrics.revenue), hint: "Recorded paid orders", icon: Wallet, color: "text-emerald-300", tint: "bg-emerald-300/10" }] : []),
     { label: "Live products", value: metrics.activeProducts.toLocaleString("en-IN"), hint: `${metrics.products} products in catalogue`, icon: Package, color: "text-[#d9b65d]", tint: "bg-[#d9b65d]/10" },
     { label: "Customer reviews", value: metrics.reviews.toLocaleString("en-IN"), hint: "All submitted reviews", icon: Star, color: "text-violet-300", tint: "bg-violet-300/10" },
   ]
