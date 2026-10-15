@@ -124,9 +124,14 @@ export default function AdminDashboardPage() {
       }
 
       if (currentRole === "employee") {
+        // A task-table/migration issue should not break the rest of the employee dashboard.
         const { data: taskRows, error: taskError } = await supabase.from("employee_tasks").select("id,title,description,status,priority,due_date,created_at").order("created_at", { ascending: false })
-        if (taskError) throw taskError
-        setMyTasks((taskRows ?? []) as typeof myTasks)
+        if (taskError) {
+          console.error("Could not load employee tasks:", taskError)
+          setMyTasks([])
+        } else {
+          setMyTasks((taskRows ?? []) as typeof myTasks)
+        }
       } else setMyTasks([])
 
       setOrders(recent)
