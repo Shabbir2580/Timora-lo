@@ -46,6 +46,7 @@ type FeaturedProduct = {
   oldPrice: number | null
   badge: string
   image: string
+  tags?: string[]
   tone: string
 }
 
@@ -110,7 +111,7 @@ export default function HomePage() {
       try {
         const supabase = createClient()
         const { data, error } = await supabase.from("products")
-          .select("id,name,slug,category,price,compare_at_price,image_url,images,stock,created_at,is_active")
+          .select("id,name,slug,category,price,compare_at_price,image_url,images,tags,stock,created_at,is_active")
           .eq("is_active", true)
           .order("created_at", { ascending: false })
           .limit(8)
@@ -129,6 +130,7 @@ export default function HomePage() {
               stock: Number(row.stock ?? 0),
               oldPrice: compareAt > price ? compareAt : null,
               badge: compareAt > price ? "SALE" : "CURATED",
+              tags: Array.isArray(row.tags) ? row.tags.filter((tag: unknown): tag is string => typeof tag === "string") : [],
               image: row.image_url || row.images?.[0] || "/timora/watch.png",
               tone: ["bg-[#e8e1d6]", "bg-[#e7e5df]", "bg-[#e9e1d6]", "bg-[#e6e3dc]"][index % 4],
             }
