@@ -30,7 +30,7 @@ type DatabaseProduct = {
   category: string
   image_url: string
   images: string[] | null
-  available_stock: number
+  stock: number
   is_active: boolean
 }
 
