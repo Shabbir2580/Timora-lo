@@ -137,7 +137,7 @@ export default function AdminProductsPage() {
           return
         }
 
-        if (!staff || staff.role !== "admin") {
+        if (!staff || !["admin", "employee"].includes(staff.role)) {
           router.replace("/")
           return
         }
@@ -291,8 +291,8 @@ export default function AdminProductsPage() {
         .eq("user_id", user.id)
         .maybeSingle()
 
-      if (roleError || staff?.role !== "admin") {
-        setError("Admin permission could not be verified. No changes were saved.")
+      if (roleError || !staff || !["admin", "employee"].includes(staff.role)) {
+        setError("Staff permission could not be verified. No changes were saved.")
         return
       }
 
@@ -385,8 +385,8 @@ export default function AdminProductsPage() {
         .eq("user_id", user.id)
         .maybeSingle()
 
-      if (roleError || staff?.role !== "admin") {
-        setError("Admin permission could not be verified. Nothing was deleted.")
+      if (roleError || !staff || !["admin", "employee"].includes(staff.role)) {
+        setError("Staff permission could not be verified. Nothing was deleted.")
         return
       }
 
@@ -427,7 +427,7 @@ export default function AdminProductsPage() {
   if (checkingAccess) {
     return (
       <main className="grid min-h-screen place-items-center bg-[#0b0b0a] text-[#d4af37]">
-        <p className="text-sm">Verifying admin access...</p>
+        <p className="text-sm">Verifying staff access...</p>
       </main>
     )
   }
@@ -437,9 +437,9 @@ export default function AdminProductsPage() {
       <main className="grid min-h-screen place-items-center bg-[#0b0b0a] px-5 text-[#f8f8f8]">
         <div className="max-w-md text-center">
           <ShieldCheck className="mx-auto mb-4 size-10 text-[#d4af37]" />
-          <h1 className="text-xl font-semibold">Admin access required</h1>
+          <h1 className="text-xl font-semibold">Staff access required</h1>
           <p className="mt-2 text-sm text-white/60">
-            Your account could not be verified as an administrator.
+            Your account does not have permission to manage products.
           </p>
           {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
           <Link
@@ -470,7 +470,7 @@ export default function AdminProductsPage() {
                 TIMORA<span className="text-[#d4af37]">.</span>
               </p>
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">
-                Admin workspace
+                Staff workspace
               </p>
             </div>
           </div>
