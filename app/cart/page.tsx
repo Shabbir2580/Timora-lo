@@ -10,7 +10,6 @@ import {
   Trash2,
   ArrowRight,
   ShieldCheck,
-  Trash2,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
 import { formatINR } from "@/lib/format"
