@@ -263,6 +263,12 @@ export default async function ProductsPage({
             {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
             <label htmlFor="product-sort" className="sr-only">Sort products</label>
             <select id="product-sort" name="sort" defaultValue={sort} className="min-h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">
+            <button
+  type="submit"
+  className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
+>
+  Apply
+</button>
               <option value="newest">Newest first</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="name">Name: A to Z</option>
             </select>
           </form>
