@@ -445,6 +445,16 @@ export default function HomePage() {
                 </span>
               </div>
             </div>
+            <Link href="/products?category=attar" className="home-floating-fragrance group absolute -bottom-5 -left-2 z-20 hidden w-48 items-center gap-3 rounded-2xl border border-[#d8bc88]/25 bg-[#11110f]/95 p-2.5 shadow-2xl backdrop-blur sm:flex lg:-left-8">
+              <div className="relative h-16 w-14 shrink-0 overflow-hidden rounded-xl bg-[#332516]">
+                <Image src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=240&q=80" alt="Attar fragrance bottle" fill sizes="56px" className="object-cover transition duration-500 group-hover:scale-110" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[8px] uppercase tracking-[0.18em] text-[#d8bc88]">A new signature</p>
+                <p className="mt-1 text-sm font-medium">Attar & Ittar</p>
+                <p className="mt-1 inline-flex items-center gap-1 text-[10px] text-white/50 group-hover:text-[#e5cb91]">Discover fragrance <ArrowUpRight size={11} /></p>
+              </div>
+            </Link>
           </div>
         </div>
       </section>
