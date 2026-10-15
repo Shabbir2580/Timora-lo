@@ -140,8 +140,12 @@ export default async function ProductsPage({
       product.badges.includes("SALE") ||
       product.price < product.mrp
 
+    const productCategorySlug = product.categorySlug.toLowerCase()
     const matchesCategory =
-      !categorySlug || product.categorySlug.toLowerCase() === categorySlug
+      !categorySlug ||
+      (categorySlug === "attar"
+        ? ["attar", "ittar", "attar-ittar", "fragrance", "perfume-oils"].includes(productCategorySlug)
+        : productCategorySlug === categorySlug)
 
     return matchesQuery && matchesDeals && matchesCategory
   })
