@@ -45,4 +45,4 @@ Never commit Supabase service-role keys or other secrets to the repository.
 - Test COD approval, delivery progression, and COD collection.
 - Submit a review only from a delivered, paid test order, then approve it as staff.
 - Test newsletter subscription and admin coupon CRUD.
-- Confirm the admin can manage products and employees cannot modify product records.
+- Confirm admins and employees can manage product records, while coupon creation and editing remain admin-only.
