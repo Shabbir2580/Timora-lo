@@ -77,8 +77,12 @@ export default function AdminOrdersPage() {
     setError("")
     try {
       const supabase = createClient()
-      // Expiry is housekeeping, not a prerequisite for reading orders. It should
-      // run in a scheduled database job; do not block the staff order list on it.
+      // Expire old unpaid orders to restore reserved stock, but never let this
+      // housekeeping RPC prevent staff from viewing current orders.
+      const { error: expiryError } = await supabase.rpc("expire_stale_pending_orders")
+      if (expiryError) {
+        console.warn("Pending-order expiry did not run; continuing to load orders:", expiryError.message)
+      }
       const { data, error: ordersError } = await supabase
         .from("orders")
         .select("id,customer_id,customer_name,customer_email,customer_phone,address,landmark,city,state,pincode,delivery_note,subtotal_paise,shipping_paise,discount_paise,coupon_code,total_paise,order_status,payment_status,payment_provider,payment_reference,cod_approved_by,cod_approved_at,cod_rejection_reason,cod_collected_at,tracking_number,courier_name,shipped_at,delivered_at,payment_verified_at,created_at")
