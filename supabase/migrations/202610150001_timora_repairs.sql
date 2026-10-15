@@ -328,7 +328,8 @@ begin
 end
 $function$;
 
--- Product writes are admin-only. Employees may process orders/reviews but cannot alter the catalogue.
+-- Preserve the existing staff workflow: admins and employees can manage products.
+-- Coupon administration remains admin-only because discounts affect revenue.
 do $block$
 declare p record;
 begin
@@ -342,13 +343,13 @@ create policy "Public can read active products" on public.products
   for select to anon, authenticated using (is_active = true);
 create policy "Staff can read all products" on public.products
   for select to authenticated using (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role in ('admin','employee')));
-create policy "Admins insert products" on public.products
-  for insert to authenticated with check (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'));
-create policy "Admins update products" on public.products
-  for update to authenticated using (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'))
-  with check (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'));
-create policy "Admins delete products" on public.products
-  for delete to authenticated using (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'));
+create policy "Staff can insert products" on public.products
+  for insert to authenticated with check (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role in ('admin','employee')));
+create policy "Staff can update products" on public.products
+  for update to authenticated using (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role in ('admin','employee')))
+  with check (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role in ('admin','employee')));
+create policy "Staff can delete products" on public.products
+  for delete to authenticated using (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role in ('admin','employee')));
 grant select on public.products to anon, authenticated;
 grant insert, update, delete on public.products to authenticated;
 
