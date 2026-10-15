@@ -19,6 +19,8 @@ type OrderRow = {
   payment_status: string
   payment_provider: string | null
   created_at: string
+  payment_verified_at?: string | null
+  cod_collected_at?: string | null
 }
 type ProductRow = { id: string; name: string; stock: number; price: number; is_active: boolean }
 
@@ -54,7 +56,9 @@ export default function AdminDashboardPage() {
   const [metrics, setMetrics] = useState({
     orders: 0, pending: 0, products: 0, activeProducts: 0,
     customers: 0, reviews: 0, coupons: 0, employees: 0, revenue: 0,
+    monthlyRevenue: 0, previousMonthRevenue: 0, paidOrders: 0, monthlyOrders: 0,
   })
+  const [salesTrend, setSalesTrend] = useState<{ label: string; revenue: number }[]>([])
 
   const loadDashboard = useCallback(async (currentRole: Role) => {
     setLoading(true)
@@ -83,18 +87,37 @@ export default function AdminDashboardPage() {
       const customerIds = new Set((customerRows.data ?? []).map((row) => row.customer_id).filter(Boolean))
       // Owner-only financial and staff metrics are not queried for employees.
       let paidRevenue = 0
+      let monthlyRevenue = 0
+      let previousMonthRevenue = 0
+      let paidOrders = 0
+      let monthlyOrders = 0
       let coupons = 0
       let employees = 0
       if (currentRole === "admin") {
         const [paidRows, couponCount, staffRows] = await Promise.all([
-          supabase.from("orders").select("total_paise").eq("payment_status", "paid"),
+          supabase.from("orders").select("total_paise,order_status,payment_provider,payment_verified_at,cod_collected_at,created_at").eq("payment_status", "paid"),
           supabase.from("coupons").select("id", { count: "exact", head: true }),
           supabase.from("staff_roles").select("user_id,role"),
         ])
         if (paidRows.error) throw paidRows.error
         if (couponCount.error) throw couponCount.error
         if (staffRows.error) throw staffRows.error
-        paidRevenue = (paidRows.data ?? []).reduce((sum, row) => sum + Number(row.total_paise || 0), 0)
+        const now = new Date()
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        const paid = (paidRows.data ?? []).filter((row) => row.order_status !== "cancelled")
+        const collectedAt = (row: { payment_provider: string | null; payment_verified_at: string | null; cod_collected_at: string | null }) => row.payment_provider === "cod" ? row.cod_collected_at : row.payment_verified_at
+        paidRevenue = paid.reduce((sum, row) => sum + Number(row.total_paise || 0), 0)
+        monthlyRevenue = paid.reduce((sum, row) => { const stamp = collectedAt(row); return stamp && new Date(stamp) >= monthStart && new Date(stamp) <= now ? sum + Number(row.total_paise || 0) : sum }, 0)
+        previousMonthRevenue = paid.reduce((sum, row) => { const stamp = collectedAt(row); return stamp && new Date(stamp) >= previousMonthStart && new Date(stamp) < monthStart ? sum + Number(row.total_paise || 0) : sum }, 0)
+        paidOrders = paid.length
+        monthlyOrders = paid.filter((row) => { const stamp = collectedAt(row); return stamp && new Date(stamp) >= monthStart && new Date(stamp) <= now }).length
+        setSalesTrend(Array.from({ length: 6 }, (_, index) => {
+          const month = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1)
+          const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1)
+          const revenue = paid.reduce((sum, row) => { const stamp = collectedAt(row); const date = stamp ? new Date(stamp) : null; return date && date >= month && date < nextMonth ? sum + Number(row.total_paise || 0) : sum }, 0)
+          return { label: month.toLocaleDateString("en-IN", { month: "short" }), revenue }
+        }))
         coupons = couponCount.count ?? 0
         employees = (staffRows.data ?? []).filter((staff) => staff.role === "employee").length
       }
@@ -111,6 +134,10 @@ export default function AdminDashboardPage() {
         coupons,
         employees,
         revenue: paidRevenue,
+        monthlyRevenue,
+        previousMonthRevenue,
+        paidOrders,
+        monthlyOrders,
       })
     } catch (err) {
       setError(err instanceof Error ? `Could not load dashboard data: ${err.message}` : "Could not load dashboard data.")
@@ -173,7 +200,10 @@ export default function AdminDashboardPage() {
 
   const metricCards = [
     { label: "Total orders", value: metrics.orders.toLocaleString("en-IN"), hint: `${metrics.pending} awaiting payment`, icon: ShoppingBag, color: "text-sky-300", tint: "bg-sky-300/10" },
-    ...(role === "admin" ? [{ label: "Paid revenue", value: money(metrics.revenue), hint: "Recorded paid orders", icon: Wallet, color: "text-emerald-300", tint: "bg-emerald-300/10" }] : []),
+    ...(role === "admin" ? [
+      { label: "Monthly income", value: money(metrics.monthlyRevenue), hint: `${metrics.monthlyOrders} payments collected this month`, icon: Wallet, color: "text-emerald-300", tint: "bg-emerald-300/10" },
+      { label: "Lifetime paid sales", value: money(metrics.revenue), hint: `${metrics.paidOrders} paid orders · cancelled orders excluded`, icon: Activity, color: "text-sky-300", tint: "bg-sky-300/10" },
+    ] : []),
     { label: "Live products", value: metrics.activeProducts.toLocaleString("en-IN"), hint: `${metrics.products} products in catalogue`, icon: Package, color: "text-[#d9b65d]", tint: "bg-[#d9b65d]/10" },
     { label: "Customer reviews", value: metrics.reviews.toLocaleString("en-IN"), hint: "All submitted reviews", icon: Star, color: "text-violet-300", tint: "bg-violet-300/10" },
   ]
@@ -219,6 +249,12 @@ export default function AdminDashboardPage() {
           <section className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
             {metricCards.map((metric) => <article key={metric.label} className="rounded-2xl border border-white/[0.08] bg-[#101112] p-5 transition hover:border-white/[0.14]"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-medium text-white/45">{metric.label}</p><p className="mt-3 text-2xl font-semibold tracking-tight sm:text-[28px]">{metric.value}</p></div><div className={`grid size-11 place-items-center rounded-xl ${metric.tint} ${metric.color}`}><metric.icon className="size-5" /></div></div><p className="mt-3 text-[11px] text-white/35">{metric.hint}</p></article>)}
           </section>
+
+          {role === "admin" && <section className="mt-5 overflow-hidden rounded-2xl border border-emerald-300/15 bg-[radial-gradient(ellipse_at_top_right,rgba(52,211,153,0.09),transparent_45%),#101112] p-5 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-200/70">Owner insights</p><h2 className="mt-2 text-xl font-semibold">Sales performance</h2><p className="mt-1 text-xs text-white/40">Recorded payments by collection month · cancelled orders excluded</p></div><div className="rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] px-4 py-3"><p className="text-[10px] text-white/45">This month</p><p className="mt-1 text-xl font-semibold text-emerald-200">{money(metrics.monthlyRevenue)}</p><p className="mt-1 text-[10px] text-white/40">{metrics.monthlyOrders} payment(s) collected</p></div></div>
+            <div className="mt-6 grid grid-cols-6 items-end gap-2 sm:gap-4">{salesTrend.map((month, index) => { const peak = Math.max(...salesTrend.map((item) => item.revenue), 1); const height = Math.max(8, Math.round((month.revenue / peak) * 100)); const current = index === salesTrend.length - 1; return <div key={`${month.label}-${index}`} className="group flex min-w-0 flex-col items-center gap-2"><span className="text-center text-[9px] text-white/35 sm:text-[10px]">{month.revenue ? money(month.revenue) : "—"}</span><div className="flex h-28 w-full items-end overflow-hidden rounded-t-lg bg-white/[0.035] sm:h-36"><div title={`${month.label}: ${money(month.revenue)}`} className={`w-full origin-bottom rounded-t-lg transition-all duration-700 ease-out group-hover:brightness-125 ${current ? "bg-gradient-to-t from-emerald-500/70 to-emerald-200" : "bg-gradient-to-t from-[#a58b47]/55 to-[#e4cc8d]/80"}`} style={{ height: `${height}%`, animation: "fadeInUp .6s ease-out both", animationDelay: `${index * 80}ms` }} /></div><span className={`text-[10px] ${current ? "font-semibold text-emerald-200" : "text-white/40"}`}>{month.label}</span></div> })}</div>
+            <div className="mt-5 flex flex-wrap gap-3 text-xs"><span className="rounded-lg border border-white/[0.08] px-3 py-2 text-white/55">Previous month <strong className="ml-1 text-white/85">{money(metrics.previousMonthRevenue)}</strong></span><span className="rounded-lg border border-white/[0.08] px-3 py-2 text-white/55">Average paid order <strong className="ml-1 text-white/85">{money(metrics.paidOrders ? metrics.revenue / metrics.paidOrders : 0)}</strong></span></div>
+          </section>}
 
           <section className="mt-8 grid gap-6 2xl:grid-cols-[1.45fr_0.85fr]">
             <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#101112]">
