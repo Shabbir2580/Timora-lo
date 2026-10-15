@@ -2,7 +2,6 @@
 import Link from "next/link"
 import { Search, ShoppingBag, ArrowRight } from "lucide-react"
 import {
-  products as sampleProducts,
   categories,
   type Product,
   type ProductBadge,
@@ -24,25 +23,24 @@ type DatabaseProduct = {
   id: string
   name: string
   slug: string
-  description: string
+  description: string | null
   price: number | string
   compare_at_price: number | string | null
-  category: string
-  image_url: string
+  category: string | null
+  image_url: string | null
   images: string[] | null
-  available_stock: number
+  stock: number
   is_active: boolean
 }
 
 function toProduct(row: DatabaseProduct): Product {
-  const category = row.category.trim() || "Accessories"
+  const category = row.category?.trim() || "Accessories"
   const categorySlug = category.toLowerCase().replace(/[^a-z0-9]+/g, "-")
   const price = Number(row.price)
-  const mrp = row.compare_at_price == null
-    ? price
-    : Number(row.compare_at_price)
-  const stockCount = Number(row.available_stock)
-  const image = row.image_url || "/timora/watch.png"
+  const mrp =
+    row.compare_at_price == null ? price : Number(row.compare_at_price)
+  const stockCount = Number(row.stock)
+  const image = row.image_url || row.images?.[0] || "/timora/watch.png"
 
   const stock: StockState =
     stockCount <= 0
@@ -51,8 +49,7 @@ function toProduct(row: DatabaseProduct): Product {
         ? "low_stock"
         : "in_stock"
 
-  const badges: ProductBadge[] =
-    mrp > price ? ["SALE"] : []
+  const badges: ProductBadge[] = mrp > price ? ["SALE"] : []
 
   return {
     id: row.id,
@@ -79,7 +76,8 @@ function toProduct(row: DatabaseProduct): Product {
     specs: [],
     box: [],
     warranty: "See product details",
-    description: row.description || "Discover this product from the Timora collection.",
+    description:
+      row.description || "Discover this product from the Timora collection.",
     reviews: [],
   }
 }
@@ -99,9 +97,9 @@ export default async function ProductsPage({
   try {
     const supabase = await createClient()
     const { data, error } = await supabase
-      .from("available_products")
+      .from("products")
       .select(
-        "id, name, slug, description, price, compare_at_price, category, image_url, images, available_stock, is_active",
+        "id,name,slug,description,price,compare_at_price,category,image_url,images,stock,is_active"
       )
       .eq("is_active", true)
       .order("created_at", { ascending: false })
@@ -117,16 +115,11 @@ export default async function ProductsPage({
     databaseError = true
   }
 
-  // Never mix mock products into a live catalogue. Preview products are only a fallback
-  // when the database catalogue is empty or unavailable; the order API rejects mock stock.
-  const usingSampleProducts = databaseProducts.length === 0
-  const allProducts = usingSampleProducts ? sampleProducts : databaseProducts
-
   const selectedCategory = categories.find(
-    (category) => category.slug.toLowerCase() === categorySlug,
+    (category) => category.slug.toLowerCase() === categorySlug
   )
 
-  const filteredProducts = allProducts.filter((product) => {
+  const filteredProducts = databaseProducts.filter((product) => {
     const matchesQuery =
       !query ||
       [
@@ -152,10 +145,14 @@ export default async function ProductsPage({
   })
 
   const sortedProducts = [...filteredProducts]
-  if (sort === "price-asc") sortedProducts.sort((a, b) => a.price - b.price)
-  else if (sort === "price-desc") sortedProducts.sort((a, b) => b.price - a.price)
-  else if (sort === "name") sortedProducts.sort((a, b) => a.name.localeCompare(b.name))
-  // The database query is newest-first and sample products follow it, so newest is the default order.
+
+  if (sort === "price-asc") {
+    sortedProducts.sort((a, b) => a.price - b.price)
+  } else if (sort === "price-desc") {
+    sortedProducts.sort((a, b) => b.price - a.price)
+  } else if (sort === "name") {
+    sortedProducts.sort((a, b) => a.name.localeCompare(b.name))
+  }
 
   const heading = selectedCategory
     ? selectedCategory.name
@@ -204,11 +201,23 @@ export default async function ProductsPage({
           </div>
         </section>
 
-        {usingSampleProducts && (
-          <p role="status" className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-amber-100">
-            {databaseError
-              ? "The live catalogue could not be reached. Preview products are shown; live stock and prices cannot be verified right now. Please try again later."
-              : "These are preview products only. Add active products in the admin catalogue before accepting live orders."}
+        {databaseError && (
+          <p
+            role="alert"
+            className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm leading-6"
+          >
+            The live catalogue could not be loaded. Please try again later.
+          </p>
+        )}
+
+        {!databaseError && databaseProducts.length === 0 && (
+          <p
+            role="status"
+            className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm leading-6"
+          >
+            No active products are available in the live catalogue yet. Add
+            your real products through the admin catalogue before accepting
+            live orders.
           </p>
         )}
 
@@ -259,14 +268,40 @@ export default async function ProductsPage({
 
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">Sort products</p>
-          <form action="/products" method="get" className="flex flex-wrap items-center gap-2">
+
+          <form
+            action="/products"
+            method="get"
+            className="flex flex-wrap items-center gap-2"
+          >
             {query && <input type="hidden" name="q" value={params.q} />}
             {dealsOnly && <input type="hidden" name="deals" value="1" />}
-            {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
-            <label htmlFor="product-sort" className="sr-only">Sort products</label>
-            <select id="product-sort" name="sort" defaultValue={sort} onChange={(event) => event.currentTarget.form?.requestSubmit()} className="min-h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring">
-              <option value="newest">Newest first</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="name">Name: A to Z</option>
+            {categorySlug && (
+              <input type="hidden" name="category" value={categorySlug} />
+            )}
+
+            <label htmlFor="product-sort" className="sr-only">
+              Sort products
+            </label>
+
+            <select
+              id="product-sort"
+              name="sort"
+              defaultValue={sort}
+              className="min-h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="newest">Newest first</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="name">Name: A to Z</option>
             </select>
+
+            <button
+              type="submit"
+              className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Apply
+            </button>
           </form>
         </div>
 
@@ -295,17 +330,23 @@ export default async function ProductsPage({
               )}
             </div>
 
-            <h2 className="text-xl font-semibold">No products found</h2>
+            <h2 className="text-xl font-semibold">
+              {databaseError ? "Catalogue unavailable" : "No products found"}
+            </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-              Try another search term or browse all products in the Timora collection.
+              {databaseError
+                ? "We could not load the catalogue. Please try again later."
+                : "Try another search term or browse all products in the Timora collection."}
             </p>
 
-            <Link
-              href="/products"
-              className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
-              View all products
-            </Link>
+            {!databaseError && (
+              <Link
+                href="/products"
+                className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              >
+                View all products
+              </Link>
+            )}
           </section>
         )}
       </div>

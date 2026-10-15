@@ -3,7 +3,6 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
-import { products as catalogueProducts } from "@/lib/data"
 import { useCart } from "@/lib/cart-context"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -34,17 +33,18 @@ const categories = [
   { name: "New arrivals", detail: "Freshly discovered", icon: Zap, href: "/products?sort=newest" },
 ]
 
-const sampleFeaturedProducts = catalogueProducts.map((product, index) => ({
-  id: product.id,
-  slug: product.slug,
-  name: product.name,
-  category: product.category,
-  price: product.price,
-  oldPrice: product.mrp > product.price ? product.mrp : null,
-  badge: product.badges[0] ?? "CURATED",
-  image: product.image,
-  tone: ["bg-[#e8e1d6]", "bg-[#e7e5df]", "bg-[#e9e1d6]", "bg-[#e6e3dc]"][index % 4],
-}))
+type FeaturedProduct = {
+  id: string
+  slug: string
+  name: string
+  category: string
+  price: number
+  oldPrice: number | null
+  badge: string
+  image: string
+  tone: string
+}
+
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat("en-IN", {
@@ -56,7 +56,7 @@ const formatPrice = (price: number) =>
 export default function HomePage() {
   const [search, setSearch] = useState("")
   const [activeCategory, setActiveCategory] = useState("All")
-  const [featuredProducts, setFeaturedProducts] = useState(sampleFeaturedProducts)
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
   const [catalogueFallback, setCatalogueFallback] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { wishlist, toggleWishlist } = useCart()
@@ -66,8 +66,8 @@ export default function HomePage() {
     async function loadFeaturedProducts() {
       try {
         const supabase = createClient()
-        const { data, error } = await supabase.from("available_products")
-          .select("id,name,slug,category,price,compare_at_price,image_url,images,available_stock,created_at")
+        const { data, error } = await supabase.from("products")
+          .select("id,name,slug,category,price,compare_at_price,image_url,images,stock,created_at,is_active")
           .eq("is_active", true)
           .order("created_at", { ascending: false })
           .limit(8)
@@ -91,11 +91,15 @@ export default function HomePage() {
           }))
           setCatalogueFallback(false)
         } else {
+          setFeaturedProducts([])
           setCatalogueFallback(true)
         }
       } catch (error) {
         console.error("Homepage catalogue lookup failed:", error)
-        if (active) setCatalogueFallback(true)
+        if (active) {
+          setFeaturedProducts([])
+          setCatalogueFallback(true)
+        }
       }
     }
     void loadFeaturedProducts()
@@ -404,7 +408,7 @@ export default function HomePage() {
               A selection of standout pieces chosen for their style, simplicity
               and everyday appeal.
             </p>
-            {catalogueFallback && <p role="status" className="mt-3 max-w-xl rounded-lg border border-amber-300/20 bg-amber-300/[0.05] px-3 py-2 text-xs leading-5 text-amber-100/70">Showing preview products because no live catalogue items could be loaded. Preview listings must be added to the Supabase catalogue before they can be ordered.</p>}
+            {catalogueFallback && <p role="status" className="mt-3 max-w-xl rounded-lg border border-amber-300/20 bg-amber-300/[0.05] px-3 py-2 text-xs leading-5 text-amber-100/70">No live products are available right now. Please check back soon.</p>}
           </div>
           <Link
             href="/products"
