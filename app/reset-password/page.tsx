@@ -16,7 +16,16 @@ export default function ResetPasswordPage() {
     if(password.length<8){setError("Use at least 8 characters for your new password.");return}
     if(password!==confirm){setError("The passwords do not match.");return}
     setLoading(true)
-    try { const supabase=createClient(); const {error}=await supabase.auth.updateUser({password}); if(error) throw error; router.replace("/login?password_reset=success") }
+    try {
+      const supabase=createClient()
+      const {error}=await supabase.auth.updateUser({password})
+      if(error) throw error
+      const requestedNext = new URLSearchParams(window.location.search).get("next")
+      const safeNext = requestedNext && requestedNext.startsWith("/") && !requestedNext.startsWith("//")
+        ? requestedNext
+        : "/"
+      router.replace(`/login?password_reset=success&next=${encodeURIComponent(safeNext)}`)
+    }
     catch(e){console.error("Password update failed:",e);setError("The reset link may have expired. Request a new password-reset email and try again.")}
     finally{setLoading(false)}
   }
