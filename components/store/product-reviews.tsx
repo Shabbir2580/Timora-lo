@@ -79,7 +79,7 @@ export function ProductReviews({ productId, productName }: { productId: string; 
               {error && <p role="alert" className="rounded-lg border border-red-300/20 bg-red-300/5 p-2 text-xs text-red-200">{error}</p>}
               {notice && <p role="status" className="rounded-lg border border-emerald-300/20 bg-emerald-300/5 p-2 text-xs text-emerald-200">{notice}</p>}
               <button disabled={sending} type="submit" className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-[#d4af37] px-4 text-sm font-semibold text-[#17130c] disabled:opacity-50"><Send className="size-4"/>{sending ? "Submitting…" : "Submit review"}</button>
-            </form>}
+            </form></>}
             {!userId && <Link href="/login?next=%2Forders" className="mt-4 inline-flex min-h-10 items-center justify-center rounded-full border border-[#c9a96e]/35 px-4 text-sm text-[#dfc797] hover:bg-[#c9a96e]/10">Sign in to review</Link>}
           </aside>
         </div>
