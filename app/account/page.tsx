@@ -5,8 +5,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import {
-  ArrowRight, BadgeCheck, ChevronRight, CircleUserRound, CreditCard, Heart,
-  LogOut, MapPin, Package, Pencil, RefreshCw, ShieldCheck, ShoppingBag, Truck, UserRound, Wallet,
+  ArrowRight, BadgeCheck, ChevronRight, Heart, LogOut, MapPin, Package, Pencil,
+  RefreshCw, ShieldCheck, ShoppingBag, Truck,
 } from "lucide-react"
 
 type Address = {
@@ -25,7 +25,6 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
-  const [userId, setUserId] = useState("")
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
@@ -37,7 +36,6 @@ export default function AccountPage() {
     setLoading(true); setError("")
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) { router.replace("/login?next=%2Faccount"); return }
-    setUserId(user.id)
     setEmail(user.email ?? "")
     setName(typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "")
     setPhone(typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : "")
