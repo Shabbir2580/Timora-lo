@@ -28,9 +28,11 @@ export function ProductReviews({ productId, productName }: { productId: string; 
         supabase.from("product_reviews").select("id,rating,title,body,created_at").eq("product_id", productId).eq("status", "approved").order("created_at", { ascending: false }),
         supabase.auth.getUser(),
       ])
+      // Resolve auth independently from the public reviews query. A reviews-table
+      // permission/network error must never make a signed-in customer look signed out.
+      setUserId(authData.user?.id ?? null)
       if (reviewError) throw reviewError
       setReviews((data ?? []) as Review[])
-      setUserId(authData.user?.id ?? null)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Reviews could not be loaded.")
     } finally { setLoading(false) }
