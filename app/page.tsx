@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { useCart } from "@/lib/cart-context"
 import { createClient } from "@/lib/supabase/client"
@@ -54,6 +55,7 @@ const formatPrice = (price: number) =>
   }).format(price)
 
 export default function HomePage() {
+  const router = useRouter()
   const [search, setSearch] = useState("")
   const [activeCategory, setActiveCategory] = useState("All")
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
@@ -172,10 +174,20 @@ export default function HomePage() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <label className="hidden items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 focus-within:border-[#c9a96e] md:flex">
-              <Search size={15} className="text-white/45" />
+            <form
+              role="search"
+              onSubmit={(event) => {
+                event.preventDefault()
+                const query = search.trim()
+                if (query) router.push(`/products?q=${encodeURIComponent(query)}`)
+                else router.push("/products")
+              }}
+              className="hidden items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 focus-within:border-[#c9a96e] md:flex"
+            >
+              <Search size={15} className="text-white/45" aria-hidden="true" />
               <input
-                aria-label="Search products"
+                aria-label="Search all products"
+                type="search"
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value)
@@ -187,7 +199,14 @@ export default function HomePage() {
                 placeholder="Search collection"
                 className="w-32 bg-transparent text-xs outline-none placeholder:text-white/35 lg:w-40"
               />
-            </label>
+              <button
+                type="submit"
+                aria-label="Search catalogue"
+                className="rounded-full p-1 text-white/60 transition hover:text-[#dfc797] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a96e]"
+              >
+                <ArrowRight size={15} aria-hidden="true" />
+              </button>
+            </form>
 
             <Link
               href="/orders"
@@ -231,16 +250,34 @@ export default function HomePage() {
 
         {mobileMenuOpen && (
           <nav className="border-t border-white/10 bg-[#11110f] px-5 py-5 lg:hidden">
-            <div className="mb-4 flex items-center gap-2 rounded-xl border border-white/15 px-3 py-3">
-              <Search size={17} className="text-white/50" />
+            <form
+              role="search"
+              onSubmit={(event) => {
+                event.preventDefault()
+                const query = search.trim()
+                if (query) router.push(`/products?q=${encodeURIComponent(query)}`)
+                else router.push("/products")
+                setMobileMenuOpen(false)
+              }}
+              className="mb-4 flex items-center gap-2 rounded-xl border border-white/15 px-3 py-3 focus-within:border-[#c9a96e]"
+            >
+              <Search size={17} className="shrink-0 text-white/50" aria-hidden="true" />
               <input
-                aria-label="Search products"
+                aria-label="Search all products"
+                type="search"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search the collection..."
-                className="w-full bg-transparent text-sm outline-none placeholder:text-white/40"
+                className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-white/40"
               />
-            </div>
+              <button
+                type="submit"
+                aria-label="Search catalogue"
+                className="shrink-0 rounded-full p-1 text-white/70 transition hover:text-[#dfc797] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a96e]"
+              >
+                <ArrowRight size={17} aria-hidden="true" />
+              </button>
+            </form>
             <div className="flex flex-col">
               {[
                 ["Login / Sign Up", "/login"],
