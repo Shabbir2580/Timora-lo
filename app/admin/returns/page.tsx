@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 
 type ReturnRow = {
   id: string; order_id: string; customer_id: string; reason: string; customer_note: string; status: string
-  staff_note: string | null; refund_amount_paise: number | null; created_at: string; updated_at: string
+  refund_amount_paise: number | null; created_at: string; updated_at: string
 }
 type OrderInfo = { id: string; customer_name: string; customer_email: string; customer_phone: string; total_paise: number; order_status: string; payment_status: string; payment_provider: string | null }
 
@@ -39,9 +39,15 @@ export default function AdminReturnsPage() {
       if (queryError) throw queryError
       const result = (data ?? []) as ReturnRow[]
       setRows(result)
+      const requestIds = result.map(row => row.id)
+      const { data: noteRows, error: notesError } = requestIds.length
+        ? await supabase.from("return_request_staff_notes").select("return_request_id,staff_note").in("return_request_id", requestIds)
+        : { data: [], error: null }
+      if (notesError) throw notesError
+      const privateNotes = Object.fromEntries((noteRows ?? []).map((note: { return_request_id: string; staff_note: string }) => [note.return_request_id, note.staff_note]))
       result.forEach(row => {
         setStatusDrafts(current => ({ ...current, [row.id]: row.status }))
-        setNotes(current => ({ ...current, [row.id]: row.staff_note ?? "" }))
+        setNotes(current => ({ ...current, [row.id]: privateNotes[row.id] ?? "" }))
         setRefunds(current => ({ ...current, [row.id]: row.refund_amount_paise == null ? "" : String(row.refund_amount_paise / 100) }))
       })
       const ids = Array.from(new Set(result.map(row => row.order_id)))
@@ -86,9 +92,14 @@ export default function AdminReturnsPage() {
       if (authError || !user) throw new Error("Please sign in again.")
       const { data: staff, error: roleError } = await supabase.from("staff_roles").select("role").eq("user_id", user.id).maybeSingle()
       if (roleError || staff?.role !== "admin") throw new Error("Admin permission could not be verified.")
+      const { error: noteError } = await supabase.from("return_request_staff_notes").upsert({
+        return_request_id: row.id,
+        staff_note: (notes[row.id] ?? "").trim(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "return_request_id" })
+      if (noteError) throw noteError
       const { error: updateError } = await supabase.from("return_requests").update({
         status,
-        staff_note: (notes[row.id] ?? "").trim() || null,
         refund_amount_paise: refundAmount === null ? null : Math.round(refundAmount * 100),
       }).eq("id", row.id)
       if (updateError) throw updateError
