@@ -280,6 +280,7 @@ export default function AdminOrdersPage() {
             <div><p className="text-lg font-semibold tracking-[0.18em]">TIMORA<span className="text-[#d4af37]">.</span></p><p className="text-[10px] uppercase tracking-[0.2em] text-white/45">Order management · {role}</p></div>
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/admin/returns" className="inline-flex min-h-10 items-center justify-center rounded-full border border-[#d4af37]/30 px-3 text-xs text-[#e4c878] hover:bg-[#d4af37]/10">Returns desk</Link>
             <button type="button" onClick={() => void loadOrders()} disabled={loading} className="grid size-10 place-items-center rounded-full border border-white/10 hover:border-[#d4af37]/40 disabled:opacity-50" aria-label="Refresh orders"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /></button>
             <button type="button" onClick={handleLogout} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-white/70 hover:text-[#e4c878]"><LogOut className="size-4" /><span className="hidden sm:inline">Sign out</span></button>
           </div>
