@@ -81,6 +81,7 @@ export default function AdminProductsPage() {
   const router = useRouter()
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [authorized, setAuthorized] = useState(false)
+  const [role, setRole] = useState<"admin" | "employee" | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -153,6 +154,7 @@ export default function AdminProductsPage() {
         }
 
         if (active) {
+          setRole(staff.role as "admin" | "employee")
           setAuthorized(true)
           await loadProducts()
         }
@@ -421,8 +423,8 @@ export default function AdminProductsPage() {
         .eq("user_id", user.id)
         .maybeSingle()
 
-      if (roleError || !staff || !["admin", "employee"].includes(staff.role)) {
-        setError("Staff permission could not be verified. Nothing was deleted.")
+      if (roleError || !staff || staff.role !== "admin") {
+        setError("Only an administrator can permanently delete products.")
         return
       }
 
