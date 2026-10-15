@@ -4,10 +4,9 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
-  Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BadgePercent,
-  Boxes, CheckCircle2, ChevronRight, CircleDollarSign, Clock3,
+  Activity, ArrowRight, BadgePercent, Boxes, CheckCircle2, ChevronRight, Clock3,
   LayoutDashboard, LogOut, Package, RefreshCw, ShieldCheck,
-  ShoppingBag, Star, Truck, Users, Wallet, AlertTriangle,
+  ShoppingBag, Star, Users, Wallet, AlertTriangle,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -82,10 +81,6 @@ export default function AdminDashboardPage() {
       const recent = (recentOrders.data ?? []) as OrderRow[]
       const productList = (productRows.data ?? []) as ProductRow[]
       const customerIds = new Set((customerRows.data ?? []).map((row) => row.customer_id).filter(Boolean))
-      const revenue = recent.length
-        ? 0
-        : 0
-
       // Revenue is calculated from all paid orders, not from the recent-orders preview.
       const paidRows = await supabase.from("orders").select("total_paise").eq("payment_status", "paid")
       if (paidRows.error) throw paidRows.error
@@ -117,7 +112,6 @@ export default function AdminDashboardPage() {
         employees,
         revenue: paidRevenue,
       })
-      void revenue
     } catch (err) {
       setError(err instanceof Error ? `Could not load dashboard data: ${err.message}` : "Could not load dashboard data.")
     } finally {
