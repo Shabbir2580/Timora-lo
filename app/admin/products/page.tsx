@@ -965,14 +965,15 @@ export default function AdminProductsPage() {
                             >
                               {product.is_active ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                             </button>
-                            <button
+                            {role === "admin" && (<button
                               type="button"
                               onClick={() => void deleteProduct(product)}
                               aria-label={`Delete ${product.name}`}
                               className="grid size-9 place-items-center rounded-lg text-red-300/70 hover:bg-red-400/10 hover:text-red-300"
                             >
                               <Trash2 className="size-4" />
-                            </button>
+                            </button>)}
+
                           </div>
                         </td>
                       </tr>
