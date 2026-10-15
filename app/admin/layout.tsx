@@ -13,7 +13,7 @@ function StaffBackNavigationGuard() {
 
   useEffect(() => {
     function handlePopState() {
-      if (window.location.pathname.startsWith("/admin/")) {
+      if (pathname.startsWith("/admin/")) {
         router.replace("/admin")
       }
     }
