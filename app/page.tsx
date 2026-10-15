@@ -40,6 +40,7 @@ type FeaturedProduct = {
   name: string
   category: string
   price: number
+  stock: number
   oldPrice: number | null
   badge: string
   image: string
@@ -85,6 +86,7 @@ export default function HomePage() {
               name: row.name,
               category: row.category || "Accessories",
               price,
+              stock: Number(row.stock ?? 0),
               oldPrice: compareAt > price ? compareAt : null,
               badge: compareAt > price ? "SALE" : "CURATED",
               image: row.image_url || row.images?.[0] || "/timora/watch.png",
@@ -486,8 +488,8 @@ export default function HomePage() {
                   />
                 </Link>
 
-                <span className="absolute left-2 top-2 rounded-full bg-[#f4eee3]/95 px-2 py-1.5 text-[8px] font-semibold tracking-[0.09em] text-[#242018] sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px]">
-                  {product.badge}
+                <span className={`absolute left-2 top-2 rounded-full px-2 py-1.5 text-[8px] font-semibold tracking-[0.09em] sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px] ${product.stock <= 0 ? "bg-[#242018]/95 text-white" : "bg-[#f4eee3]/95 text-[#242018]"}`}>
+                  {product.stock <= 0 ? "SOLD OUT" : product.badge}
                 </span>
 
                 <button
@@ -534,6 +536,9 @@ export default function HomePage() {
                     </span>
                   )}
                 </div>
+                <p className={`mt-2 text-[10px] sm:text-xs ${product.stock <= 0 ? "text-red-300/80" : product.stock <= 5 ? "text-amber-200/80" : "text-white/35"}`}>
+                  {product.stock <= 0 ? "Currently unavailable" : product.stock <= 5 ? `Only ${product.stock} left in stock` : "In stock"}
+                </p>
               </div>
             </article>
           ))}
