@@ -255,11 +255,24 @@ export default function AdminOrdersPage() {
         throw new Error("Only an administrator can permanently delete orders.")
       }
 
-      const { error: deleteError } = await supabase.rpc("admin_delete_order", {
+      const { data: deleteResult, error: deleteError } = await supabase.rpc("admin_delete_order", {
         p_order_id: order.id,
       })
-      if (deleteError) throw deleteError
+      if (deleteError) {
+        const message = deleteError.message || "Unknown database error."
+        if (message.includes("admin_delete_order") && (message.includes("schema cache") || message.includes("Could not find the function"))) {
+          throw new Error("Order deletion is not enabled in the database yet. Apply supabase/migrations/202610150006_admin_delete_orders.sql in the Timora Supabase SQL Editor, then try again.")
+        }
+        throw new Error(message)
+      }
+      const result = deleteResult as { success?: boolean; order_id?: string } | null
+      if (!result?.success || result.order_id !== order.id) {
+        throw new Error("The database did not confirm that this order was deleted. Refresh the page and try again.")
+      }
 
+      // Remove it immediately after the database confirms deletion, then refresh
+      // the authoritative list so a failed refresh does not make the delete feel ignored.
+      setOrders((current) => current.filter((item) => item.id !== order.id))
       setNotice(`Order #${order.id.slice(0, 8).toUpperCase()} deleted.`)
       await loadOrders()
     } catch (err) {
