@@ -59,7 +59,7 @@ export default function AdminDashboardPage() {
     monthlyRevenue: 0, previousMonthRevenue: 0, paidOrders: 0, monthlyOrders: 0,
   })
   const [salesTrend, setSalesTrend] = useState<{ label: string; revenue: number }[]>([])
-  const [myTasks, setMyTasks] = useState<{ id: string; title: string; description: string | null; status: "todo" | "in_progress" | "done"; priority: "low" | "normal" | "high"; due_date: string | null; created_at: string }[]>([])
+  const [myTasks, setMyTasks] = useState<{ id: string; title: string; description: string | null; status: "todo" | "in_progress" | "submitted" | "needs_changes" | "done"; priority: "low" | "normal" | "high"; due_date: string | null; created_at: string; submitted_at?: string | null; review_note?: string | null }[]>([])
 
   const loadDashboard = useCallback(async (currentRole: Role) => {
     setLoading(true)
@@ -125,7 +125,7 @@ export default function AdminDashboardPage() {
 
       if (currentRole === "employee") {
         // A task-table/migration issue should not break the rest of the employee dashboard.
-        const { data: taskRows, error: taskError } = await supabase.from("employee_tasks").select("id,title,description,status,priority,due_date,created_at").order("created_at", { ascending: false })
+        const { data: taskRows, error: taskError } = await supabase.from("employee_tasks").select("id,title,description,status,priority,due_date,created_at,submitted_at,review_note").order("created_at", { ascending: false })
         if (taskError) {
           console.error("Could not load employee tasks:", taskError)
           setMyTasks([])
@@ -261,8 +261,8 @@ export default function AdminDashboardPage() {
 
           {role === "employee" && <section className="mt-5 rounded-2xl border border-[#d9b65d]/20 bg-[#101112] p-5 sm:p-6">
 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d9b65d]">Your assignments</p><h2 className="mt-2 text-xl font-semibold">My work queue</h2><p className="mt-1 text-xs text-white/40">Tasks assigned to your account.</p></div><Link href="/admin/tasks" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#d9b65d]/25 px-4 text-xs text-[#e4cc8d]">Open task board <ArrowRight className="size-3.5"/></Link></div>
-<div className="mt-4 grid gap-3 sm:grid-cols-3">{[{label:"To do",count:myTasks.filter((task)=>task.status==="todo").length},{label:"In progress",count:myTasks.filter((task)=>task.status==="in_progress").length},{label:"Completed",count:myTasks.filter((task)=>task.status==="done").length}].map((item)=><div key={item.label} className="rounded-xl border border-white/[0.07] bg-black/20 p-3"><p className="text-xs text-white/45">{item.label}</p><p className="mt-1 text-2xl font-semibold">{item.count}</p></div>)}</div>
-{myTasks.length ? <div className="mt-4 space-y-2">{myTasks.slice(0,4).map((task)=><Link href="/admin/tasks" key={task.id} className="flex flex-col gap-2 rounded-xl border border-white/[0.07] p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="truncate text-sm font-medium">{task.title}</p><p className="mt-1 line-clamp-2 text-xs text-white/40">{task.description || "No extra instructions"}{task.due_date ? " · Due "+new Date(task.due_date+"T12:00:00").toLocaleDateString("en-IN") : ""}</p></div><span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/65">{task.status==="done"?"Completed":task.status==="in_progress"?"In progress":"To do"} · {task.priority}</span></Link>)}</div> : <p className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-white/45">No tasks assigned yet. New work will appear here.</p>}
+<div className="mt-4 grid gap-3 grid-cols-2 sm:grid-cols-4">{[{label:"To do",count:myTasks.filter((task)=>task.status==="todo").length},{label:"In progress",count:myTasks.filter((task)=>task.status==="in_progress").length},{label:"Awaiting approval",count:myTasks.filter((task)=>task.status==="submitted").length},{label:"Approved",count:myTasks.filter((task)=>task.status==="done").length}].map((item)=><div key={item.label} className="rounded-xl border border-white/[0.07] bg-black/20 p-3"><p className="text-xs text-white/45">{item.label}</p><p className="mt-1 text-2xl font-semibold">{item.count}</p></div>)}</div>
+{myTasks.length ? <div className="mt-4 space-y-2">{myTasks.slice(0,4).map((task)=><Link href="/admin/tasks" key={task.id} className="flex flex-col gap-2 rounded-xl border border-white/[0.07] p-3 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="truncate text-sm font-medium">{task.title}</p><p className="mt-1 line-clamp-2 text-xs text-white/40">{task.description || "No extra instructions"}{task.due_date ? " · Due "+new Date(task.due_date+"T12:00:00").toLocaleDateString("en-IN") : ""}{task.review_note ? " · Admin feedback: "+task.review_note : ""}</p></div><span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/65">{task.status==="done"?"Approved":task.status==="submitted"?"Awaiting approval":task.status==="needs_changes"?"Changes requested":task.status==="in_progress"?"In progress":"To do"} · {task.priority}</span></Link>)}</div> : <p className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-white/45">No tasks assigned yet. New work will appear here.</p>}
 </section>}
 
           <section className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
