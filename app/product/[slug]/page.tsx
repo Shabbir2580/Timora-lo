@@ -19,6 +19,7 @@ type DatabaseProduct = {
   category: string | null
   image_url: string | null
   images: string[] | null
+  videos: string[] | null
   stock: number
   is_active: boolean
 }
@@ -55,7 +56,8 @@ function toProduct(row: DatabaseProduct): Product {
     rating: 0,
     reviewCount: 0,
     image,
-    images: Array.from(new Set([image, ...(row.images ?? [])].filter(Boolean))),
+    images: Array.from(new Set([image, ...(row.images ?? [])].filter(Boolean))).slice(0, 6),
+    videos: (row.videos ?? []).filter(Boolean).slice(0, 2),
     badges,
     verified: false,
     stock,
@@ -85,7 +87,7 @@ export default async function ProductDetailPage({
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id,name,slug,description,price,compare_at_price,category,image_url,images,stock,is_active"
+      "id,name,slug,description,price,compare_at_price,category,image_url,images,videos,stock,is_active"
     )
     .eq("slug", slug)
     .eq("is_active", true)
@@ -114,6 +116,7 @@ export default async function ProductDetailPage({
         <div className="mt-7 grid gap-8 lg:grid-cols-2 lg:gap-14">
           <ProductGallery
             images={product.images.length ? product.images : [product.image]}
+            videos={product.videos}
             productName={product.name}
           />
 
