@@ -118,7 +118,7 @@ begin
     or length(trim(coalesce(p_state,''))) not between 1 and 100
     or coalesce(p_pincode,'') !~ '^[0-9]{6}$'
   then raise exception 'invalid customer details'; end if;
-  if p_payment_provider not in ('upi_qr','whatsapp','cod') then raise exception 'invalid payment provider'; end if;
+  if p_payment_provider is null or p_payment_provider not in ('upi_qr','whatsapp','cod') then raise exception 'invalid payment provider'; end if;
   if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 50 then
     raise exception 'invalid items';
   end if;
@@ -305,10 +305,10 @@ returns jsonb language plpgsql security definer set search_path = ''
 as $function$
 begin
   if auth.uid() is null or not exists (select 1 from public.staff_roles where user_id = auth.uid() and role in ('admin','employee')) then raise exception 'permission denied'; end if;
-  if p_decision not in ('approve','reject') then raise exception 'invalid moderation decision'; end if;
-  update public.product_reviews set status = case when p_decision = 'approve' then 'approved' else 'rejected' end, updated_at = now() where id = p_review_id;
+  if p_decision not in ('approved','rejected') then raise exception 'invalid moderation decision'; end if;
+  update public.product_reviews set status = p_decision, updated_at = now() where id = p_review_id;
   if not found then raise exception 'review not found'; end if;
-  return jsonb_build_object('success',true,'review_id',p_review_id,'status',case when p_decision='approve' then 'approved' else 'rejected' end);
+  return jsonb_build_object('success',true,'review_id',p_review_id,'status',p_decision);
 end
 $function$;
 
