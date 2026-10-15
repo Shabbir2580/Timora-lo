@@ -8,9 +8,9 @@ import { useCart } from "@/lib/cart-context"
 import { ProductCard } from "@/components/store/product-card"
 import { createClient } from "@/lib/supabase/client"
 
-type DatabaseProduct = { id: string; name: string; slug: string; description: string | null; price: number | string; compare_at_price: number | string | null; category: string; image_url: string | null; images: string[] | null; available_stock: number; is_active: boolean }
+type DatabaseProduct = { id: string; name: string; slug: string; description: string | null; price: number | string; compare_at_price: number | string | null; category: string; image_url: string | null; images: string[] | null; stock: number; is_active: boolean }
 function toProduct(row: DatabaseProduct): Product {
-  const price=Number(row.price), mrp=row.compare_at_price==null?price:Number(row.compare_at_price), stockCount=Number(row.available_stock)
+  const price=Number(row.price), mrp=row.compare_at_price==null?price:Number(row.compare_at_price), stockCount=Number(row.stock)
   const category=row.category?.trim()||"Accessories", image=row.image_url||row.images?.[0]||"/timora/watch.png"
   const stock:StockState=stockCount<=0?"out_of_stock":stockCount<=5?"low_stock":"in_stock"
   const badges:ProductBadge[]=mrp>price?["SALE"]:[]
@@ -26,7 +26,7 @@ export default function WishlistPage() {
     const load=async()=>{
       try {
         const supabase=createClient()
-        const {data,error}=await supabase.from("available_products").select("id,name,slug,description,price,compare_at_price,category,image_url,images,available_stock,is_active").eq("is_active",true)
+        const {data,error}=await supabase.from("products").select("id,name,slug,description,price,compare_at_price,category,image_url,images,stock,is_active").eq("is_active",true)
         if(error) throw error
         if(active) setDatabaseProducts(((data??[]) as DatabaseProduct[]).map(toProduct))
       } catch(error) { console.error("Wishlist products could not be loaded:",error) }
