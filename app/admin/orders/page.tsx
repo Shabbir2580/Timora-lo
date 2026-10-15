@@ -230,6 +230,29 @@ export default function AdminOrdersPage() {
     router.refresh()
   }
 
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const collectedThisMonth = orders.reduce((sum, order) => {
+    if (order.order_status === "cancelled" || order.payment_status !== "paid") return sum
+    const collectedAt = order.payment_provider === "cod"
+      ? order.cod_collected_at
+      : order.payment_verified_at
+    if (!collectedAt) return sum
+    const collectedDate = new Date(collectedAt)
+    return collectedDate >= monthStart && collectedDate <= now ? sum + Number(order.total_paise || 0) : sum
+  }, 0)
+  const paymentsCollectedThisMonth = orders.filter((order) => {
+    if (order.order_status === "cancelled" || order.payment_status !== "paid") return false
+    const collectedAt = order.payment_provider === "cod" ? order.cod_collected_at : order.payment_verified_at
+    if (!collectedAt) return false
+    const date = new Date(collectedAt)
+    return date >= monthStart && date <= now
+  }).length
+  const ordersPlacedThisMonth = orders.filter((order) => {
+    const date = new Date(order.created_at)
+    return date >= monthStart && date <= now && order.order_status !== "cancelled"
+  }).length
+
   const query = search.trim().toLowerCase()
   const visibleOrders = orders.filter((order) => {
     const matchesFilter = filter === "all"
@@ -276,6 +299,24 @@ export default function AdminOrdersPage() {
           <div className="rounded-xl border border-white/10 bg-[#11110f] p-4"><div className="flex items-center gap-2 text-xs text-white/50"><PackageCheck className="size-4 text-emerald-300" />Approved</div><p className="mt-3 text-2xl font-semibold">{orders.filter((o) => Boolean(o.cod_approved_at) && o.order_status !== "cancelled").length}</p></div>
           <div className="rounded-xl border border-white/10 bg-[#11110f] p-4"><div className="flex items-center gap-2 text-xs text-white/50"><CreditCard className="size-4 text-amber-200" />Payment pending</div><p className="mt-3 text-2xl font-semibold">{orders.filter((o) => o.payment_status !== "paid" && o.order_status !== "cancelled").length}</p></div>
           <div className="col-span-2 rounded-xl border border-white/10 bg-[#11110f] p-4 sm:col-span-1"><div className="flex items-center gap-2 text-xs text-white/50"><XCircle className="size-4 text-red-300" />Cancelled</div><p className="mt-3 text-2xl font-semibold">{orders.filter((o) => o.order_status === "cancelled").length}</p></div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-[#d4af37]/25 bg-[#d4af37]/[0.06] p-4">
+            <p className="text-xs text-white/55">Money collected this month</p>
+            <p className="mt-2 text-2xl font-semibold text-[#e4c878]">{money(collectedThisMonth)}</p>
+            <p className="mt-1 text-[11px] text-white/40">{paymentsCollectedThisMonth} recorded payment(s) · {now.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-[#11110f] p-4">
+            <p className="text-xs text-white/55">Orders placed this month</p>
+            <p className="mt-2 text-2xl font-semibold">{ordersPlacedThisMonth}</p>
+            <p className="mt-1 text-[11px] text-white/40">Excludes cancelled orders</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-[#11110f] p-4">
+            <p className="text-xs text-white/55">Delivered orders</p>
+            <p className="mt-2 text-2xl font-semibold">{orders.filter((order) => order.order_status === "delivered").length}</p>
+            <p className="mt-1 text-[11px] text-white/40">Across all loaded order history</p>
+          </div>
         </div>
 
         <label className="mt-6 flex min-h-11 items-center gap-3 rounded-xl border border-white/10 bg-[#11110f] px-4"><Search className="size-4 text-white/40"/><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search order ID, customer, phone, PIN or tracking number" className="w-full bg-transparent text-sm outline-none placeholder:text-white/35" aria-label="Search orders"/></label>
