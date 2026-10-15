@@ -32,6 +32,7 @@ export interface Product {
   image: string
   images: string[]
   badges: ProductBadge[]
+  tags?: string[]
   verified: boolean
   stock: StockState
   stockCount?: number
