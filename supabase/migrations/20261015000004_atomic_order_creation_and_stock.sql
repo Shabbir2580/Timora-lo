@@ -57,7 +57,7 @@ begin
     or nullif(btrim(p_address), '') is null
     or nullif(btrim(p_city), '') is null
     or nullif(btrim(p_state), '') is null
-    or p_pincode !~ '^\d{6}$'
+    or coalesce(p_pincode, '') !~ '^\d{6}$'
   then
     raise exception 'invalid customer';
   end if;
