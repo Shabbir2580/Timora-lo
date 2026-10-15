@@ -130,6 +130,13 @@ export default function AdminTasksPage() {
       </form>}
       {error && <p role="alert" className="mt-4 rounded-xl border border-red-300/20 bg-red-300/10 p-3 text-sm text-red-200">{error}</p>}
       {notice && <p role="status" className="mt-4 rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-3 text-sm text-emerald-200">{notice}</p>}
+      <section className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {([
+          { label: "To do", count: visibleTasks.filter((task) => task.status === "todo").length, detail: "Ready to start", tone: "border-sky-300/15 bg-sky-300/[0.05] text-sky-200" },
+          { label: "In progress", count: visibleTasks.filter((task) => task.status === "in_progress").length, detail: "Currently being worked on", tone: "border-[#d4af37]/20 bg-[#d4af37]/[0.05] text-[#e4c878]" },
+          { label: "Completed", count: visibleTasks.filter((task) => task.status === "done").length, detail: "Work finished", tone: "border-emerald-300/15 bg-emerald-300/[0.05] text-emerald-200" },
+        ]).map((item) => <article key={item.label} className={"rounded-2xl border p-4 " + item.tone}><p className="text-xs opacity-75">{item.label}</p><p className="mt-2 text-3xl font-semibold tracking-tight">{item.count}</p><p className="mt-1 text-[11px] opacity-60">{item.detail}</p></article>)}
+      </section>
       <section className="mt-7 space-y-3"><div className="flex items-center justify-between"><h2 className="font-semibold">{role === "admin" ? "All assigned tasks" : "Tasks assigned to you"}</h2><span className="text-xs text-white/40">{visibleTasks.length} task(s)</span></div>
       {visibleTasks.length === 0 ? <div className="rounded-2xl border border-white/10 bg-[#11110f] p-10 text-center"><ClipboardList className="mx-auto size-8 text-[#d4af37]/60" /><p className="mt-3 text-sm text-white/65">No tasks yet.</p><p className="mt-1 text-xs text-white/40">{role === "admin" ? "Assign the first task using the form above." : "Your administrator has not assigned work to you yet."}</p></div> : visibleTasks.map((task) => {
         const assignedEmail = staff.find((member) => member.user_id === task.assigned_to)?.email
