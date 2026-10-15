@@ -147,7 +147,7 @@ export default function AdminProductsPage() {
           return
         }
 
-        if (!staff || !["admin"].includes(staff.role)) {
+        if (!staff || !["admin", "employee"].includes(staff.role)) {
           router.replace("/")
           return
         }
@@ -327,7 +327,7 @@ export default function AdminProductsPage() {
         .eq("user_id", user.id)
         .maybeSingle()
 
-      if (roleError || !staff || !["admin"].includes(staff.role)) {
+      if (roleError || !staff || !["admin", "employee"].includes(staff.role)) {
         setError("Staff permission could not be verified. No changes were saved.")
         return
       }
@@ -421,7 +421,7 @@ export default function AdminProductsPage() {
         .eq("user_id", user.id)
         .maybeSingle()
 
-      if (roleError || !staff || !["admin"].includes(staff.role)) {
+      if (roleError || !staff || !["admin", "employee"].includes(staff.role)) {
         setError("Staff permission could not be verified. Nothing was deleted.")
         return
       }
