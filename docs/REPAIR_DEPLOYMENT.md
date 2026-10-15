@@ -17,7 +17,7 @@ Do **not** deploy the application changes to production before the migration is 
 5. If Supabase reports an error, stop. Do not deploy the app until the SQL error is corrected.
 6. Verify the expected functions exist: `create_order_atomic`, `cancel_my_pending_order`, `expire_stale_pending_orders`, `verify_order_payment`, `mark_cod_collected`, `submit_product_review`, `moderate_product_review`, and `subscribe_newsletter`.
 
-The migration reserves stock when an order is created. It restores stock only when an unpaid pending order is cancelled, expires, or a COD order is rejected. Verify these flows using test products/orders before live sales.
+The migration reserves stock when an order is created. It restores stock when an unpaid pending order is cancelled, expires, or a COD order is rejected. **The expiry function does not run automatically unless scheduled.** After the main migration succeeds, enable the `pg_cron` extension in Supabase (Database → Extensions), then run `supabase/schedule_expired_orders.sql` in SQL Editor. That script schedules expiry every 10 minutes and prints a warning if `pg_cron` is not enabled. Verify the job exists in the Supabase Cron/Jobs view and test these flows using test products/orders before live sales.
 
 ## Authentication settings
 
