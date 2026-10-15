@@ -259,14 +259,24 @@ export default function HomePage() {
               <Package size={18} />
               <span className="hidden sm:inline">My Orders</span>
             </Link>
-            <Link
-              href="/login"
-              aria-label="Login or sign up"
-              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 text-xs text-white/80 transition hover:border-[#c9a96e] hover:text-[#dfc797]"
-            >
-              <UserRound size={18} />
-              <span className="hidden sm:inline">Login / Sign Up</span>
-            </Link>
+            {!authChecked ? (
+              <span className="inline-flex size-10 items-center justify-center text-[#c9a96e]" aria-label="Checking account"><UserRound size={18} /></span>
+            ) : user ? (
+              <div className="relative">
+                <button type="button" onClick={() => setAccountMenuOpen((open) => !open)} aria-expanded={accountMenuOpen} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c9a96e]/40 px-3 py-2.5 text-xs text-[#dfc797] transition hover:bg-[#c9a96e]/10">
+                  <UserRound size={18} /><span className="hidden max-w-28 truncate sm:inline">{(user.user_metadata?.full_name as string | undefined) || user.email?.split("@")[0] || "My account"}</span>
+                </button>
+                {accountMenuOpen && <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-xl border border-[#c9a96e]/25 bg-[#11110f] p-2 shadow-xl">
+                  <Link href="/orders" onClick={() => setAccountMenuOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm text-white/80 hover:bg-[#c9a96e]/10 hover:text-[#dfc797]">My orders</Link>
+                  <Link href="/wishlist" onClick={() => setAccountMenuOpen(false)} className="block rounded-lg px-3 py-2.5 text-sm text-white/80 hover:bg-[#c9a96e]/10 hover:text-[#dfc797]">Wishlist</Link>
+                  <button type="button" onClick={() => void handleHomeSignOut()} className="w-full rounded-lg px-3 py-2.5 text-left text-sm text-red-200 hover:bg-red-400/10">Sign out</button>
+                </div>}
+              </div>
+            ) : (
+              <Link href="/login" aria-label="Login or sign up" className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 text-xs text-white/80 transition hover:border-[#c9a96e] hover:text-[#dfc797]">
+                <UserRound size={18} /><span className="hidden sm:inline">Login / Sign Up</span>
+              </Link>
+            )}
             <Link
               href="/wishlist"
               aria-label="Wishlist"
