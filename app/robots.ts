@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next"
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://v0-timora.vercel.app"
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://timora-by-sk.vercel.app"
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: ["/", "/products", "/product/", "/category/", "/contact", "/shippings", "/shipping", "/returns", "/privacy", "/terms"],
-        disallow: ["/admin", "/api/", "/checkout", "/orders", "/login", "/signup", "/auth/"],
+        disallow: ["/admin", "/api/", "/checkout", "/orders", "/login", "/register", "/forgot-password", "/reset-password", "/auth/"],
       },
     ],
     sitemap: `${siteUrl.replace(/\/$/, "")}/sitemap.xml`,
