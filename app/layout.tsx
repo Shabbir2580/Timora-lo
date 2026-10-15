@@ -16,7 +16,19 @@ export const metadata: Metadata = {
   description:
     "Discover watches, audio essentials, and lifestyle accessories at Timora. Explore our curated collection and find your next favourite.",
   applicationName: "Timora",
-  generator: "v0.app",
+  generator: "Next.js",
+  keywords: ["Timora", "luxury shopping India", "watches", "audio accessories", "lifestyle accessories", "online shopping"],
+  openGraph: {
+    type: "website",
+    siteName: "Timora",
+    title: "Timora | Timeless Style. Modern Shopping.",
+    description: "Discover considered essentials, timeless accessories, and modern lifestyle pieces at Timora.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Timora | Timeless Style. Modern Shopping.",
+    description: "Discover considered essentials, timeless accessories, and modern lifestyle pieces at Timora.",
+  },
   icons: {
     icon: [
       {
