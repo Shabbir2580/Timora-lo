@@ -1,990 +1,241 @@
-
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import {
-  ArrowLeft,
-  Package,
-  Plus,
-  Pencil,
-  Trash2,
-  Eye,
-  EyeOff,
-  RefreshCw,
-  ShieldCheck,
-  LogOut,
-  Search,
-} from "lucide-react"
 import { useRouter } from "next/navigation"
+import {
+  Activity, ArrowRight, BadgePercent, Boxes, CheckCircle2, ChevronRight, Clock3,
+  LayoutDashboard, LogOut, Package, RefreshCw, ShieldCheck,
+  ShoppingBag, Star, Users, Wallet, AlertTriangle,
+} from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
-type Product = {
+type Role = "admin" | "employee"
+type OrderRow = {
   id: string
-  name: string
-  slug: string
-  description: string
-  price: number
-  compare_at_price: number | null
-  category: string
-  image_url: string
-  images: string[]
-  videos: string[]
-  tags: string[]
-  stock: number
-  is_active: boolean
+  customer_name: string
+  total_paise: number
+  order_status: string
+  payment_status: string
+  payment_provider: string | null
   created_at: string
 }
+type ProductRow = { id: string; name: string; stock: number; price: number; is_active: boolean }
 
-type ProductForm = {
-  name: string
-  slug: string
-  description: string
-  price: string
-  compare_at_price: string
-  category: string
-  image_url: string
-  additional_images: string
-  videos: string
-  tags: string
-  stock: string
-  is_active: boolean
+const money = (paise: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency", currency: "INR", maximumFractionDigits: 0,
+  }).format(Number(paise || 0) / 100)
+
+const dateLabel = (value: string) =>
+  new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value))
+
+const statusTone: Record<string, string> = {
+  pending_payment: "border-amber-300/20 bg-amber-300/10 text-amber-200",
+  confirmed: "border-sky-300/20 bg-sky-300/10 text-sky-200",
+  processing: "border-violet-300/20 bg-violet-300/10 text-violet-200",
+  shipped: "border-cyan-300/20 bg-cyan-300/10 text-cyan-200",
+  delivered: "border-emerald-300/20 bg-emerald-300/10 text-emerald-200",
+  cancelled: "border-red-300/20 bg-red-300/10 text-red-200",
 }
 
-const emptyForm: ProductForm = {
-  name: "",
-  slug: "",
-  description: "",
-  price: "",
-  compare_at_price: "",
-  category: "Watches",
-  image_url: "",
-  additional_images: "",
-  videos: "",
-  tags: "",
-  stock: "0",
-  is_active: true,
+function shortId(id: string) {
+  return id.replace(/-/g, "").slice(0, 8).toUpperCase()
 }
 
-const inputClass =
-  "mt-1.5 w-full rounded-lg border border-white/10 bg-[#151512] px-3 py-2.5 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-[#d4af37]"
-
-function makeSlug(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-}
-
-export default function AdminProductsPage() {
+export default function AdminDashboardPage() {
   const router = useRouter()
-  const [checkingAccess, setCheckingAccess] = useState(true)
-  const [authorized, setAuthorized] = useState(false)
-  const [products, setProducts] = useState<Product[]>([])
-  const [loadingProducts, setLoadingProducts] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [formOpen, setFormOpen] = useState(false)
-  const [form, setForm] = useState<ProductForm>(emptyForm)
-  const [search, setSearch] = useState("")
-  const [tagFilter, setTagFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [role, setRole] = useState<Role | null>(null)
+  const [checking, setChecking] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [notice, setNotice] = useState("")
+  const [orders, setOrders] = useState<OrderRow[]>([])
+  const [products, setProducts] = useState<ProductRow[]>([])
+  const [metrics, setMetrics] = useState({
+    orders: 0, pending: 0, products: 0, activeProducts: 0,
+    customers: 0, reviews: 0, coupons: 0, employees: 0, revenue: 0,
+  })
 
-  const loadProducts = useCallback(async () => {
-    setLoadingProducts(true)
+  const loadDashboard = useCallback(async (currentRole: Role) => {
+    setLoading(true)
     setError("")
-
     try {
       const supabase = createClient()
-      const { data, error: queryError } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false })
+      const [
+        allOrders, pendingOrders, allProducts, activeProducts, customerRows,
+        reviewRows, recentOrders, productRows,
+      ] = await Promise.all([
+        supabase.from("orders").select("id", { count: "exact", head: true }),
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("order_status", "pending_payment"),
+        supabase.from("products").select("id", { count: "exact", head: true }),
+        supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("orders").select("customer_id"),
+        supabase.from("product_reviews").select("id", { count: "exact", head: true }),
+        supabase.from("orders").select("id,customer_name,total_paise,order_status,payment_status,payment_provider,created_at").order("created_at", { ascending: false }).limit(7),
+        supabase.from("products").select("id,name,stock,price,is_active").order("stock", { ascending: true }).limit(100),
+      ])
 
-      if (queryError) throw queryError
+      const failed = [allOrders, pendingOrders, allProducts, activeProducts, customerRows, reviewRows, recentOrders, productRows].find((result) => result.error)
+      if (failed?.error) throw failed.error
 
-      setProducts((data ?? []) as Product[])
+      const recent = (recentOrders.data ?? []) as OrderRow[]
+      const productList = (productRows.data ?? []) as ProductRow[]
+      const customerIds = new Set((customerRows.data ?? []).map((row) => row.customer_id).filter(Boolean))
+      // Owner-only financial and staff metrics are not queried for employees.
+      let paidRevenue = 0
+      let coupons = 0
+      let employees = 0
+      if (currentRole === "admin") {
+        const [paidRows, couponCount, staffRows] = await Promise.all([
+          supabase.from("orders").select("total_paise").eq("payment_status", "paid"),
+          supabase.from("coupons").select("id", { count: "exact", head: true }),
+          supabase.from("staff_roles").select("user_id,role"),
+        ])
+        if (paidRows.error) throw paidRows.error
+        if (couponCount.error) throw couponCount.error
+        if (staffRows.error) throw staffRows.error
+        paidRevenue = (paidRows.data ?? []).reduce((sum, row) => sum + Number(row.total_paise || 0), 0)
+        coupons = couponCount.count ?? 0
+        employees = (staffRows.data ?? []).filter((staff) => staff.role === "employee").length
+      }
+
+      setOrders(recent)
+      setProducts(productList)
+      setMetrics({
+        orders: allOrders.count ?? 0,
+        pending: pendingOrders.count ?? 0,
+        products: allProducts.count ?? 0,
+        activeProducts: activeProducts.count ?? 0,
+        customers: customerIds.size,
+        reviews: reviewRows.count ?? 0,
+        coupons,
+        employees,
+        revenue: paidRevenue,
+      })
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? `Could not load products: ${err.message}`
-          : "Could not load products."
-      )
+      setError(err instanceof Error ? `Could not load dashboard data: ${err.message}` : "Could not load dashboard data.")
     } finally {
-      setLoadingProducts(false)
+      setLoading(false)
     }
   }, [])
 
   useEffect(() => {
     let active = true
-
-    async function checkAccess() {
+    async function verify() {
       try {
         const supabase = createClient()
-        const {
-          data: { user },
-          error: authError,
-        } = await supabase.auth.getUser()
-
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
         if (authError || !user) {
           router.replace("/login?next=%2Fadmin")
           return
         }
-
         const { data: staff, error: roleError } = await supabase
-          .from("staff_roles")
-          .select("role")
-          .eq("user_id", user.id)
-          .maybeSingle()
-
-        if (roleError) {
-          if (active) {
-            setError("Unable to verify admin permissions. Please try again.")
-          }
-          return
-        }
-
+          .from("staff_roles").select("role").eq("user_id", user.id).maybeSingle()
+        if (roleError) throw roleError
         if (!staff || !["admin", "employee"].includes(staff.role)) {
           router.replace("/")
           return
         }
-
         if (active) {
-          setAuthorized(true)
-          await loadProducts()
+          const currentRole = staff.role as Role
+          setRole(currentRole)
+          await loadDashboard(currentRole)
         }
-      } catch {
-        if (active) {
-          setError("Unable to verify your account. Please refresh the page.")
-        }
+      } catch (err) {
+        if (active) setError(err instanceof Error ? err.message : "Could not verify staff access.")
       } finally {
-        if (active) setCheckingAccess(false)
+        if (active) setChecking(false)
       }
     }
+    void verify()
+    return () => { active = false }
+  }, [router, loadDashboard])
 
-    void checkAccess()
-
-    return () => {
-      active = false
-    }
-  }, [router, loadProducts])
-
-  function startNewProduct() {
-    setEditingId(null)
-    setForm(emptyForm)
-    setFormOpen(true)
-    setError("")
-    setNotice("")
-  }
-
-  function startEdit(product: Product) {
-    setEditingId(product.id)
-    setForm({
-      name: product.name,
-      slug: product.slug,
-      description: product.description ?? "",
-      price: String(product.price),
-      compare_at_price:
-        product.compare_at_price == null
-          ? ""
-          : String(product.compare_at_price),
-      category: product.category,
-      image_url: product.image_url ?? "",
-      additional_images: (product.images ?? []).filter((image) => image !== product.image_url).slice(0, 5).join("\n"),
-      videos: (product.videos ?? []).slice(0, 2).join("\n"),
-      tags: (product.tags ?? []).join(", "),
-      stock: String(product.stock),
-      is_active: product.is_active,
-    })
-    setFormOpen(true)
-    setError("")
-    setNotice("")
-  }
-
-  function updateField<K extends keyof ProductForm>(
-    field: K,
-    value: ProductForm[K]
-  ) {
-    setForm((current) => ({ ...current, [field]: value }))
-  }
-
-  async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSaving(true)
-    setError("")
-    setNotice("")
-
-    const price = Number(form.price)
-    const compareAtPrice =
-      form.compare_at_price.trim() === ""
-        ? null
-        : Number(form.compare_at_price)
-    const stock = Number(form.stock)
-    const tags = Array.from(new Set(form.tags.split(",").map((tag) => tag.trim()).filter(Boolean))).slice(0, 5)
-    const slug = makeSlug(form.slug || form.name)
-
-    if (!form.name.trim() || !slug) {
-      setError("Enter a product name and a valid slug.")
-      setSaving(false)
-      return
-    }
-
-    if (!Number.isFinite(price) || price <= 0) {
-      setError("Enter a valid selling price greater than zero.")
-      setSaving(false)
-      return
-    }
-
-    if (
-      compareAtPrice !== null &&
-      (!Number.isFinite(compareAtPrice) || compareAtPrice < price)
-    ) {
-      setError("The original price must be equal to or greater than the selling price.")
-      setSaving(false)
-      return
-    }
-
-    if (!Number.isInteger(stock) || stock < 0) {
-      setError("Stock must be a whole number greater than or equal to zero.")
-      setSaving(false)
-      return
-    }
-
-    if (form.image_url.trim()) {
-      try {
-        const parsedUrl = new URL(form.image_url.trim())
-        if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
-          throw new Error("Invalid protocol")
-        }
-      } catch {
-        setError("Enter a valid image URL beginning with https:// or http://.")
-        setSaving(false)
-        return
-      }
-    }
-
-    const existingImages = editingId
-      ? products.find((product) => product.id === editingId)?.images ?? []
-      : []
-    const mainImage = form.image_url.trim()
-    const additionalImages = form.additional_images.split("\n").map((value) => value.trim()).filter(Boolean)
-    const videos = form.videos.split("\n").map((value) => value.trim()).filter(Boolean)
-    const preservedImages = Array.from(new Set([mainImage, ...additionalImages].filter(Boolean)))
-    if (preservedImages.length > 6) {
-      setError("Add up to 6 product image URLs in total, including the main image.")
-      setSaving(false)
-      return
-    }
-    if (videos.length > 2) {
-      setError("Add up to 2 product video URLs.")
-      setSaving(false)
-      return
-    }
-    for (const url of [...preservedImages, ...videos]) {
-      try {
-        const parsedUrl = new URL(url)
-        if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") throw new Error("Invalid protocol")
-      } catch {
-        setError("Every image and video URL must begin with https:// or http://.")
-        setSaving(false)
-        return
-      }
-    }
-
-    const payload = {
-      name: form.name.trim(),
-      slug,
-      description: form.description.trim(),
-      price,
-      compare_at_price: compareAtPrice,
-      category: form.category.trim() || "Accessories",
-      image_url: preservedImages[0] ?? "",
-      images: preservedImages,
-      videos,
-      tags,
-      stock,
-      is_active: form.is_active,
-      updated_at: new Date().toISOString(),
-    }
-
-    try {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.replace("/login?next=%2Fadmin")
-        return
-      }
-
-      const { data: staff, error: roleError } = await supabase
-        .from("staff_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle()
-
-      if (roleError || !staff || !["admin", "employee"].includes(staff.role)) {
-        setError("Staff permission could not be verified. No changes were saved.")
-        return
-      }
-
-      const result = editingId
-        ? await supabase
-            .from("products")
-            .update(payload)
-            .eq("id", editingId)
-            .select("id")
-            .single()
-        : await supabase
-            .from("products")
-            .insert(payload)
-            .select("id")
-            .single()
-
-      if (result.error) throw result.error
-
-      setNotice(editingId ? "Product updated successfully." : "Product added successfully.")
-      setFormOpen(false)
-      setEditingId(null)
-      setForm(emptyForm)
-      await loadProducts()
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? `Could not save product: ${err.message}`
-          : "Could not save product. Please try again."
-      )
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function toggleProduct(product: Product) {
-    setError("")
-    setNotice("")
-
-    try {
-      const supabase = createClient()
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({
-          is_active: !product.is_active,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", product.id)
-
-      if (updateError) throw updateError
-
-      setNotice(
-        product.is_active
-          ? "Product hidden from the public catalogue."
-          : "Product activated."
-      )
-      await loadProducts()
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? `Could not change product status: ${err.message}`
-          : "Could not change product status."
-      )
-    }
-  }
-
-  async function deleteProduct(product: Product) {
-    const confirmed = window.confirm(
-      `Permanently delete "${product.name}"? This cannot be undone.`
-    )
-
-    if (!confirmed) return
-
-    setError("")
-    setNotice("")
-
-    try {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        router.replace("/login?next=%2Fadmin")
-        return
-      }
-
-      const { data: staff, error: roleError } = await supabase
-        .from("staff_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle()
-
-      if (roleError || !staff || !["admin", "employee"].includes(staff.role)) {
-        setError("Staff permission could not be verified. Nothing was deleted.")
-        return
-      }
-
-      const { error: deleteError } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", product.id)
-
-      if (deleteError) throw deleteError
-
-      setNotice("Product deleted.")
-      await loadProducts()
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? `Could not delete product: ${err.message}`
-          : "Could not delete product."
-      )
-    }
-  }
-
-  async function handleLogout() {
+  const lowStock = useMemo(() => products.filter((product) => product.is_active && product.stock <= 5), [products])
+  const signOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
     router.replace("/login")
     router.refresh()
   }
 
-  const availableTags = Array.from(
-    new Set(products.flatMap((product) => product.tags ?? []))
-  ).sort((a, b) => a.localeCompare(b))
+  if (checking) return (
+    <main className="grid min-h-screen place-items-center bg-[#090a0b] text-[#d9b65d]">
+      <div className="flex items-center gap-3 text-sm"><RefreshCw className="size-4 animate-spin" /> Securing your workspace…</div>
+    </main>
+  )
 
-  const filteredProducts = products.filter((product) => {
-    const term = search.toLowerCase().trim()
-    const matchesSearch =
-      product.name.toLowerCase().includes(term) ||
-      product.slug.toLowerCase().includes(term) ||
-      product.category.toLowerCase().includes(term) ||
-      (product.tags ?? []).some((tag) => tag.toLowerCase().includes(term))
-    const matchesTag =
-      tagFilter === "all" ||
-      (product.tags ?? []).some((tag) => tag.toLowerCase() === tagFilter.toLowerCase())
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && product.is_active) ||
-      (statusFilter === "hidden" && !product.is_active) ||
-      (statusFilter === "low-stock" && product.stock > 0 && product.stock <= 5) ||
-      (statusFilter === "out-of-stock" && product.stock <= 0)
-    return matchesSearch && matchesTag && matchesStatus
-  })
+  if (!role) return (
+    <main className="grid min-h-screen place-items-center bg-[#090a0b] px-5 text-white">
+      <div className="max-w-sm text-center"><ShieldCheck className="mx-auto size-10 text-[#d9b65d]" /><h1 className="mt-4 text-xl font-semibold">Staff access required</h1><p className="mt-2 text-sm text-white/50">Sign in with an authorized Timora staff account.</p>{error && <p className="mt-4 text-sm text-red-300">{error}</p>}<Link href="/" className="mt-5 inline-flex rounded-full border border-white/15 px-4 py-2 text-sm">Return to store</Link></div>
+    </main>
+  )
 
-  if (checkingAccess) {
-    return (
-      <main className="grid min-h-screen place-items-center bg-[#0b0b0a] text-[#d4af37]">
-        <p className="text-sm">Verifying staff access...</p>
-      </main>
-    )
-  }
+  const metricCards = [
+    { label: "Total orders", value: metrics.orders.toLocaleString("en-IN"), hint: `${metrics.pending} awaiting payment`, icon: ShoppingBag, color: "text-sky-300", tint: "bg-sky-300/10" },
+    ...(role === "admin" ? [{ label: "Paid revenue", value: money(metrics.revenue), hint: "Recorded paid orders", icon: Wallet, color: "text-emerald-300", tint: "bg-emerald-300/10" }] : []),
+    { label: "Live products", value: metrics.activeProducts.toLocaleString("en-IN"), hint: `${metrics.products} products in catalogue`, icon: Package, color: "text-[#d9b65d]", tint: "bg-[#d9b65d]/10" },
+    { label: "Customer reviews", value: metrics.reviews.toLocaleString("en-IN"), hint: "All submitted reviews", icon: Star, color: "text-violet-300", tint: "bg-violet-300/10" },
+  ]
 
-  if (!authorized) {
-    return (
-      <main className="grid min-h-screen place-items-center bg-[#0b0b0a] px-5 text-[#f8f8f8]">
-        <div className="max-w-md text-center">
-          <ShieldCheck className="mx-auto mb-4 size-10 text-[#d4af37]" />
-          <h1 className="text-xl font-semibold">Staff access required</h1>
-          <p className="mt-2 text-sm text-white/60">
-            Your account does not have permission to manage products.
-          </p>
-          {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
-          <Link
-            href="/"
-            className="mt-5 inline-flex rounded-full border border-[#d4af37]/40 px-4 py-2 text-sm text-[#e4c878]"
-          >
-            Return to Timora
-          </Link>
-        </div>
-      </main>
-    )
-  }
+  const shortcuts = [
+    { title: "Order management", desc: "Payments, COD approvals, fulfilment and tracking", href: "/admin/orders", icon: ShoppingBag, adminOnly: false, tag: metrics.pending ? `${metrics.pending} pending` : "Up to date" },
+    { title: "Products & inventory", desc: "Edit listings, prices, stock and visibility", href: "/admin/products", icon: Boxes, adminOnly: true, tag: `${lowStock.length} low stock` },
+    { title: "Reviews & ratings", desc: "Review submissions and moderation", href: "/admin/reviews", icon: Star, adminOnly: false, tag: "Moderation" },
+    { title: "Coupons & offers", desc: "Discounts, expiry dates and usage limits", href: "/admin/coupons", icon: BadgePercent, adminOnly: true, tag: `${metrics.coupons} coupons` },
+    { title: "Employee access", desc: "Authorize staff and manage roles", href: "/admin/employees", icon: Users, adminOnly: true, tag: `${metrics.employees} employees` },
+  ].filter((item) => role === "admin" || !item.adminOnly)
 
   return (
-    <main className="min-h-screen bg-[#0b0b0a] text-[#f8f8f8]">
-      <header className="sticky top-0 z-20 border-b border-[#d4af37]/20 bg-[#0b0b0a]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              aria-label="Back to Timora storefront"
-              className="grid size-10 place-items-center rounded-full border border-white/10 hover:border-[#d4af37]/50"
-            >
-              <ArrowLeft className="size-4" />
-            </Link>
-            <div>
-              <p className="text-lg font-semibold tracking-[0.18em]">
-                TIMORA<span className="text-[#d4af37]">.</span>
-              </p>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">
-                Staff workspace
-              </p>
-            </div>
+    <main className="min-h-screen bg-[#090a0b] text-[#f6f5f0]"><style jsx global>{`@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }`}</style>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-white/[0.07] bg-[#0c0d0e] xl:flex">
+        <Link href="/" className="flex h-[88px] items-center gap-3 border-b border-white/[0.07] px-6">
+          <div className="grid size-10 place-items-center rounded-xl border border-[#d9b65d]/30 bg-[#d9b65d]/[0.08]"><span className="font-serif text-xl text-[#d9b65d]">T</span></div>
+          <div><p className="text-lg font-semibold tracking-[0.2em]">TIMORA<span className="text-[#d9b65d]">.</span></p><p className="text-[9px] uppercase tracking-[0.2em] text-white/35">Commerce console</p></div>
+        </Link>
+        <div className="px-4 pt-6"><p className="px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">Workspace</p><div className="mt-3 flex items-center gap-3 rounded-xl border border-[#d9b65d]/20 bg-[#d9b65d]/[0.08] px-3 py-3 text-sm text-[#ead49b]"><LayoutDashboard className="size-4" /> Overview <span className="ml-auto size-1.5 rounded-full bg-[#d9b65d]" /></div></div>
+        <nav className="mt-3 flex-1 space-y-1 px-4">
+          {shortcuts.map((item) => <Link key={item.href} href={item.href} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/55 transition hover:bg-white/[0.05] hover:text-white"><item.icon className="size-4 text-white/40 group-hover:text-[#d9b65d]" />{item.title}<ChevronRight className="ml-auto size-3.5 opacity-30" /></Link>)}
+        </nav>
+        <div className="m-4 rounded-xl border border-white/[0.07] bg-white/[0.025] p-4"><div className="flex items-center gap-2"><span className="size-2 rounded-full bg-emerald-400" /><span className="text-xs font-medium text-white/70">Signed in securely</span></div><p className="mt-2 text-[11px] text-white/35">Access level: {role === "admin" ? "Administrator" : "Employee"}</p><button onClick={signOut} className="mt-4 flex min-h-9 w-full items-center gap-2 rounded-lg border border-white/10 px-3 text-xs text-white/55 hover:text-white"><LogOut className="size-3.5" /> Sign out</button></div>
+      </aside>
+
+      <div className="xl:pl-[248px]">
+        <header className="sticky top-0 z-20 border-b border-white/[0.07] bg-[#090a0b]/90 backdrop-blur-xl">
+          <div className="mx-auto flex min-h-[76px] max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
+            <div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl border border-white/10 bg-white/[0.03] xl:hidden"><span className="font-serif text-lg text-[#d9b65d]">T</span></div><div><p className="text-xs text-white/35">Timora / Workspace</p><h1 className="mt-0.5 text-lg font-semibold tracking-tight sm:text-xl">Business overview</h1></div></div>
+            <div className="flex items-center gap-2 sm:gap-3"><span className="hidden rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-1.5 text-[11px] text-emerald-200 sm:inline-flex"><span className="mr-2 mt-1 size-1.5 rounded-full bg-emerald-300" />Workspace active</span><button onClick={() => role && void loadDashboard(role)} disabled={loading} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 px-3 text-xs text-white/65 transition hover:border-[#d9b65d]/40 hover:text-white disabled:opacity-50"><RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /><span className="hidden sm:inline">Refresh</span></button><button onClick={signOut} aria-label="Sign out" className="grid size-10 place-items-center rounded-xl border border-white/10 text-white/60 hover:text-white xl:hidden"><LogOut className="size-4" /></button><div className="hidden size-10 place-items-center rounded-full border border-[#d9b65d]/30 bg-[#d9b65d]/10 text-sm font-semibold text-[#e8d39b] sm:grid">{role === "admin" ? "A" : "E"}</div></div>
           </div>
+        </header>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Link href="/admin/orders" className="inline-flex min-h-10 items-center rounded-full border border-white/10 px-3 text-xs text-white/70 hover:border-[#d4af37]/40 hover:text-[#e4c878]">Orders</Link>
-            <Link href="/admin/reviews" className="inline-flex min-h-10 items-center rounded-full border border-white/10 px-3 text-xs text-white/70 hover:border-[#d4af37]/40 hover:text-[#e4c878]">Reviews</Link>
-            <Link href="/admin/coupons" className="inline-flex min-h-10 items-center rounded-full border border-white/10 px-3 text-xs text-white/70 hover:border-[#d4af37]/40 hover:text-[#e4c878]">Coupons</Link>
-            <Link href="/admin/employees" className="inline-flex min-h-10 items-center rounded-full border border-white/10 px-3 text-xs text-white/70 hover:border-[#d4af37]/40 hover:text-[#e4c878]">Employees</Link>
-            <button type="button" onClick={handleLogout} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-white/70 hover:border-[#d4af37]/40 hover:text-[#e4c878]"><LogOut className="size-4" /><span className="hidden sm:inline">Sign out</span></button>
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-10">
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#d4af37]">
-              Store management
-            </p>
-            <h1 className="mt-2 text-3xl font-medium tracking-tight sm:text-4xl">
-              Products
-            </h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-white/55">
-              Manage your catalogue, selling prices, stock, and product visibility.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={startNewProduct}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-5 text-sm font-semibold text-[#17130c] transition hover:bg-[#e6c85c]"
-          >
-            <Plus className="size-4" />
-            Add product
-          </button>
-        </div>
-
-        <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <div className="rounded-xl border border-white/10 bg-[#11110f] p-4">
-            <div className="flex items-center gap-2 text-xs text-white/50">
-              <Package className="size-4 text-[#d4af37]" />
-              Total products
-            </div>
-            <p className="mt-3 text-2xl font-semibold">{products.length}</p>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-[#11110f] p-4">
-            <div className="flex items-center gap-2 text-xs text-white/50">
-              <Eye className="size-4 text-[#d4af37]" />
-              Active products
-            </div>
-            <p className="mt-3 text-2xl font-semibold">
-              {products.filter((product) => product.is_active).length}
-            </p>
-          </div>
-          <div className="col-span-2 rounded-xl border border-white/10 bg-[#11110f] p-4 lg:col-span-1">
-            <div className="flex items-center gap-2 text-xs text-white/50">
-              <Package className="size-4 text-[#d4af37]" />
-              Units in stock
-            </div>
-            <p className="mt-3 text-2xl font-semibold">
-              {products.reduce((total, product) => total + product.stock, 0)}
-            </p>
-          </div>
-        </div>
-
-        {error && (
-          <div role="alert" className="mt-5 rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">
-            {error}
-          </div>
-        )}
-
-        {notice && (
-          <div role="status" className="mt-5 rounded-lg border border-[#d4af37]/25 bg-[#d4af37]/10 px-4 py-3 text-sm text-[#e6d39c]">
-            {notice}
-          </div>
-        )}
-
-        {formOpen && (
-          <section className="mt-7 rounded-2xl border border-[#d4af37]/30 bg-[#11110f] p-4 sm:p-6">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-medium">
-                  {editingId ? "Edit product" : "Add a product"}
-                </h2>
-                <p className="mt-1 text-xs text-white/45">
-                  Fields marked * are required.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setFormOpen(false)
-                  setEditingId(null)
-                  setForm(emptyForm)
-                }}
-                className="rounded-full border border-white/10 px-3 py-2 text-xs text-white/70 hover:text-white"
-              >
-                Cancel
-              </button>
-            </div>
-
-            <form onSubmit={saveProduct} className="grid gap-4 sm:grid-cols-2">
-              <label className="text-xs text-white/65">
-                Product name *
-                <input
-                  className={inputClass}
-                  value={form.name}
-                  onChange={(event) => {
-                    const name = event.target.value
-                    setForm((current) => ({
-                      ...current,
-                      name,
-                      slug: editingId ? current.slug : makeSlug(name),
-                    }))
-                  }}
-                  placeholder="e.g. Timora Classic Watch"
-                  required
-                  maxLength={160}
-                />
-              </label>
-
-              <label className="text-xs text-white/65">
-                Product URL slug *
-                <input
-                  className={inputClass}
-                  value={form.slug}
-                  onChange={(event) => updateField("slug", makeSlug(event.target.value))}
-                  placeholder="timora-classic-watch"
-                  required
-                  maxLength={180}
-                />
-              </label>
-
-              <label className="text-xs text-white/65">
-                Selling price (₹) *
-                <input
-                  className={inputClass}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.price}
-                  onChange={(event) => updateField("price", event.target.value)}
-                  placeholder="12999"
-                  required
-                />
-              </label>
-
-              <label className="text-xs text-white/65">
-                Original price / MRP (₹)
-                <input
-                  className={inputClass}
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.compare_at_price}
-                  onChange={(event) => updateField("compare_at_price", event.target.value)}
-                  placeholder="14999"
-                />
-              </label>
-
-              <label className="text-xs text-white/65">
-                Category *
-                <select
-                  className={inputClass}
-                  value={form.category}
-                  onChange={(event) => updateField("category", event.target.value)}
-                  required
-                >
-                  <option>Watches</option>
-                  <option>Headphones</option>
-                  <option>Audio</option>
-                  <option>Earbuds</option>
-                  <option>Speakers</option>
-                  <option>Accessories</option>
-                  <option>Bags</option>
-                  <option>Perfume</option>
-                  <option>Electronics</option>
-                  <option>Other</option>
-                </select>
-              </label>
-
-              <label className="text-xs text-white/65">
-                Stock quantity *
-                <input
-                  className={inputClass}
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={form.stock}
-                  onChange={(event) => updateField("stock", event.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="text-xs text-white/65 sm:col-span-2">
-                Product tags (up to 5)
-                <input
-                  className={inputClass}
-                  value={form.tags}
-                  onChange={(event) => updateField("tags", event.target.value)}
-                  placeholder="Best Seller, Sale, New Arrival"
-                  maxLength={180}
-                />
-                <span className="mt-1 block text-[11px] text-white/40">
-                  Separate tags with commas. Examples: Best Seller, Sale, New Arrival, Trending, Limited Edition.
-                </span>
-              </label>
-
-              <label className="text-xs text-white/65 sm:col-span-2">
-                Main image URL (image 1 of up to 6)
-                <input
-                  className={inputClass}
-                  type="url"
-                  value={form.image_url}
-                  onChange={(event) => updateField("image_url", event.target.value)}
-                  placeholder="https://..."
-                />
-                <span className="mt-1 block text-[11px] text-white/40">
-                  Use a publicly accessible image URL. Add up to 5 more image URLs below.
-                </span>
-              </label>
-
-              <label className="text-xs text-white/65 sm:col-span-2">
-                Additional product image URLs (one per line, up to 5)
-                <textarea className={`${inputClass} min-h-24 resize-y`} value={form.additional_images} onChange={(event) => updateField("additional_images", event.target.value)} placeholder={"https://example.com/product-side.jpg\\nhttps://example.com/product-back.jpg"} />
-              </label>
-
-              <label className="text-xs text-white/65 sm:col-span-2">
-                Product video URLs (one per line, up to 2)
-                <textarea className={`${inputClass} min-h-20 resize-y`} value={form.videos} onChange={(event) => updateField("videos", event.target.value)} placeholder={"https://example.com/product-demo.mp4\\nhttps://example.com/product-detail.mp4"} />
-                <span className="mt-1 block text-[11px] text-white/40">Use direct public MP4/WebM links. YouTube links can be added in a future update.</span>
-              </label>
-
-              {form.image_url && (
-                <div className="sm:col-span-2">
-                  <p className="mb-2 text-xs text-white/50">Image preview</p>
-                  <img
-                    src={form.image_url}
-                    alt="Product preview"
-                    className="h-36 w-36 rounded-xl border border-white/10 object-cover"
-                    onError={(event) => {
-                      event.currentTarget.style.visibility = "hidden"
-                    }}
-                  />
-                </div>
-              )}
-
-              <label className="text-xs text-white/65 sm:col-span-2">
-                Description
-                <textarea
-                  className={`${inputClass} min-h-24 resize-y`}
-                  value={form.description}
-                  onChange={(event) => updateField("description", event.target.value)}
-                  placeholder="Describe the product, its materials, features, and benefits..."
-                  maxLength={5000}
-                />
-              </label>
-
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-white/10 p-3 text-sm sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={form.is_active}
-                  onChange={(event) => updateField("is_active", event.target.checked)}
-                  className="size-4 accent-[#d4af37]"
-                />
-                <span>
-                  <span className="block">Visible in catalogue</span>
-                  <span className="mt-1 block text-xs text-white/45">
-                    Turn this off to hide the product without deleting it.
-                  </span>
-                </span>
-              </label>
-
-              <div className="flex flex-col-reverse gap-3 pt-2 sm:col-span-2 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={() => setFormOpen(false)}
-                  className="min-h-11 rounded-full border border-white/15 px-5 text-sm text-white/70 hover:text-white"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="min-h-11 rounded-full bg-[#d4af37] px-6 text-sm font-semibold text-[#17130c] hover:bg-[#e6c85c] disabled:cursor-wait disabled:opacity-60"
-                >
-                  {saving ? "Saving..." : editingId ? "Save changes" : "Create product"}
-                </button>
-              </div>
-            </form>
+        <div className="mx-auto max-w-[1600px] px-4 py-7 sm:px-7 sm:py-9 lg:px-10">
+          <section className="animate-in relative overflow-hidden rounded-2xl border border-[#d9b65d]/20 bg-[radial-gradient(ellipse_at_top_right,rgba(217,182,93,0.13),transparent_48%),linear-gradient(120deg,#151513,#101112_60%,#12110d)] p-5 sm:p-8 lg:p-9">
+            <div className="pointer-events-none absolute -right-12 -top-20 size-64 animate-pulse rounded-full border border-[#d9b65d]/20 sm:size-80" /><div className="pointer-events-none absolute -right-2 -top-10 size-48 rounded-full border border-[#d9b65d]/10 sm:size-64" />
+            <div className="relative max-w-2xl"><div className="inline-flex items-center gap-2 rounded-full border border-[#d9b65d]/25 bg-black/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.17em] text-[#e5cd8c]"><ShieldCheck className="size-3.5" /> {role === "admin" ? "Administrator workspace" : "Employee workspace"}</div><h2 className="mt-5 max-w-xl text-3xl font-medium leading-tight tracking-tight sm:text-4xl lg:text-[42px]">Your store, <span className="font-serif italic text-[#d9b65d]">at a glance.</span></h2><p className="mt-3 max-w-xl text-sm leading-6 text-white/50">Monitor the essentials, catch issues early, and move orders from checkout to delivery—all from one calm, focused workspace.</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/admin/orders" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#d9b65d] px-4 text-sm font-semibold text-[#17140b] transition hover:bg-[#ead49b]">Open orders <ArrowRight className="size-4" /></Link>{role === "admin" && <Link href="/admin/products" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-black/15 px-4 text-sm text-white/80 transition hover:border-[#d9b65d]/40">Manage catalogue <Package className="size-4" /></Link>}</div></div>
           </section>
-        )}
 
-        <section className="mt-8">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-medium">Product catalogue</h2>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <label className="flex min-h-10 items-center gap-2 rounded-full border border-white/10 bg-[#11110f] px-3 sm:w-64">
-                <Search className="size-4 shrink-0 text-white/40" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search name, category or tag"
-                  aria-label="Search products by name, category, or tag"
-                  className="w-full bg-transparent text-sm outline-none placeholder:text-white/35"
-                />
-              </label>
-              <label className="flex min-h-10 items-center rounded-full border border-white/10 bg-[#11110f] px-3">
-                <span className="sr-only">Filter by tag</span>
-                <select
-                  value={tagFilter}
-                  onChange={(event) => setTagFilter(event.target.value)}
-                  aria-label="Filter products by tag"
-                  className="max-w-36 bg-transparent text-xs text-white/75 outline-none"
-                >
-                  <option value="all" className="bg-[#11110f]">All tags</option>
-                  {availableTags.map((tag) => (
-                    <option key={tag} value={tag} className="bg-[#11110f]">{tag}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex min-h-10 items-center rounded-full border border-white/10 bg-[#11110f] px-3">
-                <span className="sr-only">Filter product status</span>
-                <select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                  aria-label="Filter products by stock and visibility"
-                  className="max-w-36 bg-transparent text-xs text-white/75 outline-none"
-                >
-                  <option value="all" className="bg-[#11110f]">All status</option>
-                  <option value="active" className="bg-[#11110f]">Active</option>
-                  <option value="hidden" className="bg-[#11110f]">Hidden</option>
-                  <option value="low-stock" className="bg-[#11110f]">Low stock</option>
-                  <option value="out-of-stock" className="bg-[#11110f]">Out of stock</option>
-                </select>
-              </label>
-              <button
-                type="button"
-                onClick={() => void loadProducts()}
-                disabled={loadingProducts}
-                aria-label="Refresh products"
-                className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 text-white/65 hover:border-[#d4af37]/40 hover:text-[#e4c878] disabled:opacity-50"
-              >
-                <RefreshCw className={`size-4 ${loadingProducts ? "animate-spin" : ""}`} />
-              </button>
+          {error && <div role="alert" className="mt-5 flex items-start gap-3 rounded-xl border border-red-300/20 bg-red-300/[0.07] p-4 text-sm text-red-200"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span>{error}</span></div>}
+
+          <section className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+            {metricCards.map((metric) => <article key={metric.label} className="rounded-2xl border border-white/[0.08] bg-[#101112] p-5 transition hover:border-white/[0.14]"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-medium text-white/45">{metric.label}</p><p className="mt-3 text-2xl font-semibold tracking-tight sm:text-[28px]">{metric.value}</p></div><div className={`grid size-11 place-items-center rounded-xl ${metric.tint} ${metric.color}`}><metric.icon className="size-5" /></div></div><p className="mt-3 text-[11px] text-white/35">{metric.hint}</p></article>)}
+          </section>
+
+          <section className="mt-8 grid gap-6 2xl:grid-cols-[1.45fr_0.85fr]">
+            <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#101112]">
+              <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-5 py-5 sm:px-6"><div><h2 className="font-semibold">Recent orders</h2><p className="mt-1 text-xs text-white/35">Latest activity across your store</p></div><Link href="/admin/orders" className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs text-[#e4cc8d] hover:bg-white/[0.04]">All orders <ArrowRight className="size-3.5" /></Link></div>
+              {orders.length ? <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left"><thead><tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-[0.13em] text-white/30"><th className="px-5 py-3 font-medium sm:px-6">Order</th><th className="px-3 py-3 font-medium">Customer</th><th className="px-3 py-3 font-medium">Amount</th><th className="px-5 py-3 font-medium sm:px-6">Status</th></tr></thead><tbody>{orders.map((order) => <tr key={order.id} className="border-b border-white/[0.045] last:border-0 hover:bg-white/[0.02]"><td className="px-5 py-4 sm:px-6"><p className="text-xs font-semibold">#{shortId(order.id)}</p><p className="mt-1 text-[10px] text-white/30">{dateLabel(order.created_at)}</p></td><td className="max-w-[150px] truncate px-3 py-4 text-xs text-white/65">{order.customer_name}</td><td className="whitespace-nowrap px-3 py-4 text-xs font-medium">{money(order.total_paise)}</td><td className="px-5 py-4 sm:px-6"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] ${statusTone[order.order_status] ?? "border-white/10 bg-white/5 text-white/60"}`}>{order.order_status.replace(/_/g, " ")}</span></td></tr>)}</tbody></table></div> : <div className="px-6 py-12 text-center"><ShoppingBag className="mx-auto size-7 text-white/20" /><p className="mt-3 text-sm text-white/55">No orders to show yet</p><p className="mt-1 text-xs text-white/30">New orders will appear here when customers check out.</p></div>}
             </div>
-          </div>
 
-          <div className="overflow-hidden rounded-xl border border-white/10">
-            {loadingProducts && products.length === 0 ? (
-              <p className="p-8 text-center text-sm text-white/50">Loading products...</p>
-            ) : filteredProducts.length === 0 ? (
-              <div className="p-10 text-center">
-                <Package className="mx-auto size-8 text-[#d4af37]/60" />
-                <p className="mt-3 text-sm text-white/70">
-                  {search || tagFilter !== "all" || statusFilter !== "all" ? "No products match these filters." : "No database products yet."}
-                </p>
-                {!search && tagFilter === "all" && statusFilter === "all" && (
-                  <p className="mt-1 text-xs text-white/40">
-                    Your existing sample products are still in the code. Add a database product here to begin.
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead className="bg-[#141411] text-xs text-white/50">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Product</th>
-                      <th className="px-4 py-3 font-medium">Category</th>
-                      <th className="px-4 py-3 font-medium">Price</th>
-                      <th className="px-4 py-3 font-medium">Stock</th>
-                      <th className="px-4 py-3 font-medium">Status</th>
-                      <th className="px-4 py-3 text-right font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.07]">
-                    {filteredProducts.map((product) => (
-                      <tr key={product.id} className="bg-[#0e0e0c] hover:bg-[#141411]">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            {product.image_url ? (
-                              <img
-                                src={product.image_url}
-                                alt=""
-                                className="size-12 shrink-0 rounded-lg border border-white/10 object-cover"
-                              />
-                            ) : (
-                              <div className="grid size-12 shrink-0 place-items-center rounded-lg bg-white/5">
-                                <Package className="size-5 text-white/30" />
-                              </div>
-                            )}
-                            <div className="max-w-64">
-                              <p className="truncate font-medium">{product.name}</p>
-                              <p className="mt-1 truncate text-xs text-white/40">
-                                /{product.slug}
-                              </p>
-                              {product.tags?.length > 0 && (
-                                <div className="mt-1 flex flex-wrap gap-1">
-                                  {product.tags.slice(0, 3).map((tag) => (
-                                    <span key={tag} className="rounded-full border border-[#d4af37]/25 bg-[#d4af37]/[0.08] px-2 py-0.5 text-[9px] text-[#e6d39c]">{tag}</span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-white/65">{product.category}</td>
-                        <td className="px-4 py-3 tabular-nums">
-                          ₹{Number(product.price).toLocaleString("en-IN")}
-                        </td>
-                        <td className="px-4 py-3 tabular-nums">{product.stock}</td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-[10px] ${
-                              product.is_active
-                                ? "bg-emerald-400/10 text-emerald-300"
-                                : "bg-white/10 text-white/50"
-                            }`}
-                          >
-                            {product.is_active ? "Active" : "Hidden"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => startEdit(product)}
-                              aria-label={`Edit ${product.name}`}
-                              className="grid size-9 place-items-center rounded-lg text-white/60 hover:bg-[#d4af37]/10 hover:text-[#e4c878]"
-                            >
-                              <Pencil className="size-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void toggleProduct(product)}
-                              aria-label={product.is_active ? `Hide ${product.name}` : `Activate ${product.name}`}
-                              className="grid size-9 place-items-center rounded-lg text-white/60 hover:bg-[#d4af37]/10 hover:text-[#e4c878]"
-                            >
-                              {product.is_active ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void deleteProduct(product)}
-                              aria-label={`Delete ${product.name}`}
-                              className="grid size-9 place-items-center rounded-lg text-red-300/70 hover:bg-red-400/10 hover:text-red-300"
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </section>
+            <div className="space-y-6">
+              <section className="rounded-2xl border border-white/[0.08] bg-[#101112] p-5 sm:p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold">Needs attention</h2><p className="mt-1 text-xs text-white/35">Items worth checking today</p></div><Activity className="size-5 text-[#d9b65d]" /></div><div className="mt-5 space-y-3"><Link href="/admin/orders" className="flex items-center gap-3 rounded-xl border border-white/[0.06] p-3.5 transition hover:border-amber-300/20 hover:bg-white/[0.02]"><div className="grid size-10 place-items-center rounded-xl bg-amber-300/10 text-amber-200"><Clock3 className="size-4" /></div><div className="min-w-0 flex-1"><p className="text-sm font-medium">Orders awaiting payment</p><p className="mt-1 text-[11px] text-white/35">Review pending orders and COD requests</p></div><span className="text-lg font-semibold">{metrics.pending}</span></Link><Link href="/admin/products" className="flex items-center gap-3 rounded-xl border border-white/[0.06] p-3.5 transition hover:border-red-300/20 hover:bg-white/[0.02]"><div className="grid size-10 place-items-center rounded-xl bg-red-300/10 text-red-200"><AlertTriangle className="size-4" /></div><div className="min-w-0 flex-1"><p className="text-sm font-medium">Low stock products</p><p className="mt-1 text-[11px] text-white/35">Active products with 5 units or fewer</p></div><span className="text-lg font-semibold">{lowStock.length}</span></Link><Link href="/admin/reviews" className="flex items-center gap-3 rounded-xl border border-white/[0.06] p-3.5 transition hover:border-violet-300/20 hover:bg-white/[0.02]"><div className="grid size-10 place-items-center rounded-xl bg-violet-300/10 text-violet-200"><Star className="size-4" /></div><div className="min-w-0 flex-1"><p className="text-sm font-medium">Review moderation</p><p className="mt-1 text-[11px] text-white/35">Check submitted customer feedback</p></div><span className="text-lg font-semibold">{metrics.reviews}</span></Link></div></section>
 
-        <p className="mt-8 text-center text-[11px] leading-5 text-white/35">
-          Timora Admin · Product changes are stored in Supabase and drive the live storefront catalogue. Preview products are only shown when the database catalogue is empty or unavailable.
-        </p>
+              {role === "admin" && <section className="rounded-2xl border border-white/[0.08] bg-[#101112] p-5 sm:p-6"><div className="flex items-center justify-between"><div><h2 className="font-semibold">Inventory watch</h2><p className="mt-1 text-xs text-white/35">Lowest-stock active listings</p></div><Boxes className="size-5 text-[#d9b65d]" /></div>{lowStock.length ? <div className="mt-4 space-y-3">{lowStock.slice(0, 4).map((product) => <div key={product.id} className="flex items-center gap-3"><div className="grid size-9 place-items-center rounded-lg bg-white/[0.04]"><Package className="size-4 text-white/45" /></div><div className="min-w-0 flex-1"><p className="truncate text-xs font-medium">{product.name}</p><p className="mt-1 text-[10px] text-white/30">{money(Math.round(product.price * 100))} each</p></div><span className={`rounded-lg px-2 py-1 text-[10px] font-semibold ${product.stock === 0 ? "bg-red-300/10 text-red-200" : "bg-amber-300/10 text-amber-200"}`}>{product.stock} left</span></div>)}</div> : <div className="py-6 text-center"><CheckCircle2 className="mx-auto size-6 text-emerald-300/70" /><p className="mt-2 text-xs text-white/45">No low-stock alerts in the loaded catalogue.</p></div>}<Link href="/admin/products" className="mt-5 flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/10 text-xs text-white/65 hover:border-[#d9b65d]/35 hover:text-white">View inventory <ArrowRight className="size-3.5" /></Link></section>}
+            </div>
+          </section>
+
+          <section className="mt-8"><div className="mb-4"><h2 className="text-lg font-semibold">Quick access</h2><p className="mt-1 text-xs text-white/35">Jump directly into your day-to-day tasks</p></div><div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">{shortcuts.map((item) => <Link key={item.href} href={item.href} className="group flex min-h-[126px] animate-[fadeInUp_.55s_ease-out_both] items-start gap-4 rounded-2xl border border-white/[0.08] bg-[#101112] p-5 transition hover:-translate-y-0.5 hover:border-[#d9b65d]/25 hover:bg-[#131411]"><div className="grid size-11 shrink-0 place-items-center rounded-xl border border-white/[0.06] bg-white/[0.03] text-[#d9b65d] transition group-hover:border-[#d9b65d]/20 group-hover:bg-[#d9b65d]/[0.08]"><item.icon className="size-5" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="text-sm font-semibold">{item.title}</h3><span className="rounded-full bg-white/[0.05] px-2 py-1 text-[9px] text-white/40">{item.tag}</span></div><p className="mt-2 text-xs leading-5 text-white/40">{item.desc}</p><span className="mt-3 inline-flex items-center gap-1 text-[11px] text-[#e4cc8d]">Open section <ChevronRight className="size-3 transition group-hover:translate-x-0.5" /></span></div></Link>)}</div></section>
+          <footer className="mt-10 flex flex-col gap-2 border-t border-white/[0.07] py-6 text-[10px] text-white/25 sm:flex-row sm:items-center sm:justify-between"><p>Timora Commerce Console · {role === "admin" ? "Administrator" : "Employee"} access</p><p>Metrics reflect records currently available to your account.</p></footer>
+        </div>
       </div>
     </main>
   )
