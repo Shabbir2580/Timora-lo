@@ -543,6 +543,11 @@ export default function HomePage() {
                 <span className={`absolute left-2 top-2 rounded-full px-2 py-1.5 text-[8px] font-semibold tracking-[0.09em] sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px] ${product.stock <= 0 ? "bg-[#242018]/95 text-white" : "bg-[#f4eee3]/95 text-[#242018]"}`}>
                   {product.stock <= 0 ? "SOLD OUT" : product.badge}
                 </span>
+                {product.tags?.slice(0, 2).map((tag, index) => (
+                  <span key={tag} className={`absolute left-2 rounded-full border border-[#c9a96e]/45 bg-[#0b0b0a]/90 px-2 py-1 text-[8px] font-semibold uppercase tracking-wide text-[#e5cb91] sm:left-3 sm:text-[9px] ${index === 0 ? "top-11 sm:top-12" : "top-[4.6rem] sm:top-[4.9rem]"}`}>
+                    {tag}
+                  </span>
+                ))}
 
                 <button
                   type="button"
