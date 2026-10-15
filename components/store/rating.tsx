@@ -10,6 +10,9 @@ interface RatingProps {
 
 export function Rating({ value, count, size = "sm", className }: RatingProps) {
   const dim = size === "sm" ? "size-3.5" : "size-4"
+  if (value <= 0 || (count !== undefined && count <= 0)) {
+    return <span className={cn("text-xs text-muted-foreground", className)}>No reviews yet</span>
+  }
   return (
     <div className={cn("flex items-center gap-1.5", className)}>
       <span className="inline-flex items-center gap-1 rounded bg-success/10 px-1.5 py-0.5 text-success">
