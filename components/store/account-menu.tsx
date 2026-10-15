@@ -8,12 +8,7 @@ import {
   User,
   Package,
   Heart,
-  MapPin,
-  Ticket,
   RotateCcw,
-  Star,
-  Bell,
-  Settings,
   LogOut,
   ChevronDown,
   LoaderCircle,
@@ -22,15 +17,9 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 
 const links = [
-  { href: "/account", label: "My Profile", icon: User },
   { href: "/orders", label: "My Orders", icon: Package },
   { href: "/wishlist", label: "Wishlist", icon: Heart },
-  { href: "/account/addresses", label: "Addresses", icon: MapPin },
-  { href: "/account/coupons", label: "Coupons", icon: Ticket },
-  { href: "/account/returns", label: "Returns", icon: RotateCcw },
-  { href: "/account/reviews", label: "Reviews", icon: Star },
-  { href: "/account/notifications", label: "Notifications", icon: Bell },
-  { href: "/account/settings", label: "Settings", icon: Settings },
+  { href: "/returns", label: "Returns", icon: RotateCcw },
 ]
 
 export function AccountMenu({ compact = false }: { compact?: boolean }) {
