@@ -260,3 +260,97 @@
   .timora-cursor-ring { display: none; }
   .product-card-media::after { transition: none; }
 }
+
+
+/* Timora design-system polish shared by every route. Keep effects subtle and touch-friendly. */
+:root {
+  --timora-gold: #c9a96e;
+  --timora-gold-bright: #e5cb91;
+  --timora-gold-soft: rgba(201, 169, 110, 0.12);
+  --timora-surface: rgba(21, 21, 18, 0.82);
+}
+
+html {
+  scroll-padding-top: 5rem;
+  scrollbar-color: #76613a #0b0b0a;
+  scrollbar-width: thin;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse at 8% 0%, rgba(201, 169, 110, 0.055), transparent 30rem),
+    radial-gradient(ellipse at 96% 42%, rgba(201, 169, 110, 0.035), transparent 34rem);
+  background-attachment: fixed;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(201, 169, 110, 0.82);
+  color: #17130c;
+}
+
+a {
+  text-underline-offset: 0.22em;
+  transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+button,
+[role="button"],
+input,
+select,
+textarea {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea {
+  color-scheme: dark;
+}
+
+:where(input, select, textarea):focus-visible {
+  border-color: var(--timora-gold-bright) !important;
+  box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.13);
+}
+
+:where(button, a, [role="button"]):focus-visible {
+  outline-offset: 4px;
+}
+
+img {
+  backface-visibility: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :where(button:not(:disabled), [role="button"]:not([aria-disabled="true"])):active {
+    transform: translateY(1px);
+  }
+
+  :where(a[href]):active {
+    opacity: 0.88;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 640px) {
+  body { background-attachment: scroll; }
+}
