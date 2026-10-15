@@ -328,6 +328,30 @@ begin
 end
 $function$;
 
+-- Product writes are admin-only. Employees may process orders/reviews but cannot alter the catalogue.
+do $block$
+declare p record;
+begin
+  for p in select policyname from pg_policies where schemaname = 'public' and tablename = 'products'
+  loop
+    execute format('drop policy if exists %I on public.products', p.policyname);
+  end loop;
+end
+$block$;
+create policy "Public can read active products" on public.products
+  for select to anon, authenticated using (is_active = true);
+create policy "Staff can read all products" on public.products
+  for select to authenticated using (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role in ('admin','employee')));
+create policy "Admins insert products" on public.products
+  for insert to authenticated with check (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'));
+create policy "Admins update products" on public.products
+  for update to authenticated using (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'))
+  with check (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'));
+create policy "Admins delete products" on public.products
+  for delete to authenticated using (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'));
+grant select on public.products to anon, authenticated;
+grant insert, update, delete on public.products to authenticated;
+
 -- Existing delivery-transition RPC is kept; it already validates staff roles and delivery progression.
 
 revoke all on function public.create_order_atomic(text,text,text,text,text,text,text,text,text,text,jsonb,text) from public;
