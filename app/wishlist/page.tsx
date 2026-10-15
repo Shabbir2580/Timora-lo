@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
-import { ArrowLeft, Heart, ShoppingBag, LoaderCircle, RefreshCw, AlertCircle } from "lucide-react"
+import { ArrowLeft, Heart, ShoppingBag, LoaderCircle, RefreshCw, AlertCircle, Trash2 } from "lucide-react"
 import type { Product, ProductBadge, StockState } from "@/lib/data"
 import { useCart } from "@/lib/cart-context"
 import { ProductCard } from "@/components/store/product-card"
@@ -63,7 +63,7 @@ function toProduct(row: DatabaseProduct): Product {
 }
 
 export default function WishlistPage() {
-  const { wishlist } = useCart()
+  const { wishlist, toggleWishlist } = useCart()
   const [databaseProducts, setDatabaseProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
@@ -122,9 +122,23 @@ export default function WishlistPage() {
             {loading || loadError ? " " : `${savedProducts.length} ${savedProducts.length === 1 ? "product" : "products"} saved`}
           </p>
           {!loading && !loadError && savedProducts.length > 0 && (
-            <Link href="/products" className="text-sm font-medium text-primary hover:underline">
-              Explore more
-            </Link>
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm("Remove all saved products from your wishlist?")) {
+                    savedProducts.forEach((product) => toggleWishlist(product.id))
+                  }
+                }}
+                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 px-3 text-xs text-white/55 transition hover:border-red-300/30 hover:text-red-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <Trash2 className="size-3.5" />
+                Clear wishlist
+              </button>
+              <Link href="/products" className="text-sm font-medium text-primary hover:underline">
+                Explore more
+              </Link>
+            </div>
           )}
         </div>
 
