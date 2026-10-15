@@ -24,6 +24,7 @@ export default function AdminTasksPage() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [assignee, setAssignee] = useState("")
+  const [taskEmployeeFilter, setTaskEmployeeFilter] = useState("all")
   const [priority, setPriority] = useState<Task["priority"]>("normal")
   const [dueDate, setDueDate] = useState("")
   const [error, setError] = useState("")
@@ -110,7 +111,8 @@ export default function AdminTasksPage() {
   if (checking) return <main className="grid min-h-screen place-items-center bg-[#0b0b0a] text-[#d4af37]"><RefreshCw className="size-5 animate-spin" /></main>
   if (!role) return <main className="grid min-h-screen place-items-center bg-[#0b0b0a] px-5 text-white"><div className="text-center"><ShieldCheck className="mx-auto size-9 text-[#d4af37]" /><h1 className="mt-3 text-xl font-semibold">Staff access required</h1><p className="mt-2 text-sm text-white/55">{error || "Sign in with an authorized staff account."}</p><Link href="/" className="mt-4 inline-block text-sm text-[#e4c878]">Return to store</Link></div></main>
 
-  const visibleTasks = role === "admin" ? tasks : tasks.filter((task) => task.assigned_to === userId)
+  const visibleTasks = (role === "admin" ? tasks : tasks.filter((task) => task.assigned_to === userId))
+    .filter((task) => role !== "admin" || taskEmployeeFilter === "all" || task.assigned_to === taskEmployeeFilter)
   return <main className="min-h-screen bg-[#0b0b0a] text-white">
     <header className="border-b border-[#d4af37]/20 bg-[#0b0b0a]/95"><div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-4 sm:px-6">
       <Link href="/admin" className="grid size-10 place-items-center rounded-full border border-white/10" aria-label="Back to dashboard"><ArrowLeft className="size-4" /></Link>
@@ -137,7 +139,23 @@ export default function AdminTasksPage() {
           { label: "Completed", count: visibleTasks.filter((task) => task.status === "done").length, detail: "Work finished", tone: "border-emerald-300/15 bg-emerald-300/[0.05] text-emerald-200" },
         ]).map((item) => <article key={item.label} className={"rounded-2xl border p-4 " + item.tone}><p className="text-xs opacity-75">{item.label}</p><p className="mt-2 text-3xl font-semibold tracking-tight">{item.count}</p><p className="mt-1 text-[11px] opacity-60">{item.detail}</p></article>)}
       </section>
-      <section className="mt-7 space-y-3"><div className="flex items-center justify-between"><h2 className="font-semibold">{role === "admin" ? "All assigned tasks" : "Tasks assigned to you"}</h2><span className="text-xs text-white/40">{visibleTasks.length} task(s)</span></div>
+      {role === "admin" && <section className="mt-7 rounded-2xl border border-white/10 bg-[#11110f] p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div><h2 className="font-semibold">Employee workload</h2><p className="mt-1 text-xs text-white/45">See each employee's assigned, active, and completed work.</p></div>
+          <label className="text-xs text-white/55">Show tasks for<select value={taskEmployeeFilter} onChange={(e) => setTaskEmployeeFilter(e.target.value)} className="mt-1.5 min-h-10 w-full rounded-lg border border-white/10 bg-black/30 px-3 text-sm text-white sm:w-64"><option value="all">All employees</option>{staff.map((member) => <option key={member.user_id} value={member.user_id}>{member.email}</option>)}</select></label>
+        </div>
+        {staff.length === 0 ? <p className="mt-4 rounded-xl border border-white/10 p-4 text-sm text-white/50">No employees are authorized yet. Add employees in Employee Management first.</p> : <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{staff.map((member) => {
+          const memberTasks = tasks.filter((task) => task.assigned_to === member.user_id)
+          const completed = memberTasks.filter((task) => task.status === "done").length
+          const activeTasks = memberTasks.filter((task) => task.status === "in_progress").length
+          return <button type="button" key={member.user_id} onClick={() => setTaskEmployeeFilter(member.user_id)} className={`rounded-xl border p-4 text-left transition ${taskEmployeeFilter === member.user_id ? "border-[#d4af37]/50 bg-[#d4af37]/[0.08]" : "border-white/10 bg-black/20 hover:border-white/20"}`}>
+            <p className="break-all text-sm font-medium">{member.email}</p>
+            <div className="mt-3 flex flex-wrap gap-2 text-[11px]"><span className="rounded-full bg-white/10 px-2 py-1">{memberTasks.length} assigned</span><span className="rounded-full bg-[#d4af37]/10 px-2 py-1 text-[#e4c878]">{activeTasks} active</span><span className="rounded-full bg-emerald-300/10 px-2 py-1 text-emerald-200">{completed} done</span></div>
+            <p className="mt-3 text-[11px] text-white/40">{memberTasks.length ? `${Math.round(completed / memberTasks.length * 100)}% completed` : "No work assigned yet"}</p>
+          </button>
+        })}</div>}
+      </section>}
+      <section className="mt-7 space-y-3"><div className="flex items-center justify-between"><h2 className="font-semibold">{role === "admin" ? (taskEmployeeFilter === "all" ? "All assigned tasks" : `Tasks for ${staff.find((member) => member.user_id === taskEmployeeFilter)?.email || "selected employee"}`) : "Tasks assigned to you"}</h2><span className="text-xs text-white/40">{visibleTasks.length} task(s)</span></div>
       {visibleTasks.length === 0 ? <div className="rounded-2xl border border-white/10 bg-[#11110f] p-10 text-center"><ClipboardList className="mx-auto size-8 text-[#d4af37]/60" /><p className="mt-3 text-sm text-white/65">No tasks yet.</p><p className="mt-1 text-xs text-white/40">{role === "admin" ? "Assign the first task using the form above." : "Your administrator has not assigned work to you yet."}</p></div> : visibleTasks.map((task) => {
         const assignedEmail = staff.find((member) => member.user_id === task.assigned_to)?.email
         return <article key={task.id} className="rounded-2xl border border-white/10 bg-[#11110f] p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold">{task.title}</h3><span className={`rounded-full px-2.5 py-1 text-[10px] ${task.priority === "high" ? "bg-red-300/10 text-red-200" : task.priority === "low" ? "bg-sky-300/10 text-sky-200" : "bg-[#d4af37]/10 text-[#e4c878]"}`}>{task.priority} priority</span></div>{task.description && <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-white/55">{task.description}</p>}<p className="mt-3 text-xs text-white/40">{role === "admin" ? `Assigned to: ${assignedEmail || task.assigned_to}` : "Assigned by Timora admin"}{task.due_date ? ` · Due ${new Date(task.due_date + "T12:00:00").toLocaleDateString("en-IN")}` : ""}</p></div><label className="text-xs text-white/50">Status<select value={task.status} onChange={(e) => void updateStatus(task, e.target.value as Task["status"])} className="mt-1.5 min-h-10 w-full rounded-lg border border-white/10 bg-black/30 px-3 text-sm text-white sm:w-40"><option value="todo">To do</option><option value="in_progress">In progress</option><option value="done">Completed</option></select></label></div><div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10"><div className={`h-full rounded-full transition-all ${task.status === "done" ? "w-full bg-emerald-300" : task.status === "in_progress" ? "w-1/2 bg-[#d4af37]" : "w-[8%] bg-white/30"}`} /></div></article>
