@@ -650,7 +650,7 @@ export default function HomePage() {
             </h3>
             <div className="mt-4 flex flex-col gap-3 text-xs text-white/50">
               <Link href="/contact" className="hover:text-white">Contact us</Link>
-              <Link href="/shipping" className="hover:text-white">Shipping information</Link>
+              <Link href="/shippings" className="hover:text-white">Shipping information</Link>
               <Link href="/returns" className="hover:text-white">Returns information</Link>
               <Link href="/privacy" className="hover:text-white">Privacy policy</Link>
             </div>
