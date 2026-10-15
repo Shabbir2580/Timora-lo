@@ -30,6 +30,7 @@ type Product = {
   image_url: string
   images: string[]
   videos: string[]
+  tags: string[]
   stock: number
   is_active: boolean
   created_at: string
@@ -45,6 +46,7 @@ type ProductForm = {
   image_url: string
   additional_images: string
   videos: string
+  tags: string
   stock: string
   is_active: boolean
 }
@@ -59,6 +61,7 @@ const emptyForm: ProductForm = {
   image_url: "",
   additional_images: "",
   videos: "",
+  tags: "",
   stock: "0",
   is_active: true,
 }
@@ -190,6 +193,7 @@ export default function AdminProductsPage() {
       image_url: product.image_url ?? "",
       additional_images: (product.images ?? []).filter((image) => image !== product.image_url).slice(0, 5).join("\n"),
       videos: (product.videos ?? []).slice(0, 2).join("\n"),
+      tags: (product.tags ?? []).join(", "),
       stock: String(product.stock),
       is_active: product.is_active,
     })
@@ -217,6 +221,7 @@ export default function AdminProductsPage() {
         ? null
         : Number(form.compare_at_price)
     const stock = Number(form.stock)
+    const tags = Array.from(new Set(form.tags.split(",").map((tag) => tag.trim()).filter(Boolean))).slice(0, 5)
     const slug = makeSlug(form.slug || form.name)
 
     if (!form.name.trim() || !slug) {
@@ -297,6 +302,7 @@ export default function AdminProductsPage() {
       image_url: preservedImages[0] ?? "",
       images: preservedImages,
       videos,
+      tags,
       stock,
       is_active: form.is_active,
       updated_at: new Date().toISOString(),
@@ -695,6 +701,20 @@ export default function AdminProductsPage() {
               </label>
 
               <label className="text-xs text-white/65 sm:col-span-2">
+                Product tags (up to 5)
+                <input
+                  className={inputClass}
+                  value={form.tags}
+                  onChange={(event) => updateField("tags", event.target.value)}
+                  placeholder="Best Seller, Sale, New Arrival"
+                  maxLength={180}
+                />
+                <span className="mt-1 block text-[11px] text-white/40">
+                  Separate tags with commas. Examples: Best Seller, Sale, New Arrival, Trending, Limited Edition.
+                </span>
+              </label>
+
+              <label className="text-xs text-white/65 sm:col-span-2">
                 Main image URL (image 1 of up to 6)
                 <input
                   className={inputClass}
@@ -854,6 +874,13 @@ export default function AdminProductsPage() {
                               <p className="mt-1 truncate text-xs text-white/40">
                                 /{product.slug}
                               </p>
+                              {product.tags?.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {product.tags.slice(0, 3).map((tag) => (
+                                    <span key={tag} className="rounded-full border border-[#d4af37]/25 bg-[#d4af37]/[0.08] px-2 py-0.5 text-[9px] text-[#e6d39c]">{tag}</span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
