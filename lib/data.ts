@@ -63,6 +63,7 @@ export const categories: Category[] = [
   { slug: "earbuds", name: "Earbuds", productCount: 142, image: "/timora/earbuds.png" },
   { slug: "speakers", name: "Speakers", productCount: 73, image: "/timora/speaker.png" },
   { slug: "keyboards", name: "Keyboards", productCount: 61, image: "/timora/keyboard.png" },
+  { slug: "attar", name: "Attar & Ittar", productCount: 0, image: "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=900&q=85" },
 ]
 
 
