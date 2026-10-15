@@ -242,7 +242,6 @@ export default function AdminDashboardPage() {
       await loadDashboard("admin")
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "Could not delete this order.")
-      await loadDashboard("admin")
     } finally {
       setDeletingOrderId(null)
     }
