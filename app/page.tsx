@@ -22,7 +22,6 @@ import {
   ShoppingBag,
   Package,
   UserRound,
-  LogOut,
   Sparkles,
   Truck,
   Watch,
