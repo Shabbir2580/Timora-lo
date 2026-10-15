@@ -29,6 +29,7 @@ type Product = {
   category: string
   image_url: string
   images: string[]
+  videos: string[]
   stock: number
   is_active: boolean
   created_at: string
@@ -42,6 +43,8 @@ type ProductForm = {
   compare_at_price: string
   category: string
   image_url: string
+  additional_images: string
+  videos: string
   stock: string
   is_active: boolean
 }
@@ -54,6 +57,8 @@ const emptyForm: ProductForm = {
   compare_at_price: "",
   category: "Watches",
   image_url: "",
+  additional_images: "",
+  videos: "",
   stock: "0",
   is_active: true,
 }
@@ -183,6 +188,8 @@ export default function AdminProductsPage() {
           : String(product.compare_at_price),
       category: product.category,
       image_url: product.image_url ?? "",
+      additional_images: (product.images ?? []).filter((image) => image !== product.image_url).slice(0, 5).join("\n"),
+      videos: (product.videos ?? []).slice(0, 2).join("\n"),
       stock: String(product.stock),
       is_active: product.is_active,
     })
@@ -256,9 +263,29 @@ export default function AdminProductsPage() {
       ? products.find((product) => product.id === editingId)?.images ?? []
       : []
     const mainImage = form.image_url.trim()
-    const preservedImages = mainImage
-      ? Array.from(new Set([mainImage, ...existingImages]))
-      : existingImages
+    const additionalImages = form.additional_images.split("\n").map((value) => value.trim()).filter(Boolean)
+    const videos = form.videos.split("\n").map((value) => value.trim()).filter(Boolean)
+    const preservedImages = Array.from(new Set([mainImage, ...additionalImages].filter(Boolean)))
+    if (preservedImages.length > 6) {
+      setError("Add up to 6 product image URLs in total, including the main image.")
+      setSaving(false)
+      return
+    }
+    if (videos.length > 2) {
+      setError("Add up to 2 product video URLs.")
+      setSaving(false)
+      return
+    }
+    for (const url of [...preservedImages, ...videos]) {
+      try {
+        const parsedUrl = new URL(url)
+        if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") throw new Error("Invalid protocol")
+      } catch {
+        setError("Every image and video URL must begin with https:// or http://.")
+        setSaving(false)
+        return
+      }
+    }
 
     const payload = {
       name: form.name.trim(),
@@ -267,8 +294,9 @@ export default function AdminProductsPage() {
       price,
       compare_at_price: compareAtPrice,
       category: form.category.trim() || "Accessories",
-      image_url: mainImage || (existingImages[0] ?? ""),
+      image_url: preservedImages[0] ?? "",
       images: preservedImages,
+      videos,
       stock,
       is_active: form.is_active,
       updated_at: new Date().toISOString(),
@@ -667,7 +695,7 @@ export default function AdminProductsPage() {
               </label>
 
               <label className="text-xs text-white/65 sm:col-span-2">
-                Main image URL
+                Main image URL (image 1 of up to 6)
                 <input
                   className={inputClass}
                   type="url"
@@ -676,8 +704,19 @@ export default function AdminProductsPage() {
                   placeholder="https://..."
                 />
                 <span className="mt-1 block text-[11px] text-white/40">
-                  Image upload will be added next. For now, use a publicly accessible image URL.
+                  Use a publicly accessible image URL. Add up to 5 more image URLs below.
                 </span>
+              </label>
+
+              <label className="text-xs text-white/65 sm:col-span-2">
+                Additional product image URLs (one per line, up to 5)
+                <textarea className={`${inputClass} min-h-24 resize-y`} value={form.additional_images} onChange={(event) => updateField("additional_images", event.target.value)} placeholder={"https://example.com/product-side.jpg\\nhttps://example.com/product-back.jpg"} />
+              </label>
+
+              <label className="text-xs text-white/65 sm:col-span-2">
+                Product video URLs (one per line, up to 2)
+                <textarea className={`${inputClass} min-h-20 resize-y`} value={form.videos} onChange={(event) => updateField("videos", event.target.value)} placeholder={"https://example.com/product-demo.mp4\\nhttps://example.com/product-detail.mp4"} />
+                <span className="mt-1 block text-[11px] text-white/40">Use direct public MP4/WebM links. YouTube links can be added in a future update.</span>
               </label>
 
               {form.image_url && (
