@@ -43,6 +43,6 @@ Audit basis: source review of the `main` branch and the current `fix/timora-repa
 
 ## Current audit notes
 
-- The repair branch is based on `main`; it is 15 commits ahead after the latest search and wishlist fixes.
+- The repair branch is based on `main`; the latest branch comparison should be used for the current ahead/behind count.
 - The migration has not been run against the live Supabase project from this environment.
 - No local build, browser automation, live checkout, or payment test was run here. Do not interpret source review as production validation.
