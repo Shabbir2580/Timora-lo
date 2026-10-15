@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { products, type Product } from "./data"
+import { type Product } from "./data"
 
 export interface CartLine {
   product: Product
@@ -24,6 +24,7 @@ interface CartState {
   removeFromCart: (id: string, variant?: string) => void
   setQuantity: (id: string, quantity: number, variant?: string) => void
   toggleWishlist: (id: string) => void
+  clearCart: () => void
   count: number
   subtotal: number
 }
@@ -32,6 +33,10 @@ const CartContext = createContext<CartState | null>(null)
 
 const STORAGE_KEY = "timora-shopping-state-v1"
 const DEFAULT_MAX_QUANTITY = 99
+
+function isLiveProductId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)
+}
 
 function maxQuantity(product: Product): number {
   if (product.stock === "out_of_stock") return 0
@@ -70,6 +75,7 @@ function restoreCartLine(value: unknown): CartLine | null {
     !saved.product ||
     typeof saved.product !== "object" ||
     typeof saved.product.id !== "string" ||
+    !isLiveProductId(saved.product.id) ||
     typeof saved.product.name !== "string" ||
     typeof saved.product.slug !== "string" ||
     typeof saved.product.price !== "number" ||
@@ -95,16 +101,8 @@ function restoreCartLine(value: unknown): CartLine | null {
 function restoreWishlist(value: unknown): string[] {
   if (!Array.isArray(value)) return []
 
-  const validIds = new Set(products.map((product) => product.id))
-
-  return Array.from(
-    new Set(
-      value.filter(
-        (id): id is string =>
-          typeof id === "string" && validIds.has(id),
-      ),
-    ),
-  )
+  // Only UUID-backed live catalogue products can be persisted in the wishlist.
+  return Array.from(new Set(value.filter((id): id is string => typeof id === "string" && isLiveProductId(id))))
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -177,8 +175,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     variant = product.colors?.[0] ?? "Default",
     quantity = 1,
   ) {
-    // Accept either a sample product or a product returned by Supabase.
-    if (!product || typeof product.id !== "string" || !product.id) return
+    // Only database-backed products may enter a real cart. Sample catalogue entries are previews.
+    if (!product || typeof product.id !== "string" || !isLiveProductId(product.id)) return
 
     const safeVariant = normalizeVariant(product, variant)
     const safeQuantity = normalizeQuantity(product, quantity)
@@ -252,9 +250,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  function clearCart() {
+    setLines([])
+  }
+
   function toggleWishlist(id: string) {
-    // Wishlist still supports the existing sample products.
-    if (!products.some((product) => product.id === id)) return
+    if (typeof id !== "string" || !isLiveProductId(id)) return
 
     setWishlist((previous) =>
       previous.includes(id)
@@ -284,6 +285,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     removeFromCart,
     setQuantity,
     toggleWishlist,
+    clearCart,
     count,
     subtotal,
   }
