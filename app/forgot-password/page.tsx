@@ -32,8 +32,16 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     try {
       const supabase = createClient()
+      // Keep staff/customer return destinations through the full recovery flow.
+      const requestedNext = new URLSearchParams(window.location.search).get("next")
+      const safeNext = requestedNext && requestedNext.startsWith("/") && !requestedNext.startsWith("//")
+        ? requestedNext
+        : "/"
+      const resetPath = new URL("/reset-password", TIMORA_SITE_URL)
+      resetPath.searchParams.set("next", safeNext)
+
       const redirectTo = new URL("/auth/callback", TIMORA_SITE_URL)
-      redirectTo.searchParams.set("next", "/reset-password")
+      redirectTo.searchParams.set("next", `${resetPath.pathname}${resetPath.search}`)
 
       const { error } = await supabase.auth.resetPasswordForEmail(
         email.trim(),
