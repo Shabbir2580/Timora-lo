@@ -305,9 +305,9 @@ export default function AdminOrdersPage() {
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-[#d4af37]/25 bg-[#d4af37]/[0.06] p-4">
-            <p className="text-xs text-white/55">Money collected this month</p>
-            <p className="mt-2 text-2xl font-semibold text-[#e4c878]">{money(collectedThisMonth)}</p>
-            <p className="mt-1 text-[11px] text-white/40">{paymentsCollectedThisMonth} recorded payment(s) · {now.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}</p>
+            <p className="text-xs text-white/55">{role === "admin" ? "Money collected this month" : "Monthly operations"}</p>
+            <p className="mt-2 text-2xl font-semibold text-[#e4c878]">{role === "admin" ? money(collectedThisMonth) : "—"}</p>
+            <p className="mt-1 text-[11px] text-white/40">{role === "admin" ? `${paymentsCollectedThisMonth} recorded payment(s) ·` : "Owner-only financial metric ·"} {now.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-[#11110f] p-4">
             <p className="text-xs text-white/55">Orders placed this month</p>
