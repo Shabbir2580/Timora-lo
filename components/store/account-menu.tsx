@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import {
   User,
   Package,
+  MapPin,
   Heart,
   RotateCcw,
   LogOut,
@@ -19,6 +20,7 @@ import { createClient } from "@/lib/supabase/client"
 const links = [
   { href: "/account", label: "My Account", icon: User },
   { href: "/orders", label: "My Orders", icon: Package },
+  { href: "/addresses", label: "Addresses", icon: MapPin },
   { href: "/wishlist", label: "Wishlist", icon: Heart },
   { href: "/returns", label: "Returns", icon: RotateCcw },
 ]
