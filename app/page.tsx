@@ -82,7 +82,6 @@ export default function HomePage() {
     return () => { active = false; subscription.unsubscribe() }
   }, [])
 
-)
 
   async function handleHomeSignOut() {
     const supabase = createClient()
