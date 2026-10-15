@@ -41,6 +41,10 @@ const safe = (value: unknown) => String(value ?? "").replace(/[&<>"]/g, (char) =
 
 export function InvoiceButton({ order, admin = false }: { order: InvoiceOrder; admin?: boolean }) {
   function printInvoice() {
+    if (order.order_status === "pending_payment" || order.order_status === "cancelled") {
+      window.alert("An invoice is available after the order is confirmed. Pending or cancelled orders cannot be invoiced.")
+      return
+    }
     const invoiceNumber = `TM-${new Date(order.created_at).getFullYear()}-${order.id.replace(/-/g, "").slice(0, 10).toUpperCase()}`
     const items = (order.order_items ?? []).map((item) => `
       <tr><td>${safe(item.product_name)}${item.variant && item.variant !== "Default" ? `<small>Variant: ${safe(item.variant)}</small>` : ""}</td>
@@ -61,7 +65,7 @@ export function InvoiceButton({ order, admin = false }: { order: InvoiceOrder; a
       <div class="line"><span>Shipping</span><span>${money(order.shipping_paise)}</span></div><div class="line grand"><span>Total</span><span>${money(order.total_paise)}</span></div></div>
       <div class="note"><strong>Invoice information</strong><br>This document reflects the order details recorded by Timora. Tax/GST is not separately represented because seller GST registration and tax breakdown were not supplied to this invoice view. For a GST tax invoice, configure the seller's legal details and applicable tax data before issuing it.<br>Thank you for shopping with Timora.</div>
       <script>window.onload=()=>window.print()</script></body></html>`
-    const win = window.open("", "_blank", "noopener,noreferrer,width=900,height=700")
+    const win = window.open("", "_blank", "width=900,height=700")
     if (!win) {
       window.alert("Please allow pop-ups for Timora to open your printable invoice.")
       return
