@@ -31,6 +31,7 @@ export interface Product {
   reviewCount: number
   image: string
   images: string[]
+  videos?: string[]
   badges: ProductBadge[]
   tags?: string[]
   verified: boolean
