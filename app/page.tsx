@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
+import type { User } from "@supabase/supabase-js"
 import { useCart } from "@/lib/cart-context"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -20,6 +21,7 @@ import {
   ShoppingBag,
   Package,
   UserRound,
+  LogOut,
   Sparkles,
   Truck,
   Watch,
@@ -62,7 +64,45 @@ export default function HomePage() {
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
   const [catalogueFallback, setCatalogueFallback] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [cursorPosition, setCursorPosition] = useState({ x: -100, y: -100, visible: false })
   const { wishlist, toggleWishlist } = useCart()
+
+  useEffect(() => {
+    const supabase = createClient()
+    let active = true
+    supabase.auth.getUser().then(({ data }) => {
+      if (active) { setUser(data.user); setAuthChecked(true) }
+    }).catch(() => { if (active) setAuthChecked(true) })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setUser(session?.user ?? null)
+    })
+    return () => { active = false; subscription.unsubscribe() }
+  }, [])
+
+  useEffect(() => {
+    if (window.matchMedia("(pointer: coarse)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    let frame = 0
+    const move = (event: PointerEvent) => {
+      if (frame) cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => setCursorPosition({ x: event.clientX, y: event.clientY, visible: true }))
+    }
+    const leave = () => setCursorPosition((current) => ({ ...current, visible: false }))
+    window.addEventListener("pointermove", move, { passive: true })
+    document.addEventListener("pointerleave", leave)
+    return () => { window.removeEventListener("pointermove", move); document.removeEventListener("pointerleave", leave); if (frame) cancelAnimationFrame(frame) }
+  }, [])
+
+  async function handleHomeSignOut() {
+    const supabase = createClient()
+    const { error } = await supabase.auth.signOut()
+    if (error) return
+    setUser(null)
+    setAccountMenuOpen(false)
+    router.refresh()
+  }
 
   useEffect(() => {
     let active = true
@@ -130,7 +170,7 @@ export default function HomePage() {
   }, [activeCategory, search, featuredProducts])
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#0b0b0a] text-[#f5f1e8]">
+    <main className="min-h-screen overflow-hidden bg-[#0b0b0a] text-[#f5f1e8]">\n      <div aria-hidden="true" className={`timora-cursor-ring ${cursorPosition.visible ? "is-visible" : ""}`} style={{ left: cursorPosition.x, top: cursorPosition.y }} />
       {/* Announcement bar */}
       <div className="border-b border-white/10 bg-[#c9a96e] px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.19em] text-[#17130c] sm:text-xs">
         Discover your next favourite · Explore the Timora collection
@@ -282,7 +322,7 @@ export default function HomePage() {
             </form>
             <div className="flex flex-col">
               {[
-                ["Login / Sign Up", "/login"],
+                ...(user ? [["My Account", "/orders"]] : [["Login / Sign Up", "/login"]]),
                 ["My Orders", "/orders"],
                 ["Home", "/"],
                 ["Shop all", "/products"],
