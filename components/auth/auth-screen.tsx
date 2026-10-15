@@ -19,6 +19,8 @@ type AuthScreenProps = {
   mode: "login" | "register"
 }
 
+const TIMORA_SITE_URL = "https://timora-by-sk.vercel.app"
+
 function getSafeNextPath(value: string | null) {
   return value && value.startsWith("/") && !value.startsWith("//")
     ? value
@@ -86,7 +88,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
       const supabase = createClient()
       const emailRedirectTo =
-        `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`
+        `${TIMORA_SITE_URL}/auth/callback?next=${encodeURIComponent(nextPath)}`
 
       if (isLogin) {
         const { error: authError } =
@@ -156,7 +158,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
           provider: "google",
           options: {
             redirectTo:
-              `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+              `${TIMORA_SITE_URL}/auth/callback?next=${encodeURIComponent(nextPath)}`,
           },
         })
 
