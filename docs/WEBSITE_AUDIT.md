@@ -16,8 +16,8 @@ Audit basis: source review of the `main` branch and the current `fix/timora-repa
 - [x] Product detail offers a View cart action after adding an item (already present on the repair branch).
 - [x] Cart persistence validates saved quantities and only accepts live UUID-backed products (already present on the repair branch).
 - [ ] Test cart add/remove/quantity controls on mobile and desktop, including stock limits and reload persistence.
-- [ ] Test wishlist loading when Supabase is unavailable. Show a clear load error/retry state rather than implying the wishlist is empty if the request failed.
-- [ ] Route homepage search to the full catalogue. Current homepage search only filters the featured products currently loaded on that page.
+- [x] Wishlist now distinguishes database loading failures from a genuinely empty wishlist and provides a retry action. Still needs browser verification.
+- [x] Homepage desktop and mobile search now submit to the full `/products?q=...` catalogue instead of relying only on the eight featured items. Still needs browser verification.
 - [ ] Add explicit loading, empty, error, and retry states to catalogue, product, orders, and admin pages; confirm all visible controls have meaningful outcomes.
 - [ ] Verify every navigation/footer destination exists and does not lead to a 404.
 - [ ] Check image URLs, missing-image fallbacks, product gallery ordering, and mobile tap targets.
@@ -43,6 +43,6 @@ Audit basis: source review of the `main` branch and the current `fix/timora-repa
 
 ## Current audit notes
 
-- The repair branch is based on `main` and was ahead by 10 commits before this audit's gallery repair.
+- The repair branch is based on `main`; it is 15 commits ahead after the latest search and wishlist fixes.
 - The migration has not been run against the live Supabase project from this environment.
 - No local build, browser automation, live checkout, or payment test was run here. Do not interpret source review as production validation.
