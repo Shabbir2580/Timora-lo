@@ -119,14 +119,25 @@ export default function AdminProductsPage() {
 
     try {
       const supabase = createClient()
-      const { data, error: queryError } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false })
+      // Load the full catalogue in bounded pages so PostgREST's row cap
+      // cannot silently hide products from admin search and inventory controls.
+      const pageSize = 500
+      const rows: Product[] = []
+      for (let offset = 0; ; offset += pageSize) {
+        const { data, error: queryError } = await supabase
+          .from("products")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
+          .range(offset, offset + pageSize - 1)
 
-      if (queryError) throw queryError
+        if (queryError) throw queryError
+        const page = (data ?? []) as Product[]
+        rows.push(...page)
+        if (page.length < pageSize) break
+      }
 
-      setProducts((data ?? []) as Product[])
+      setProducts(rows)
     } catch (err) {
       setError(
         err instanceof Error
