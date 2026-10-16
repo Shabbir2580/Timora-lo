@@ -98,6 +98,6 @@ Audit basis: source review of `main` on 16 October 2026. This is a code-level au
 ## Order history completeness — 17 October 2026
 
 - [x] Updated `app/admin/orders/page.tsx` to page through order records in batches of 500 instead of relying on a single PostgREST response, which can be capped by the project's row limit.
-- [x] Chunked order-item lookups into groups of 200 order IDs and grouped items by order ID, avoiding repeated full-array filtering for each order.
+- [x] Chunked order-item lookups into groups of 10 order IDs and grouped items by order ID, avoiding oversized item responses and repeated full-array filtering for each order.
 - [ ] Verify in a test environment with more orders than the configured API row limit, and test refresh, filters, monthly metrics, CSV export, and order actions.
 - [ ] No build, browser test, live Supabase query, or deployment was performed for this source change.
