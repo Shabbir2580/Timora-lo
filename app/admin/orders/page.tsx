@@ -106,9 +106,10 @@ export default function AdminOrdersPage() {
         return
       }
 
-      // Chunk the item lookup too, avoiding excessively long IN filters on large stores.
+      // An order can contain up to 50 lines. Keep each batch at 10 orders so
+      // item rows stay below common PostgREST response caps (at most 500 rows).
       const items: OrderItem[] = []
-      const itemChunkSize = 200
+      const itemChunkSize = 10
       for (let offset = 0; offset < rows.length; offset += itemChunkSize) {
         const ids = rows.slice(offset, offset + itemChunkSize).map((order) => order.id)
         const { data: itemRows, error: itemsError } = await supabase
