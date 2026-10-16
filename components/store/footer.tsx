@@ -1,6 +1,6 @@
 
 import Link from "next/link"
-import { Instagram, Mail, Phone, ArrowUpRight } from "lucide-react"
+import { Mail, Phone, ArrowUpRight } from "lucide-react"
 
 const columns = [
   {
@@ -32,6 +32,25 @@ const columns = [
     ],
   },
 ]
+
+function InstagramMark() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      className="size-4"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
 
 export function Footer() {
   return (
@@ -65,7 +84,7 @@ export function Footer() {
                 aria-label="Visit Timora on Instagram"
                 className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-4 text-xs text-white/70 transition hover:border-[#c9a96e]/60 hover:text-[#dfc797]"
               >
-                <Instagram className="size-4" aria-hidden="true" />
+                <InstagramMark />
                 Instagram
                 <ArrowUpRight className="size-3" aria-hidden="true" />
               </a>
