@@ -9,6 +9,7 @@ import { ProductReviews } from "@/components/store/product-reviews"
 import { RelatedProducts } from "@/components/store/related-products"
 import { RecentlyViewedProducts } from "@/components/store/recently-viewed-products"
 import { ProductCompareToggle } from "@/components/store/product-compare-toggle"
+import { PriceStockAlertButton } from "@/components/store/price-stock-alert-button"
 
 export const dynamic = "force-dynamic"
 
@@ -239,6 +240,14 @@ export default async function ProductDetailPage({
               image: product.image,
               description: product.description,
               stockCount: product.stockCount ?? 0,
+            }} />
+            <PriceStockAlertButton item={{
+              id: product.id,
+              slug: product.slug,
+              name: product.name,
+              price: product.price,
+              inStock: product.stock !== "out_of_stock",
+              updatedAt: new Date().toISOString(),
             }} />
 
             <div className="mt-7 border-t border-white/10 pt-5">
