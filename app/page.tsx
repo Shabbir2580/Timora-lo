@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { SmartImage } from "@/components/store/smart-image"
+import { AdPlacement } from "@/components/store/ad-placement"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import type { User } from "@supabase/supabase-js"
@@ -473,6 +474,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      <AdPlacement placement="homepage_secondary" className="pb-4" />
+
       {/* Featured products */}
       <section id="featured-products" className="home-reveal scroll-mt-6 mx-auto max-w-[1440px] px-5 py-16 sm:px-8 sm:py-20 lg:px-12 lg:py-24">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
@@ -513,6 +516,8 @@ export default function HomePage() {
             </button>
           ))}
         </div>
+
+        <AdPlacement placement="featured_product" className="mt-6" />
 
         <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-6">
           {filteredProducts.map((product) => (
