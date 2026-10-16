@@ -111,3 +111,10 @@ Audit basis: source review of `main` on 16 October 2026. This is a code-level au
 - [ ] **Payment is manual, not gateway-verified:** the UPI QR section explicitly tells customers to confirm payment manually; staff RPC marks payment paid after manual verification. The QR asset's presence is not proof of merchant ownership, and no automatic UPI/Razorpay verification was confirmed.
 - [ ] Review the actual deployed database function definitions and migration history before applying repair migrations. The historical atomic-order migration returns a table while the later repair migration changes the function to JSONB by dropping/recreating it; do not rerun the repair migration blindly against a database with dependencies or unconfirmed state.
 - [ ] No successful build or browser/end-to-end check has been confirmed for the latest `main` commit. GitHub reports no completed check runs for the current documentation commit.
+
+
+## Order delivery RPC follow-up — 17 October 2026
+
+- [x] Added `supabase/migrations/202610170002_define_order_delivery_rpc.sql` because the admin order page calls `update_order_delivery`, but no checked-in migration defined that RPC. The function locks the order row, permits only confirmed → processing → shipped → delivered transitions, requires verified payment or approved COD, requires courier and tracking details before shipping, and limits execution to admin/employee staff roles.
+- [ ] **Do not assume this migration is applied.** Review the live function definition and Supabase migration history first; apply only after confirming the target schema and function signature. Then test unauthorized access, unpaid non-COD orders, unapproved COD orders, invalid transitions, missing tracking details, and the full valid transition sequence in a test project.
+- [ ] Build/deployment remains unverified because Vercel reports build-rate-limit failures. No live database or browser tests were run for this migration.
