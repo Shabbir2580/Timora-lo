@@ -31,7 +31,10 @@ const contactOptions = [
   },
 ]
 
-export default function ContactPage() {
+export default async function ContactPage({ searchParams }: { searchParams: Promise<{ topic?: string; pincode?: string; product?: string; message?: string }> }) {
+  const params = await searchParams
+  const deliveryMessage = params.topic === "delivery" && params.message ? params.message : ""
+
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-8 text-[#f5f1e8] sm:px-6 sm:py-12">
       <div aria-hidden="true" className="pointer-events-none absolute -right-36 top-20 size-96 rounded-full bg-[#c9a96e]/[0.06] blur-3xl" />
@@ -60,7 +63,11 @@ export default function ContactPage() {
             <p className="max-w-md text-sm leading-6 text-white/45">For order-related questions, include your order number so we can help you more efficiently.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-            {contactOptions.map(({ title, detail, description, href, action, icon: Icon, external }, index) => (
+            {contactOptions.map(({ title, detail, description, href: originalHref, action, icon: Icon, external }, index) => {
+              const href = title === "WhatsApp support" && deliveryMessage
+                ? `https://wa.me/919909231028?text=${encodeURIComponent(deliveryMessage)}`
+                : originalHref
+              return (
               <a key={title} href={href} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})} className="group relative flex min-h-64 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025] p-5 transition duration-300 hover:-translate-y-1 hover:border-[#c9a96e]/45 hover:bg-[#c9a96e]/[0.045] hover:shadow-[0_16px_48px_rgba(0,0,0,0.2)] sm:p-6">
                 <span className="absolute right-5 top-5 text-[10px] tracking-[0.2em] text-white/25">0{index + 1}</span>
                 <span className="flex size-12 items-center justify-center rounded-2xl border border-[#c9a96e]/25 bg-[#c9a96e]/[0.08] text-[#d8bc88] transition group-hover:bg-[#c9a96e]/[0.14]"><Icon size={21}/></span>
@@ -69,7 +76,8 @@ export default function ContactPage() {
                 <p className="mt-3 text-sm leading-6 text-white/50">{description}</p>
                 <span className="mt-auto inline-flex items-center gap-2 pt-6 text-xs font-semibold text-white/70 transition group-hover:text-[#e5cb91]">{action}<ArrowUpRight size={14}/></span>
               </a>
-            ))}
+              )
+            })}
           </div>
         </section>
 
