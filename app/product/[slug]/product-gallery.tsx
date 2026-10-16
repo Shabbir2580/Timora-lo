@@ -9,23 +9,67 @@ type ProductGalleryProps = {
   productName: string
 }
 
+function normalizeImageUrl(value: string) {
+  const trimmed = value.trim()
+  // Drive's /file/d/.../view URL is a preview page, not an image URL.
+  const driveMatch = trimmed.match(/^https?:\/\/drive\.google\.com\/file\/d\/([^/?#]+)/i)
+  if (driveMatch) return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`
+  return trimmed
+}
+
+function GalleryImage({
+  src,
+  alt,
+  priority = false,
+  thumbnail = false,
+}: {
+  src: string
+  alt: string
+  priority?: boolean
+  thumbnail?: boolean
+}) {
+  const normalizedSrc = normalizeImageUrl(src)
+  const className = thumbnail ? "object-contain p-2" : "object-contain p-8 sm:p-14"
+
+  // Remote hosts (including Drive and image-hosting services) should load directly.
+  // next/image requires remote host allowlisting and can otherwise show a blank image.
+  if (/^https?:\/\//i.test(normalizedSrc)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={normalizedSrc}
+        alt={alt}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+        referrerPolicy="no-referrer"
+        className={`absolute inset-0 h-full w-full ${className}`}
+      />
+    )
+  }
+
+  return (
+    <Image
+      src={normalizedSrc}
+      alt={alt}
+      fill
+      priority={priority}
+      sizes={thumbnail ? "120px" : "(max-width: 768px) 100vw, 50vw"}
+      className={className}
+    />
+  )
+}
+
 export function ProductGallery({ images, videos = [], productName }: ProductGalleryProps) {
-  const uniqueImages = Array.from(new Set(images.filter((image) => typeof image === "string" && image.trim())))
+  const uniqueImages = Array.from(
+    new Set(images.filter((image) => typeof image === "string" && image.trim()).map(normalizeImageUrl)),
+  )
   const galleryImages = uniqueImages.length ? uniqueImages : ["/placeholder.svg"]
   const [activeImage, setActiveImage] = useState(galleryImages[0])
 
   return (
     <section aria-label={`${productName} image gallery`} className="min-w-0">
       <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-[#f1eee7]">
-        <Image
-          key={activeImage}
-          src={activeImage}
-          alt={productName}
-          fill
-          priority
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-contain p-8 sm:p-14"
-        />
+        <GalleryImage key={activeImage} src={activeImage} alt={productName} priority />
       </div>
 
       {galleryImages.length > 1 && (
@@ -41,13 +85,7 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
                 activeImage === image ? "border-[#c9a96e] ring-1 ring-[#c9a96e]" : "border-white/10 hover:border-[#c9a96e]/60"
               }`}
             >
-              <Image
-                src={image}
-                alt=""
-                fill
-                sizes="120px"
-                className="object-contain p-2"
-              />
+              <GalleryImage src={image} alt="" thumbnail />
             </button>
           ))}
         </div>
