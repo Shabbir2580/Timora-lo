@@ -60,3 +60,10 @@ This roadmap tracks source changes separately from live verification. No item is
 - Do not claim tests passed unless they were actually run.
 - Do not deploy unless the owner explicitly says to deploy.
 - After each change, record the commit and the remaining verification needed.
+
+## Work completed in this iteration — 16 October 2026
+- [x] Added an admin-only CSV export for the currently filtered/searched orders, including order/customer/payment/shipping fields and item summaries. Customer-controlled cell values are escaped to reduce spreadsheet formula-injection risk.
+- [x] Fixed dashboard low-stock alerts to query active products with stock at or below five directly; the dashboard now uses the database's exact count rather than counting only the first 100 arbitrary catalogue rows.
+- [x] Added an employee directory search by registered email.
+- [ ] Build/type-check these changes. Vercel currently reports the build-rate limit, and no local build has been run in this environment.
+- [ ] Test CSV output with special characters, an empty filter result, and real admin account permissions.
