@@ -58,7 +58,7 @@ export function PriceStockAlertButton({ item }: { item: WatchItem }) {
             if (price < previous.price) messages.push("Price dropped to ₹" + price.toLocaleString("en-IN") + ".")
             if (!previous.inStock && inStock) messages.push("This product is back in stock.")
             if (messages.length) setNotice(messages.join(" "))
-            parsed[id] = item
+            parsed[id] = { id, slug, name, price, inStock, updatedAt }
             window.localStorage.setItem(KEY, JSON.stringify(parsed))
           }
         }
