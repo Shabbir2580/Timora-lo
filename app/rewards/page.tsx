@@ -40,6 +40,7 @@ export default function RewardsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [copied, setCopied] = useState<"code" | "link" | null>(null)
+  const [siteOrigin, setSiteOrigin] = useState("")
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -66,7 +67,7 @@ export default function RewardsPage() {
     }
   }, [router])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => { setSiteOrigin(window.location.origin); void load() }, [load])
 
   async function copyValue(value: string, kind: "code" | "link") {
     try {
@@ -78,8 +79,8 @@ export default function RewardsPage() {
     }
   }
 
-  const referralLink = summary?.referral_code && typeof window !== "undefined"
-    ? window.location.origin + "/register?ref=" + encodeURIComponent(summary.referral_code)
+  const referralLink = summary?.referral_code && siteOrigin
+    ? siteOrigin + "/register?ref=" + encodeURIComponent(summary.referral_code)
     : ""
 
   return (
