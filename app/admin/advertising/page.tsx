@@ -50,6 +50,19 @@ type Campaign = {
   advertisers?: { business_name: string } | null
 }
 type Product = { id: string; name: string; slug: string }
+type AnalyticsRow = {
+  campaign_id: string
+  campaign_name: string
+  advertiser_name: string
+  placement: Campaign["placement"]
+  status: string
+  impressions: number
+  clicks: number
+  add_to_cart: number
+  purchases: number
+  attributed_revenue_paise: number
+  ctr_percent: number
+}
 
 const emptyPermission: Permission = {
   manage_advertisements: false,
@@ -126,6 +139,10 @@ export default function AdminAdvertisingPage() {
   const [endsAt, setEndsAt] = useState("")
   const [uploading, setUploading] = useState(false)
   const [statusFilter, setStatusFilter] = useState("all")
+  const [analyticsRows, setAnalyticsRows] = useState<AnalyticsRow[]>([])
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [analyticsFrom, setAnalyticsFrom] = useState(() => { const d = new Date(); d.setDate(d.getDate() - 29); return d.toISOString().slice(0, 10) })
+  const [analyticsTo, setAnalyticsTo] = useState(() => new Date().toISOString().slice(0, 10))
 
   const isAdmin = role === "admin"
   const canManageAdvertisers = isAdmin || permission.manage_advertisers
@@ -357,6 +374,36 @@ export default function AdminAdvertisingPage() {
     }
   }
 
+  useEffect(() => {
+    if (!role || !canViewAnalytics) {
+      setAnalyticsRows([])
+      return
+    }
+    let active = true
+    async function loadAnalytics() {
+      setAnalyticsLoading(true)
+      try {
+        const supabase = createClient()
+        const { data, error: analyticsError } = await supabase.rpc("get_advertising_analytics", {
+          p_from: analyticsFrom,
+          p_to: analyticsTo,
+        })
+        if (analyticsError) throw analyticsError
+        const payload = data as { campaigns?: AnalyticsRow[] } | null
+        if (active) setAnalyticsRows(Array.isArray(payload?.campaigns) ? payload.campaigns : [])
+      } catch (err) {
+        if (active) {
+          setAnalyticsRows([])
+          setError(`Could not load campaign analytics: ${friendlyError(err)}`)
+        }
+      } finally {
+        if (active) setAnalyticsLoading(false)
+      }
+    }
+    void loadAnalytics()
+    return () => { active = false }
+  }, [role, canViewAnalytics, analyticsFrom, analyticsTo])
+
   const filteredCampaigns = useMemo(() => campaigns.filter((campaign) => statusFilter === "all" || campaign.status === statusFilter), [campaigns, statusFilter])
   const stats = useMemo(() => ({
     total: campaigns.length,
@@ -393,6 +440,36 @@ export default function AdminAdvertisingPage() {
           {[{ label: "Campaigns", value: stats.total, icon: Megaphone }, { label: "Live / scheduled", value: stats.live, icon: CalendarClock }, { label: "Awaiting approval", value: stats.pending, icon: ShieldCheck }, { label: "Paused", value: stats.paused, icon: Pause }].map((item) => <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><item.icon className="mb-3 size-5 text-[#d4af37]" /><p className="text-xs text-white/45">{item.label}</p><p className="mt-1 text-2xl font-semibold">{item.value}</p></div>)}
         </section>
 
+        {canViewAnalytics && (
+          <section className="mb-8 rounded-2xl border border-emerald-300/15 bg-white/[0.02] p-5 sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div><h2 className="text-lg font-semibold">Campaign performance</h2><p className="mt-1 text-sm text-white/45">Impressions are counted after at least half of a placement becomes visible. Purchase attribution only counts verified eligible orders.</p></div>
+              <div className="grid grid-cols-2 gap-2 sm:flex">
+                <label className="text-[11px] text-white/45">From<input type="date" value={analyticsFrom} max={analyticsTo} onChange={(e) => setAnalyticsFrom(e.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-white/10 bg-[#111] px-2 text-xs text-white" /></label>
+                <label className="text-[11px] text-white/45">To<input type="date" value={analyticsTo} min={analyticsFrom} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setAnalyticsTo(e.target.value)} className="mt-1 min-h-10 w-full rounded-lg border border-white/10 bg-[#111] px-2 text-xs text-white" /></label>
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+              {[
+                { label: "Impressions", value: analyticsRows.reduce((sum, row) => sum + Number(row.impressions || 0), 0).toLocaleString("en-IN") },
+                { label: "Clicks", value: analyticsRows.reduce((sum, row) => sum + Number(row.clicks || 0), 0).toLocaleString("en-IN") },
+                { label: "CTR", value: (() => { const impressions = analyticsRows.reduce((sum, row) => sum + Number(row.impressions || 0), 0); const clicks = analyticsRows.reduce((sum, row) => sum + Number(row.clicks || 0), 0); return impressions ? `${(clicks * 100 / impressions).toFixed(2)}%` : "0.00%" })() },
+                { label: "Add to cart", value: analyticsRows.reduce((sum, row) => sum + Number(row.add_to_cart || 0), 0).toLocaleString("en-IN") },
+                { label: "Attributed purchases", value: analyticsRows.reduce((sum, row) => sum + Number(row.purchases || 0), 0).toLocaleString("en-IN") },
+              ].map((item) => <div key={item.label} className="rounded-xl border border-white/[0.07] bg-black/20 p-3"><p className="text-[11px] text-white/40">{item.label}</p><p className="mt-1 text-xl font-semibold">{analyticsLoading ? "…" : item.value}</p></div>)}
+            </div>
+            <div className="mt-4 overflow-x-auto rounded-xl border border-white/[0.07]">
+              <table className="w-full min-w-[680px] text-left text-xs">
+                <thead className="bg-white/[0.035] text-white/45"><tr><th className="px-3 py-3 font-medium">Campaign</th><th className="px-3 py-3 font-medium">Impressions</th><th className="px-3 py-3 font-medium">Clicks</th><th className="px-3 py-3 font-medium">CTR</th><th className="px-3 py-3 font-medium">Purchases</th><th className="px-3 py-3 font-medium">Attributed revenue</th></tr></thead>
+                <tbody className="divide-y divide-white/[0.06]">{analyticsRows.map((row) => <tr key={row.campaign_id}><td className="px-3 py-3"><p className="font-medium">{row.campaign_name}</p><p className="mt-1 text-[10px] text-white/35">{row.advertiser_name}</p></td><td className="px-3 py-3">{Number(row.impressions).toLocaleString("en-IN")}</td><td className="px-3 py-3">{Number(row.clicks).toLocaleString("en-IN")}</td><td className="px-3 py-3">{Number(row.ctr_percent).toFixed(2)}%</td><td className="px-3 py-3">{Number(row.purchases).toLocaleString("en-IN")}</td><td className="px-3 py-3">₹{(Number(row.attributed_revenue_paise || 0) / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</td></tr>)}
+                  {!analyticsLoading && analyticsRows.length === 0 && <tr><td colSpan={6} className="px-3 py-8 text-center text-white/40">No campaign activity recorded for this period yet.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 text-[11px] leading-5 text-white/35">ROAS is not displayed until campaign costs are entered and verified. Purchase attribution uses a 30-day click window and may not capture cross-device or cross-session purchases.</p>
+          </section>
+        )}
+
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
           <section className="rounded-2xl border border-[#d4af37]/20 bg-white/[0.025] p-5 sm:p-7">
             <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">Create campaign</h2><p className="mt-1 text-sm text-white/45">New campaigns start as drafts and are not shown publicly.</p></div><div className="grid size-10 place-items-center rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/10 text-[#d4af37]"><Plus className="size-5" /></div></div>
@@ -416,7 +493,7 @@ export default function AdminAdvertisingPage() {
           <section className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.02]">
             <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"><div><h2 className="font-semibold">Campaign library</h2><p className="mt-1 text-xs text-white/45">{campaigns.length} campaigns loaded</p></div><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="min-h-10 rounded-lg border border-white/10 bg-[#111] px-3 text-xs"><option value="all">All statuses</option>{["draft","pending_approval","approved","scheduled","live","paused","rejected","expired","archived"].map((status) => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}</select></div>
             {loading && campaigns.length === 0 ? <div className="flex items-center justify-center gap-3 px-5 py-12 text-sm text-white/50"><LoaderCircle className="size-5 animate-spin text-[#d4af37]" />Loading campaigns...</div> : filteredCampaigns.length === 0 ? <div className="px-5 py-12 text-center"><Megaphone className="mx-auto mb-3 size-8 text-white/20" /><p className="font-medium">No campaigns here yet</p><p className="mt-1 text-sm text-white/40">Create a draft to begin.</p></div> : <ul className="divide-y divide-white/[0.07]">{filteredCampaigns.map((campaign) => <li key={campaign.id} className="p-4 sm:p-5"><div className="flex gap-3"><div className="size-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/20">{/* Campaign images are uploaded to the public creative bucket. */}<img src={campaign.image_url} alt="" className="size-full object-cover" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="break-words text-sm font-medium">{campaign.campaign_name}</p><span className={`rounded-full border px-2 py-0.5 text-[10px] ${statusStyles[campaign.status] ?? statusStyles.draft}`}>{campaign.status.replaceAll("_", " ")}</span></div><p className="mt-1 text-xs text-white/45">{campaign.advertisers?.business_name ?? "Advertiser"} · {placementLabels[campaign.placement]}</p><p className="mt-1 text-[11px] text-white/35">{formatDate(campaign.starts_at)} → {formatDate(campaign.ends_at)}</p><a href={campaign.destination_url} target={campaign.destination_url.startsWith("/") ? undefined : "_blank"} rel="noreferrer" className="mt-2 inline-flex items-center gap-1 break-all text-[11px] text-[#e4c878] hover:underline"><ExternalLink className="size-3 shrink-0" />Preview destination</a></div></div><div className="mt-3 flex flex-wrap gap-2">{campaign.status === "draft" && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "submit")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-sky-300/20 px-3 text-xs text-sky-200 hover:bg-sky-300/5 disabled:opacity-50"><Send className="size-3.5" />Submit for approval</button>}{canPublish && ["draft","pending_approval","approved","scheduled","paused"].includes(campaign.status) && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "publish")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#d4af37] px-3 text-xs font-semibold text-black hover:bg-[#e4c878] disabled:opacity-50">{busyCampaign === campaign.id ? <LoaderCircle className="size-3.5 animate-spin" /> : <BadgeCheck className="size-3.5" />}{campaign.starts_at && new Date(campaign.starts_at) > new Date() ? "Approve & schedule" : "Approve & publish"}</button>}{["live","scheduled","approved"].includes(campaign.status) && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "pause")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-orange-300/20 px-3 text-xs text-orange-200 hover:bg-orange-300/5 disabled:opacity-50"><Pause className="size-3.5" />Pause</button>}</div></li>)}</ul>}
-            <div className="border-t border-white/10 px-5 py-4 text-xs leading-5 text-white/40 sm:px-6"><p>Public placements and conversion analytics are not connected yet. Campaigns are saved as drafts until the website renderer and validated event pipeline are implemented.</p>{canViewAnalytics && <p className="mt-1">Analytics permission detected; event reporting will appear when ingestion and attribution are complete.</p>}</div>
+            <div className="border-t border-white/10 px-5 py-4 text-xs leading-5 text-white/40 sm:px-6"><p>Public placements are connected for eligible campaigns. Analytics are best-effort and depend on the event pipeline, attribution session and verified order states.</p>{canViewAnalytics && <p className="mt-1">Analytics permission detected; event reporting will appear when ingestion and attribution are complete.</p>}</div>
           </section>
         </div>
       </div>
