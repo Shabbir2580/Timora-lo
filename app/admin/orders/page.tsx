@@ -331,7 +331,7 @@ export default function AdminOrdersPage() {
     const cell = (value: unknown) => {
       let text = value == null ? "" : String(value)
       // Prevent spreadsheet formula injection from customer-controlled text fields.
-      if (/^[=+@\\-\\t\\r]/.test(text)) text = "'" + text
+      if (/^[=+@\-\t\r]/.test(text)) text = "'" + text
       return '"' + text.replace(/"/g, '""') + '"'
     }
     const headers = [
