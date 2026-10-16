@@ -309,6 +309,17 @@ $function$;
 revoke all on function public.timora_campaign_is_public(uuid) from public;
 grant execute on function public.timora_campaign_is_public(uuid) to anon, authenticated;
 
+
+create or replace view public.ad_advertiser_options
+with (security_barrier = true)
+as
+select id, advertiser_type, business_name, status
+from public.advertisers
+where public.timora_has_staff_permission('manage_advertisements')
+   or public.timora_has_staff_permission('manage_advertisers');
+revoke all on public.ad_advertiser_options from public;
+grant select on public.ad_advertiser_options to authenticated;
+
 drop policy if exists "Authorized staff manage advertisers" on public.advertisers;
 create policy "Authorized staff manage advertisers" on public.advertisers for all to authenticated
 using (public.timora_has_staff_permission('manage_advertisers'))
