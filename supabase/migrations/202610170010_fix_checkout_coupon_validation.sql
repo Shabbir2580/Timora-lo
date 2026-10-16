@@ -29,7 +29,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public, auth
+set search_path = ''
 as $$
 declare
   v_user_id uuid := auth.uid();
@@ -127,8 +127,7 @@ begin
   -- Evaluate the threshold against the live subtotal before coupon discounts.
   v_shipping := case when v_subtotal >= 99900 then 0 else 8000 end;
 
-  -- Validate the admin-managed coupon under a row lock so simultaneous checkouts
-  -- cannot exceed its usage limit or overwrite each other's usage count.
+  -- Lock the coupon row so simultaneous checkouts cannot exceed usage limits.
   if v_coupon_code is not null then
     select * into v_coupon from public.coupons c where c.code = v_coupon_code for update;
     if not found then raise exception 'Coupon code is invalid.'; end if;
@@ -144,8 +143,10 @@ begin
       if v_coupon.max_discount_paise is not null then
         v_discount := least(v_discount, v_coupon.max_discount_paise);
       end if;
-    else
+    elsif v_coupon.discount_type = 'fixed' then
       v_discount := least(v_subtotal, round(v_coupon.discount_value)::bigint);
+    else
+      raise exception 'This coupon has an unsupported discount type.';
     end if;
     v_discount := greatest(0, least(v_discount, v_subtotal));
   end if;
