@@ -20,6 +20,21 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { normalizeImageUrl } from "@/components/store/smart-image"
 
+function normalizeVideoUrl(value: string) {
+  const trimmed = value.trim()
+  try {
+    const url = new URL(trimmed)
+    if (url.hostname === "drive.google.com" || url.hostname.endsWith(".drive.google.com")) {
+      const match = url.pathname.match(/\/file\/d\/([^/]+)/i)
+      const id = match?.[1] || url.searchParams.get("id") || ""
+      if (id) return `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview`
+    }
+  } catch {
+    // Keep non-URL values unchanged so existing validation can show the right error.
+  }
+  return trimmed
+}
+
 type Product = {
   id: string
   name: string
@@ -278,7 +293,7 @@ export default function AdminProductsPage() {
       .map((value) => value.trim())
       .filter(Boolean)
       .map(normalizeImageUrl)
-    const videos = form.videos.split("\n").map((value) => value.trim()).filter(Boolean)
+    const videos = form.videos.split("\n").map((value) => value.trim()).filter(Boolean).map(normalizeVideoUrl)
     const preservedImages = Array.from(new Set([mainImage, ...additionalImages].filter(Boolean)))
     if (preservedImages.length > 6) {
       setError("Add up to 6 product image URLs in total, including the main image.")
