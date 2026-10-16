@@ -272,29 +272,49 @@ export default function AdminProductsPage() {
       return
     }
 
-    if (form.image_url.trim()) {
-      try {
-        const parsedUrl = new URL(form.image_url.trim())
-        if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
-          throw new Error("Invalid protocol")
-        }
-      } catch {
-        setError("Enter a valid image URL beginning with https:// or http://.")
-        setSaving(false)
-        return
-      }
-    }
-
-    const existingImages = editingId
-      ? products.find((product) => product.id === editingId)?.images ?? []
-      : []
-    const mainImage = form.image_url.trim() ? normalizeImageUrl(form.image_url.trim()) : ""
-    const additionalImages = form.additional_images
+    // Validate the URLs entered by the user BEFORE normalizing them.
+    // Google Drive images are converted to an internal /api/drive-image route,
+    // which is intentionally relative and must not be re-validated as an external URL.
+    const rawMainImage = form.image_url.trim()
+    const rawAdditionalImages = form.additional_images
       .split("\n")
       .map((value) => value.trim())
       .filter(Boolean)
-      .map(normalizeImageUrl)
-    const videos = form.videos.split("\n").map((value) => value.trim()).filter(Boolean).map(normalizeVideoUrl)
+    const rawVideos = form.videos
+      .split("\n")
+      .map((value) => value.trim())
+      .filter(Boolean)
+
+    const isValidHttpUrl = (value: string) => {
+      try {
+        const parsed = new URL(value)
+        return (parsed.protocol === "https:" || parsed.protocol === "http:") && Boolean(parsed.hostname)
+      } catch {
+        return false
+      }
+    }
+
+    if (rawMainImage && !isValidHttpUrl(rawMainImage)) {
+      setError("Enter a valid image URL beginning with https:// or http://.")
+      setSaving(false)
+      return
+    }
+    const invalidAdditionalImage = rawAdditionalImages.find((url) => !isValidHttpUrl(url))
+    if (invalidAdditionalImage) {
+      setError(`Invalid additional image URL: ${invalidAdditionalImage}`)
+      setSaving(false)
+      return
+    }
+    const invalidVideo = rawVideos.find((url) => !isValidHttpUrl(url))
+    if (invalidVideo) {
+      setError(`Invalid video URL: ${invalidVideo}`)
+      setSaving(false)
+      return
+    }
+
+    const mainImage = rawMainImage ? normalizeImageUrl(rawMainImage) : ""
+    const additionalImages = rawAdditionalImages.map(normalizeImageUrl)
+    const videos = rawVideos.map(normalizeVideoUrl)
     const preservedImages = Array.from(new Set([mainImage, ...additionalImages].filter(Boolean)))
     if (preservedImages.length > 6) {
       setError("Add up to 6 product image URLs in total, including the main image.")
@@ -305,16 +325,6 @@ export default function AdminProductsPage() {
       setError("Add up to 2 product video URLs.")
       setSaving(false)
       return
-    }
-    for (const url of [...preservedImages, ...videos]) {
-      try {
-        const parsedUrl = new URL(url)
-        if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") throw new Error("Invalid protocol")
-      } catch {
-        setError("Every image and video URL must begin with https:// or http://.")
-        setSaving(false)
-        return
-      }
     }
 
     const payload = {
