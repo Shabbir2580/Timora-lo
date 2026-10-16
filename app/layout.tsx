@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     description: "Discover considered essentials, timeless accessories, and modern lifestyle pieces at Timora.",
   },
   icons: {
-    icon: [{ url: "/timora-logo.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/timora-logo.svg?v=2", type: "image/svg+xml" }],
   },
 }
 
