@@ -295,7 +295,7 @@ export default function AdminDashboardPage() {
   const metricCards = [
     { label: "Total orders", value: metrics.orders.toLocaleString("en-IN"), hint: `${metrics.pending} awaiting payment`, icon: ShoppingBag, color: "text-sky-300", tint: "bg-sky-300/10" },
     ...((role === "admin" || canViewSalesAnalytics) ? [
-      { label: "Monthly income", value: money(metrics.monthlyRevenue), hint: `${metrics.monthlyOrders} payments collected this month`, icon: Wallet, color: "text-emerald-300", tint: "bg-emerald-300/10" },
+      { label: "Monthly collections", value: money(metrics.monthlyRevenue), hint: `${metrics.monthlyOrders} payments collected this month`, icon: Wallet, color: "text-emerald-300", tint: "bg-emerald-300/10" },
       { label: "Lifetime paid sales", value: money(metrics.revenue), hint: `${metrics.paidOrders} paid orders · cancelled orders excluded`, icon: Activity, color: "text-sky-300", tint: "bg-sky-300/10" },
     ] : []),
     { label: "Live products", value: metrics.activeProducts.toLocaleString("en-IN"), hint: `${metrics.products} products in catalogue`, icon: Package, color: "text-[#d9b65d]", tint: "bg-[#d9b65d]/10" },
