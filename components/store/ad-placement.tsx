@@ -22,6 +22,14 @@ async function recordCampaignEvent(campaign: PublicCampaign, eventType: "impress
   const eventKey = crypto.randomUUID()
   const sessionKey = getSessionKey()
   try {
+    if (eventType === "click") {
+      try {
+        // Persist the session attribution synchronously before the browser follows the link.
+        sessionStorage.setItem("timora_last_ad_click", JSON.stringify({ campaignId: campaign.id, clickId: eventKey, placement: campaign.placement, productId: campaign.product_id, at: Date.now() }))
+      } catch {
+        // Attribution remains best-effort when session storage is unavailable.
+      }
+    }
     const supabase = createClient()
     const { error } = await supabase.rpc("record_ad_event", {
       p_event_key: eventKey,
@@ -34,13 +42,6 @@ async function recordCampaignEvent(campaign: PublicCampaign, eventType: "impress
       p_session_key: sessionKey,
     })
     if (error) return
-    if (eventType === "click") {
-      try {
-        sessionStorage.setItem("timora_last_ad_click", JSON.stringify({ campaignId: campaign.id, clickId: eventKey, placement: campaign.placement, productId: campaign.product_id, at: Date.now() }))
-      } catch {
-        // Attribution remains best-effort when session storage is unavailable.
-      }
-    }
   } catch {
     // Analytics failure must never block navigation or shopping.
   }
