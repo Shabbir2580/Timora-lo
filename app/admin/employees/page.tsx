@@ -26,6 +26,52 @@ type StaffMember = {
   created_at: string
 }
 
+type StaffPermissions = {
+  user_id: string
+  manage_advertisements: boolean
+  publish_advertisements: boolean
+  manage_advertisers: boolean
+  view_advertisement_analytics: boolean
+  manage_marketing_content: boolean
+  publish_marketing_content: boolean
+  view_sales_analytics: boolean
+  view_profit_analytics: boolean
+}
+
+const permissionLabels: Array<{ key: keyof Omit<StaffPermissions, "user_id">; label: string; description: string }> = [
+  { key: "manage_advertisements", label: "Manage website advertisements", description: "Create and edit campaign drafts." },
+  { key: "publish_advertisements", label: "Publish advertisements directly", description: "Allows publishing without admin approval." },
+  { key: "manage_advertisers", label: "Manage external advertisers", description: "Manage business profiles and their campaigns." },
+  { key: "view_advertisement_analytics", label: "View advertising analytics", description: "View impressions, clicks and conversion reports." },
+  { key: "manage_marketing_content", label: "Manage Instagram marketing content", description: "Prepare captions, creatives and content calendar entries." },
+  { key: "publish_marketing_content", label: "Publish marketing content directly", description: "Requires a compatible Instagram integration to publish externally." },
+  { key: "view_sales_analytics", label: "View sales and collection statistics", description: "View authorized sales and payment-collection metrics." },
+  { key: "view_profit_analytics", label: "View costs, expenses and profit reports", description: "Includes sensitive business financial information." },
+]
+
+const importantEmployeePreset: Omit<StaffPermissions, "user_id"> = {
+  manage_advertisements: true,
+  publish_advertisements: false,
+  manage_advertisers: true,
+  view_advertisement_analytics: true,
+  manage_marketing_content: true,
+  publish_marketing_content: false,
+  view_sales_analytics: true,
+  view_profit_analytics: false,
+}
+
+const emptyPermissions = (user_id: string): StaffPermissions => ({
+  user_id,
+  manage_advertisements: false,
+  publish_advertisements: false,
+  manage_advertisers: false,
+  view_advertisement_analytics: false,
+  manage_marketing_content: false,
+  publish_marketing_content: false,
+  view_sales_analytics: false,
+  view_profit_analytics: false,
+})
+
 function friendlyError(error: unknown) {
   if (error instanceof Error) return error.message
   if (typeof error === "object" && error !== null && "message" in error) {
@@ -39,6 +85,8 @@ export default function AdminEmployeesPage() {
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [authorized, setAuthorized] = useState(false)
   const [staff, setStaff] = useState<StaffMember[]>([])
+  const [permissions, setPermissions] = useState<Record<string, StaffPermissions>>({})
+  const [savingPermissionsFor, setSavingPermissionsFor] = useState<string | null>(null)
   const [email, setEmail] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [loadingStaff, setLoadingStaff] = useState(false)
@@ -54,7 +102,22 @@ export default function AdminEmployeesPage() {
       const supabase = createClient()
       const { data, error: listError } = await supabase.rpc("list_staff_members")
       if (listError) throw listError
-      setStaff((data ?? []) as StaffMember[])
+      const members = (data ?? []) as StaffMember[]
+      setStaff(members)
+      if (members.length === 0) {
+        setPermissions({})
+      } else {
+        const { data: permissionRows, error: permissionError } = await supabase
+          .from("staff_permissions")
+          .select("*")
+          .in("user_id", members.map((member) => member.user_id))
+        if (permissionError) {
+          throw new Error(`Could not load extra staff permissions. Confirm migration 202610170001_business_growth_foundation.sql is applied: ${permissionError.message}`)
+        }
+        setPermissions(Object.fromEntries(
+          ((permissionRows ?? []) as StaffPermissions[]).map((permission) => [permission.user_id, permission])
+        ))
+      }
     } catch (err) {
       setError(`Could not load staff members: ${friendlyError(err)}`)
     } finally {
@@ -133,6 +196,52 @@ export default function AdminEmployeesPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  async function savePermissions(member: StaffMember, nextPermissions: Omit<StaffPermissions, "user_id"> | null) {
+    if (member.role !== "employee") return
+    setSavingPermissionsFor(member.user_id)
+    setError("")
+    setNotice("")
+    try {
+      const supabase = createClient()
+      const { error: actionError } = await supabase.rpc("manage_staff_permissions", {
+        p_user_id: member.user_id,
+        p_permissions: nextPermissions,
+      })
+      if (actionError) throw actionError
+      setNotice(nextPermissions
+        ? `Permissions updated for ${member.email}.`
+        : `Important Employee permissions removed for ${member.email}. Their regular employee access remains unchanged.`)
+      await loadStaff()
+    } catch (err) {
+      setError(`Could not update permissions: ${friendlyError(err)}`)
+    } finally {
+      setSavingPermissionsFor(null)
+    }
+  }
+
+  async function promoteEmployee(member: StaffMember) {
+    await savePermissions(member, importantEmployeePreset)
+  }
+
+  async function updatePermission(member: StaffMember, key: keyof Omit<StaffPermissions, "user_id">, checked: boolean) {
+    const current = permissions[member.user_id] ?? emptyPermissions(member.user_id)
+    const next: Omit<StaffPermissions, "user_id"> = { ...current }
+    delete (next as Partial<StaffPermissions>).user_id
+    next[key] = checked
+    if (key === "manage_advertisements" && !checked) {
+      next.publish_advertisements = false
+      next.manage_advertisers = false
+    }
+    if (key === "manage_marketing_content" && !checked) next.publish_marketing_content = false
+    if (key === "view_sales_analytics" && !checked) next.view_profit_analytics = false
+    if (key === "publish_advertisements" && checked) next.manage_advertisements = true
+    if (key === "manage_advertisers" && checked) next.manage_advertisements = true
+    if (key === "publish_marketing_content" && checked) next.manage_marketing_content = true
+    if (key === "view_profit_analytics" && checked) next.view_sales_analytics = true
+    const hasAnyPermission = Object.values(next).some(Boolean)
+    await savePermissions(member, hasAnyPermission ? next : null)
   }
 
   async function removeEmployee(member: StaffMember) {
@@ -377,6 +486,51 @@ export default function AdminEmployeesPage() {
                       </span>
                     )}
                   </div>
+                  {member.role === "employee" && (() => {
+                    const current = permissions[member.user_id] ?? emptyPermissions(member.user_id)
+                    const isImportant = Object.keys(importantEmployeePreset).some((key) => current[key as keyof Omit<StaffPermissions, "user_id">])
+                    return (
+                      <div className="w-full rounded-xl border border-white/10 bg-black/20 p-4">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm font-medium">{isImportant ? "Important Employee" : "Regular Employee"}</p>
+                            <p className="mt-1 text-xs leading-5 text-white/45">
+                              {isImportant ? "Extra access is configurable and can be revoked without removing employee access." : "Promote this employee to grant the recommended marketing and sales-statistics permissions."}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {!isImportant ? (
+                              <button type="button" onClick={() => void promoteEmployee(member)} disabled={savingPermissionsFor === member.user_id} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-4 text-xs font-semibold text-black hover:bg-[#e4c878] disabled:opacity-50">
+                                {savingPermissionsFor === member.user_id ? <LoaderCircle className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+                                Promote to Important Employee
+                              </button>
+                            ) : (
+                              <button type="button" onClick={() => void savePermissions(member, null)} disabled={savingPermissionsFor === member.user_id} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-red-400/25 px-3 text-xs text-red-200 hover:bg-red-400/10 disabled:opacity-50">
+                                {savingPermissionsFor === member.user_id ? <LoaderCircle className="size-4 animate-spin" /> : <UserMinus className="size-4" />}
+                                Revoke extra access
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        {isImportant && (
+                          <details className="mt-4">
+                            <summary className="cursor-pointer text-sm font-medium text-[#e4c878]">Configure individual permissions</summary>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                              {permissionLabels.map((item) => (
+                                <label key={item.key} className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/[0.07] p-3">
+                                  <input type="checkbox" checked={Boolean(current[item.key])} disabled={savingPermissionsFor === member.user_id} onChange={(event) => void updatePermission(member, item.key, event.target.checked)} className="mt-1 size-4 accent-[#d4af37]" />
+                                  <span>
+                                    <span className="block text-xs font-medium">{item.label}</span>
+                                    <span className="mt-1 block text-[11px] leading-4 text-white/40">{item.description}</span>
+                                  </span>
+                                </label>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </li>
               ))}
             </ul>
