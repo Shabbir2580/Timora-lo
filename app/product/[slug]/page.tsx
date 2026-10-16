@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server"
 import { ProductActions } from "./product-actions"
 import { ProductGallery } from "./product-gallery"
 import { ProductReviews } from "@/components/store/product-reviews"
+import { RelatedProducts } from "@/components/store/related-products"
+import { RecentlyViewedProducts } from "@/components/store/recently-viewed-products"
 
 export const dynamic = "force-dynamic"
 
@@ -103,6 +105,50 @@ export default async function ProductDetailPage({
   if (!data) notFound()
 
   const product = toProduct(data as DatabaseProduct)
+
+  // Prefer same-category items, then fill gaps with relevant active products.
+  const { data: categoryRows, error: categoryError } = await supabase
+    .from("products")
+    .select("id,name,slug,description,price,compare_at_price,category,image_url,images,videos,tags,stock,is_active,created_at")
+    .eq("is_active", true)
+    .eq("category", data.category)
+    .neq("id", data.id)
+    .gt("stock", 0)
+    .order("created_at", { ascending: false })
+    .limit(8)
+
+  let relatedRows = (categoryRows ?? []) as (DatabaseProduct & { created_at?: string })[]
+  if (categoryError || relatedRows.length < 4) {
+    const { data: fallbackRows, error: fallbackError } = await supabase
+      .from("products")
+      .select("id,name,slug,description,price,compare_at_price,category,image_url,images,videos,tags,stock,is_active,created_at")
+      .eq("is_active", true)
+      .neq("id", data.id)
+      .gt("stock", 0)
+      .order("created_at", { ascending: false })
+      .limit(40)
+
+    if (!fallbackError && fallbackRows) {
+      const existing = new Set(relatedRows.map((row) => row.id))
+      const tags = new Set((data.tags ?? []).map((tag: string) => tag.trim().toLowerCase()).filter(Boolean))
+      const ranked = (fallbackRows as (DatabaseProduct & { created_at?: string })[])
+        .filter((row) => !existing.has(row.id))
+        .sort((a, b) => {
+          const score = (row: DatabaseProduct) => {
+            const sharedTags = (row.tags ?? []).filter((tag) => tags.has(tag.trim().toLowerCase())).length
+            const sameCategory = row.category?.toLowerCase() === data.category?.toLowerCase() ? 100 : 0
+            const price = Number(row.price)
+            const priceSimilarity = Number.isFinite(price) && Number(data.price) > 0
+              ? Math.max(0, 30 - Math.abs(price - Number(data.price)) / Number(data.price) * 30)
+              : 0
+            return sameCategory + sharedTags * 20 + priceSimilarity
+          }
+          return score(b) - score(a)
+        })
+      relatedRows = [...relatedRows, ...ranked].slice(0, 8)
+    }
+  }
+  const relatedProducts = relatedRows.map(toProduct)
 
   return (
     <main className="min-h-screen bg-[#0b0b0a] text-[#f5f1e8]">
@@ -203,6 +249,14 @@ export default async function ProductDetailPage({
       </div>
 
       <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+        <RelatedProducts products={relatedProducts} currentProductId={product.id} />
+        <RecentlyViewedProducts product={{
+          slug: product.slug,
+          name: product.name,
+          image: product.image,
+          price: product.price,
+          category: product.category,
+        }} />
         <ProductReviews
           productId={product.id}
           productName={product.name}
