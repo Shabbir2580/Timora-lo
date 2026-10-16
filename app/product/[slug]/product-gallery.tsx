@@ -1,7 +1,8 @@
 "use client"
 
-import { SmartImage, normalizeImageUrl } from "@/components/store/smart-image"
-import { useState } from "react"
+import Image from "next/image"
+import { useMemo, useState } from "react"
+import { Play } from "lucide-react"
 
 type ProductGalleryProps = {
   images: string[]
@@ -9,82 +10,99 @@ type ProductGalleryProps = {
   productName: string
 }
 
-function GalleryImage({ src, alt, priority = false, thumbnail = false }: { src: string; alt: string; priority?: boolean; thumbnail?: boolean }) {
-  const className = thumbnail ? "object-contain p-2" : "object-contain p-8 sm:p-14"
-  return <SmartImage src={src} alt={alt} priority={priority} fill className={className} />
-}
+type GalleryItem =
+  | { type: "image"; src: string; key: string }
+  | { type: "video"; src: string; key: string }
 
 export function ProductGallery({ images, videos = [], productName }: ProductGalleryProps) {
-  const uniqueImages = Array.from(
-    new Set(images.filter((image) => typeof image === "string" && image.trim()).map(normalizeImageUrl)),
-  )
-  const galleryImages = uniqueImages.length ? uniqueImages : ["/placeholder.svg"]
-  const [activeImage, setActiveImage] = useState(galleryImages[0])
+  const galleryItems = useMemo<GalleryItem[]>(() => {
+    const uniqueImages = Array.from(
+      new Set(images.filter((image) => typeof image === "string" && image.trim()))
+    )
+    const uniqueVideos = Array.from(
+      new Set(videos.filter((video) => typeof video === "string" && video.trim()))
+    )
+
+    return [
+      ...(uniqueImages.length
+        ? uniqueImages.map((src) => ({ type: "image" as const, src, key: `image:${src}` }))
+        : [{ type: "image" as const, src: "/placeholder.svg", key: "image:/placeholder.svg" }]),
+      ...uniqueVideos.slice(0, 2).map((src) => ({ type: "video" as const, src, key: `video:${src}` })),
+    ]
+  }, [images, videos])
+
+  const [activeKey, setActiveKey] = useState(galleryItems[0]?.key ?? "image:/placeholder.svg")
+  const activeItem = galleryItems.find((item) => item.key === activeKey) ?? galleryItems[0]
 
   return (
-    <section aria-label={`${productName} image gallery`} className="min-w-0">
+    <section aria-label={`${productName} media gallery`} className="min-w-0">
       <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-[#f1eee7]">
-        <GalleryImage key={activeImage} src={activeImage} alt={productName} priority />
+        {activeItem?.type === "video" ? (
+          <video
+            key={activeItem.src}
+            controls
+            playsInline
+            preload="metadata"
+            poster={galleryItems.find((item) => item.type === "image")?.src}
+            className="absolute inset-0 h-full w-full bg-black object-contain"
+            aria-label={`${productName} product video`}
+          >
+            <source src={activeItem.src} />
+            Your browser does not support embedded video.
+          </video>
+        ) : (
+          <Image
+            key={activeItem?.src ?? "/placeholder.svg"}
+            src={activeItem?.src ?? "/placeholder.svg"}
+            alt={productName}
+            fill
+            priority
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-contain p-8 sm:p-14"
+          />
+        )}
       </div>
 
-      {galleryImages.length > 1 && (
-        <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5" aria-label="Choose product image">
-          {galleryImages.slice(0, 8).map((image, index) => (
-            <button
-              key={`${image}-${index}`}
-              type="button"
-              onClick={() => setActiveImage(image)}
-              aria-label={`Show image ${index + 1} of ${productName}`}
-              aria-pressed={activeImage === image}
-              className={`relative aspect-square overflow-hidden rounded-lg border bg-[#f1eee7] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a96e] ${
-                activeImage === image ? "border-[#c9a96e] ring-1 ring-[#c9a96e]" : "border-white/10 hover:border-[#c9a96e]/60"
-              }`}
-            >
-              <GalleryImage src={image} alt="" thumbnail />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {videos.length > 0 && (
-        <section className="mt-6" aria-label={`${productName} product videos`}>
-          <h2 className="mb-3 text-sm font-semibold text-white/80">Product videos</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {videos.slice(0, 2).map((video, index) => {
-              let drivePreview: string | null = null
-              try {
-                const url = new URL(video)
-                if (url.hostname === "drive.google.com" || url.hostname.endsWith(".drive.google.com")) {
-                  const match = url.pathname.match(/\/file\/d\/([^/]+)/i)
-                  const id = match?.[1] || url.searchParams.get("id") || ""
-                  if (id) drivePreview = `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview`
+      {galleryItems.length > 1 && (
+        <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-5" aria-label="Choose product photo or video">
+          {galleryItems.slice(0, 8).map((item, index) => {
+            const isActive = activeItem?.key === item.key
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActiveKey(item.key)}
+                aria-label={
+                  item.type === "video"
+                    ? `Play product video ${index + 1} for ${productName}`
+                    : `Show product image ${index + 1} for ${productName}`
                 }
-              } catch {
-                // Invalid URLs are rejected by the admin form before saving.
-              }
-
-              return (
-                <div key={video} className="overflow-hidden rounded-xl border border-white/10 bg-black">
-                  {drivePreview ? (
-                    <iframe
-                      src={drivePreview}
-                      title={`${productName} video ${index + 1}`}
-                      allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                      allowFullScreen
-                      loading="lazy"
-                      className="aspect-video w-full border-0"
-                    />
-                  ) : (
-                    <video controls preload="metadata" playsInline className="aspect-video w-full" aria-label={`${productName} video ${index + 1}`}>
-                      <source src={video} />
-                      Your browser does not support embedded video.
-                    </video>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </section>
+                aria-pressed={isActive}
+                className={`relative aspect-square overflow-hidden rounded-lg border bg-[#f1eee7] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a96e] ${
+                  isActive ? "border-[#c9a96e] ring-1 ring-[#c9a96e]" : "border-white/10 hover:border-[#c9a96e]/60"
+                }`}
+              >
+                {item.type === "image" ? (
+                  <Image
+                    src={item.src}
+                    alt=""
+                    fill
+                    sizes="120px"
+                    className="object-contain p-2"
+                  />
+                ) : (
+                  <span className="absolute inset-0 grid place-items-center bg-black text-white">
+                    <span className="absolute inset-0 opacity-50" />
+                    <Play className="relative z-10 size-7 fill-current drop-shadow" aria-hidden="true" />
+                    <span className="absolute bottom-1 left-1 right-1 z-10 rounded bg-black/70 px-1 py-0.5 text-[9px] font-medium">
+                      VIDEO {index - galleryItems.filter((entry) => entry.type === "image").length + 1}
+                    </span>
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
       )}
     </section>
   )
