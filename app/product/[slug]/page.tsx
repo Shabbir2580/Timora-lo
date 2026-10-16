@@ -57,7 +57,7 @@ function toProduct(row: DatabaseProduct): Product {
     brand: "Timora",
     name: row.name,
     category,
-    categorySlug: category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    categorySlug: category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
     price,
     mrp,
     rating: 0,
