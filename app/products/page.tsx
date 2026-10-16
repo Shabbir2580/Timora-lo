@@ -50,8 +50,8 @@ function toProduct(row: DatabaseProduct): Product {
         ? "low_stock"
         : "in_stock"
 
-  const explicitlyOnSale = Array.isArray(row.tags) && row.tags.some((tag) => tag.trim().toLowerCase() === "sale")
-  const badges: ProductBadge[] = explicitlyOnSale && mrp > price ? ["SALE"] : []
+  const explicitlyOnSale = Array.isArray(row.tags) && row.tags.some((tag) => typeof tag === "string" && tag.trim().toLowerCase() === "sale")
+  const badges: ProductBadge[] = explicitlyOnSale && Number.isFinite(price) && price >= 0 && Number.isFinite(mrp) && mrp > price ? ["SALE"] : []
 
   return {
     id: row.id,
