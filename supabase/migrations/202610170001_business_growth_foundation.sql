@@ -497,6 +497,9 @@ begin
     end if;
     v_click_id := case when p_event_type = 'click' then coalesce(p_click_id, p_event_key) else p_click_id end;
   else
+    if v_campaign.campaign_type = 'external_ad' then
+      return jsonb_build_object('recorded', false, 'reason', 'external_ad_purchase_tracking_not_supported');
+    end if;
     if auth.uid() is null or p_order_id is null or p_click_id is null then
       return jsonb_build_object('recorded', false, 'reason', 'purchase_requires_authenticated_order_and_click');
     end if;
@@ -524,7 +527,13 @@ begin
       return jsonb_build_object('recorded', false, 'reason', 'no_eligible_click');
     end if;
     v_click_id := p_click_id;
-    v_value_paise := greatest(0, v_order.total_paise);
+    if v_campaign.product_id is not null then
+      select coalesce(sum(oi.line_total_paise), 0)::bigint into v_value_paise
+      from public.order_items oi
+      where oi.order_id = v_order.id and oi.product_id = v_campaign.product_id::text;
+    else
+      v_value_paise := greatest(0, v_order.total_paise);
+    end if;
   end if;
 
   insert into public.ad_events (
