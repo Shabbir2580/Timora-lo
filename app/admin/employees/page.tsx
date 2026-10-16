@@ -40,6 +40,7 @@ export default function AdminEmployeesPage() {
   const [authorized, setAuthorized] = useState(false)
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [email, setEmail] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
   const [loadingStaff, setLoadingStaff] = useState(false)
   const [saving, setSaving] = useState(false)
   const [removingId, setRemovingId] = useState<string | null>(null)
@@ -159,6 +160,8 @@ export default function AdminEmployeesPage() {
       setRemovingId(null)
     }
   }
+
+  const filteredStaff = staff.filter((member) => member.email.toLowerCase().includes(searchTerm.trim().toLowerCase()))
 
   async function signOut() {
     const supabase = createClient()
@@ -325,6 +328,8 @@ export default function AdminEmployeesPage() {
             </div>
           </div>
 
+          {staff.length > 0 && <div className="border-b border-white/[0.07] px-5 py-4 sm:px-6"><label htmlFor="staff-search" className="mb-2 block text-xs font-medium text-white/55">Search staff by email</label><input id="staff-search" type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search authorized staff..." className="min-h-11 w-full rounded-xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#d4af37]/50 focus:ring-2 focus:ring-[#d4af37]/10" /></div>}
+
           {loadingStaff && staff.length === 0 ? (
             <div className="flex items-center justify-center gap-3 px-5 py-12 text-sm text-white/55">
               <LoaderCircle className="size-5 animate-spin text-[#d4af37]" />
@@ -338,7 +343,7 @@ export default function AdminEmployeesPage() {
             </div>
           ) : (
             <ul className="divide-y divide-white/[0.07]">
-              {staff.map((member) => (
+              {filteredStaff.length === 0 ? <li className="px-5 py-10 text-center text-sm text-white/45">No staff members match “{searchTerm.trim()}”.</li> : filteredStaff.map((member) => (
                 <li key={member.user_id} className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                   <div className="flex min-w-0 items-start gap-3">
                     <div className="grid size-10 shrink-0 place-items-center rounded-full border border-[#d4af37]/20 bg-[#d4af37]/[0.08] text-[#d4af37]">
