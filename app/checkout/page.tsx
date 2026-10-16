@@ -538,6 +538,11 @@ export default function CheckoutPage() {
         `${line.product.name} | Option: ${line.variant} | Qty: ${line.quantity} | ${formatPrice(line.product.price * line.quantity)}`,
     ),
     "",
+    ...(couponCode.trim()
+      ? [serverTotals
+          ? `Coupon ${couponCode.trim().toUpperCase()} validated at order creation; discount: ${formatPrice(serverTotals.discountPaise / 100)}`
+          : `Coupon requested: ${couponCode.trim().toUpperCase()} (not yet validated; please confirm eligibility and discount)`]
+      : []),
     `Total items: ${displayCount}`,
     `Subtotal: ${formatPrice(serverTotals ? serverTotals.subtotalPaise / 100 : displaySubtotal)}`,
     ...(serverTotals && serverTotals.discountPaise > 0 ? [`Discount: -${formatPrice(serverTotals.discountPaise / 100)}`] : []),
