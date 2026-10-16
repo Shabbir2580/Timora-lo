@@ -109,6 +109,8 @@ export default function HomePage() {
           setFeaturedProducts(data.map((row, index) => {
             const price = Number(row.price)
             const compareAt = row.compare_at_price == null ? price : Number(row.compare_at_price)
+            const explicitlyOnSale = Array.isArray(row.tags) && row.tags.some((tag: unknown) => typeof tag === "string" && tag.trim().toLowerCase() === "sale")
+            const validSale = explicitlyOnSale && Number.isFinite(compareAt) && compareAt > price && price >= 0
             return {
               id: row.id,
               slug: row.slug,
@@ -116,8 +118,8 @@ export default function HomePage() {
               category: row.category || "Accessories",
               price,
               stock: Number(row.stock ?? 0),
-              oldPrice: compareAt > price ? compareAt : null,
-              badge: compareAt > price ? "SALE" : "CURATED",
+              oldPrice: validSale ? compareAt : null,
+              badge: validSale ? "SALE" : "CURATED",
               tags: Array.isArray(row.tags) ? row.tags.filter((tag: unknown): tag is string => typeof tag === "string") : [],
               image: row.image_url || row.images?.[0] || "/timora/watch.png",
               tone: ["bg-[#e8e1d6]", "bg-[#e7e5df]", "bg-[#e9e1d6]", "bg-[#e6e3dc]"][index % 4],
@@ -180,7 +182,7 @@ export default function HomePage() {
           </button>
 
           <Link href="/" className="group flex shrink-0 flex-col">
-            <span className="text-2xl font-semibold tracking-[0.2em] sm:text-3xl">
+            <span className="text-3xl font-semibold tracking-[0.2em] sm:text-4xl">
               TIMORA<span className="text-[#c9a96e]">.</span>
             </span>
             <span className="mt-0.5 text-[8px] uppercase tracking-[0.32em] text-white/45 sm:text-[9px]">
