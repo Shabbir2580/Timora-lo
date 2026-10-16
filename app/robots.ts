@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next"
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://timora-by-sk.vercel.app"
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://v0-timora.vercel.app").replace(/\/$/, "")
 
 export default function robots(): MetadataRoute.Robots {
   return {
