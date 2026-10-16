@@ -222,9 +222,9 @@ export default function CustomerOrdersPage() {
           && typeof click.at === "number"
           && click.at <= Date.now()
           && Date.now() - click.at <= 30 * 24 * 60 * 60 * 1000
-        if (validClick && click) {
+        if (validClick && click && click.campaignId && click.clickId && click.placement && typeof click.at === "number") {
           const attributedOrders = rows.filter((order) =>
-            new Date(order.created_at).getTime() >= click.at!
+            new Date(order.created_at).getTime() >= click.at
             && order.payment_status === "paid"
             && order.order_status !== "cancelled"
             && (order.payment_provider === "cod" ? Boolean(order.cod_collected_at) : Boolean(order.payment_verified_at))
