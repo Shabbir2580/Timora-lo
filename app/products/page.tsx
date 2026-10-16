@@ -140,7 +140,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       product.categorySlug,
       product.description,
       ...product.tags,
-      ...product.highlights,
+      ...(product.highlights ?? []),
     ].join(" ").toLowerCase()
     const matchesQuery = !query || searchableText.includes(query)
     const matchesDeals = !dealsOnly || product.badges.includes("SALE")
