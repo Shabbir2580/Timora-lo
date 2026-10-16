@@ -85,6 +85,33 @@ create trigger on_auth_user_created_customer_referral
 after insert on auth.users
 for each row execute function public.create_customer_referral_profile();
 
+-- Existing customers also need their own referral code when this migration is first applied.
+do $backfill$
+declare
+  v_user record;
+  v_code text;
+begin
+  for v_user in
+    select u.id
+      from auth.users u
+     where not exists (
+       select 1 from public.customer_referrals cr where cr.customer_id = u.id
+     )
+  loop
+    loop
+      v_code := substr(upper(md5(v_user.id::text || clock_timestamp()::text || random()::text)), 1, 10);
+      exit when not exists (
+        select 1 from public.customer_referrals cr where cr.referral_code = v_code
+      );
+    end loop;
+
+    insert into public.customer_referrals(customer_id, referral_code)
+    values (v_user.id, v_code)
+    on conflict do nothing;
+  end loop;
+end
+$backfill$;
+
 create or replace function public.award_timora_loyalty_points()
 returns trigger
 language plpgsql
