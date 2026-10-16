@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { normalizeImageUrl } from "@/components/store/smart-image"
 
 type Product = {
   id: string
@@ -271,8 +272,12 @@ export default function AdminProductsPage() {
     const existingImages = editingId
       ? products.find((product) => product.id === editingId)?.images ?? []
       : []
-    const mainImage = form.image_url.trim()
-    const additionalImages = form.additional_images.split("\n").map((value) => value.trim()).filter(Boolean)
+    const mainImage = form.image_url.trim() ? normalizeImageUrl(form.image_url.trim()) : ""
+    const additionalImages = form.additional_images
+      .split("\n")
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map(normalizeImageUrl)
     const videos = form.videos.split("\n").map((value) => value.trim()).filter(Boolean)
     const preservedImages = Array.from(new Set([mainImage, ...additionalImages].filter(Boolean)))
     if (preservedImages.length > 6) {
