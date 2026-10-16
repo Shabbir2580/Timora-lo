@@ -54,3 +54,14 @@ Audit basis: source review of `main` on 16 October 2026. This is a code-level au
 - The repair branch is based on `main`; the latest branch comparison should be used for the current ahead/behind count.
 - The migration has not been run against the live Supabase project from this environment.
 - No local build, browser automation, live checkout, or payment test was run here. Do not interpret source review as production validation.
+
+
+## Follow-up audit — 16 October 2026
+
+- [x] Password recovery and metadata now use `NEXT_PUBLIC_SITE_URL` (falling back to the current browser origin for recovery links) instead of hardcoding the old Vercel hostname in the recovery flow.
+- [x] Confirmed the singular `/shipping` route is a compatibility alias to `/shippings`; footer and sitemap use the plural route, so this is not a broken link.
+- [ ] **Live database/source mismatch needs resolution:** the live `create_order_atomic` definition supplied during the audit returns `TABLE(order_id, subtotal_paise, shipping_paise, discount_paise, total_paise)`, while repository migration `202610150001_timora_repairs.sql` replaces that function with a `jsonb` return. The API currently accepts either shape, but the deployed database and migration history are not aligned. Confirm the migration history and actual live schema before applying any migration; do not blindly re-run the function replacement because PostgreSQL cannot change a function's return type with `CREATE OR REPLACE`.
+- [ ] **Database target is not independently verified:** earlier SQL results showed zero orders/order items, while the admin UI was reported to show order counts. Confirm Vercel's `NEXT_PUBLIC_SUPABASE_URL` matches the Supabase project queried in SQL Editor, and verify the deployed environment has both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Never paste secret/service-role keys into chat or client-side variables.
+- [ ] **Deployment verification remains blocked:** Vercel checks for the current `main` commit report `build-rate-limit`; no production build or browser end-to-end test is verified from this environment.
+- [ ] The order-expiry cron, checkout totals/stock lifecycle, auth redirects, staff permissions, and live customer review eligibility still require test orders in the intended Supabase project.
+- [ ] Newsletter form and `/api/newsletter` RPC integration are present in source. Confirm the matching database migration/RPC is applied in the live project; stored opt-ins do not mean marketing emails are configured.
