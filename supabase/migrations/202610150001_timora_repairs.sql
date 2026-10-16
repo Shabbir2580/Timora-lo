@@ -75,6 +75,10 @@ begin
 end
 $block$;
 
+-- The earlier atomic-order migration declares this same signature with RETURNS TABLE.
+-- PostgreSQL cannot change a function's return type via CREATE OR REPLACE, so drop it first.
+drop function if exists public.create_order_atomic(text,text,text,text,text,text,text,text,text,text,jsonb,text);
+
 create or replace function public.create_order_atomic(
   p_customer_name text,
   p_customer_email text,
