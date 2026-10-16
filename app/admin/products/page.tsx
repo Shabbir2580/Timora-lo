@@ -532,8 +532,8 @@ export default function AdminProductsPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
             <Link
-              href="/"
-              aria-label="Back to Timora storefront"
+              href="/admin"
+              aria-label="Back to admin dashboard"
               className="grid size-10 place-items-center rounded-full border border-white/10 hover:border-[#d4af37]/50"
             >
               <ArrowLeft className="size-4" />
