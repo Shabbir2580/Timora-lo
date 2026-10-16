@@ -60,7 +60,7 @@ function toProduct(row: DatabaseProduct): Product {
     rating: 0,
     reviewCount: 0,
     image,
-    images: row.images?.length ? row.images : [image],
+    images: Array.from(new Set([image, ...(row.images ?? [])].filter((value): value is string => typeof value === "string" && value.trim().length > 0))).slice(0, 6),
     badges,
     tags: Array.isArray(row.tags) ? row.tags.filter((tag): tag is string => typeof tag === "string") : [],
     verified: false,
