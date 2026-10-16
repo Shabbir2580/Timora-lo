@@ -65,3 +65,8 @@ Audit basis: source review of `main` on 16 October 2026. This is a code-level au
 - [ ] **Deployment verification remains blocked:** Vercel checks for the current `main` commit report `build-rate-limit`; no production build or browser end-to-end test is verified from this environment.
 - [ ] The order-expiry cron, checkout totals/stock lifecycle, auth redirects, staff permissions, and live customer review eligibility still require test orders in the intended Supabase project.
 - [ ] Newsletter form and `/api/newsletter` RPC integration are present in source. Confirm the matching database migration/RPC is applied in the live project; stored opt-ins do not mean marketing emails are configured.
+
+## Follow-up hardening — 16 October 2026
+
+- [x] Google Drive image proxy now applies an 8-second timeout per upstream request, enforces a 12 MB maximum while streaming, cancels rejected responses, and sends `X-Content-Type-Options: nosniff`. This limits oversized or stalled upstream image requests; the endpoint still needs a successful deployment and live test with public, private, missing, and oversized Drive files.
+- [ ] Re-run the production build and exercise the image converter after the Vercel build-rate limit is resolved. No build or production verification was performed as part of this source-only change.
