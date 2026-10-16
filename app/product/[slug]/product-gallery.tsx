@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Play } from "lucide-react"
 
 type ProductGalleryProps = {
@@ -34,22 +34,48 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
   const [activeKey, setActiveKey] = useState(galleryItems[0]?.key ?? "image:/placeholder.svg")
   const activeItem = galleryItems.find((item) => item.key === activeKey) ?? galleryItems[0]
 
+  useEffect(() => {
+    if (!galleryItems.some((item) => item.key === activeKey)) {
+      setActiveKey(galleryItems[0]?.key ?? "image:/placeholder.svg")
+    }
+  }, [activeKey, galleryItems])
+
+  const isDrivePreview = (src: string) => {
+    try {
+      const url = new URL(src)
+      return (url.hostname === "drive.google.com" || url.hostname.endsWith(".drive.google.com")) && url.pathname.includes("/preview")
+    } catch {
+      return false
+    }
+  }
+
   return (
     <section aria-label={`${productName} media gallery`} className="min-w-0">
       <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-[#f1eee7]">
         {activeItem?.type === "video" ? (
-          <video
-            key={activeItem.src}
-            controls
-            playsInline
-            preload="metadata"
-            poster={galleryItems.find((item) => item.type === "image")?.src}
-            className="absolute inset-0 h-full w-full bg-black object-contain"
-            aria-label={`${productName} product video`}
-          >
-            <source src={activeItem.src} />
-            Your browser does not support embedded video.
-          </video>
+          isDrivePreview(activeItem.src) ? (
+            <iframe
+              key={activeItem.src}
+              src={activeItem.src}
+              title={`${productName} product video`}
+              allow="autoplay; encrypted-media; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full border-0 bg-black"
+            />
+          ) : (
+            <video
+              key={activeItem.src}
+              controls
+              playsInline
+              preload="metadata"
+              poster={galleryItems.find((item) => item.type === "image")?.src}
+              className="absolute inset-0 h-full w-full bg-black object-contain"
+              aria-label={`${productName} product video`}
+            >
+              <source src={activeItem.src} />
+              Your browser does not support embedded video.
+            </video>
+          )
         ) : (
           <Image
             key={activeItem?.src ?? "/placeholder.svg"}
