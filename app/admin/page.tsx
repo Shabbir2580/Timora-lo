@@ -290,7 +290,7 @@ export default function AdminDashboardPage() {
   return (
     <main className="min-h-screen bg-[#090a0b] text-[#f6f5f0]"><style jsx global>{`@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }`}</style>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-white/[0.07] bg-[#0c0d0e] xl:flex">
-        <Link href="/" className="flex h-[88px] items-center gap-3 border-b border-white/[0.07] px-6">
+        <Link href="/admin" className="flex h-[88px] items-center gap-3 border-b border-white/[0.07] px-6" aria-label="Admin dashboard">
           <Image src="/timora-logo.svg" alt="Timora" width={40} height={40} priority className="size-10 rounded-lg object-contain" />
           <div><p className="text-lg font-semibold tracking-[0.2em]">TIMORA<span className="text-[#d9b65d]">.</span></p><p className="text-[9px] uppercase tracking-[0.2em] text-white/35">Commerce console</p></div>
         </Link>
