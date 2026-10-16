@@ -1,12 +1,22 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Search, Clock, TrendingUp, X } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { products, categories } from "@/lib/data"
+import { categories } from "@/lib/data"
+import { createClient } from "@/lib/supabase/client"
+
+type SearchProduct = {
+  id: string
+  name: string
+  slug: string
+  category: string | null
+  image_url: string | null
+  images: string[] | null
+}
 
 const recent = ["wireless headphones", "smartwatch", "mechanical keyboard"]
 const popular = ["noise cancelling", "earbuds under 5000", "gaming laptop", "bluetooth speaker"]
@@ -14,17 +24,59 @@ const popular = ["noise cancelling", "earbuds under 5000", "gaming laptop", "blu
 export function SearchBar({ className }: { className?: string }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
+  const [matches, setMatches] = useState<SearchProduct[]>([])
+  const [loading, setLoading] = useState(false)
+  const [searchError, setSearchError] = useState(false)
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const matches = query
-    ? products.filter((p) => `${p.brand} ${p.name}`.toLowerCase().includes(query.toLowerCase())).slice(0, 4)
-    : products.slice(0, 3)
+  useEffect(() => {
+    if (!open) return
+
+    let active = true
+    const timer = window.setTimeout(async () => {
+      setLoading(true)
+      setSearchError(false)
+      try {
+        const supabase = createClient()
+        let request = supabase
+          .from("products")
+          .select("id,name,slug,category,image_url,images")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(4)
+
+        const term = query.trim()
+        if (term) {
+          // The full results page searches the complete live catalogue. These
+          // quick suggestions intentionally search product names only.
+          request = request.ilike("name", `%${term.replace(/[%_\\]/g, "\\$&")}%`)
+        }
+
+        const { data, error } = await request
+        if (error) throw error
+        if (active) setMatches((data ?? []) as SearchProduct[])
+      } catch (error) {
+        console.error("Could not load live search suggestions:", error)
+        if (active) {
+          setMatches([])
+          setSearchError(true)
+        }
+      } finally {
+        if (active) setLoading(false)
+      }
+    }, 180)
+
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [open, query])
 
   function submit(term: string) {
     if (!term.trim()) return
     setOpen(false)
-    router.push(`/products?q=${encodeURIComponent(term)}`)
+    router.push(`/products?q=${encodeURIComponent(term.trim())}`)
   }
 
   return (
@@ -43,9 +95,11 @@ export function SearchBar({ className }: { className?: string }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setOpen(true)}
-            onBlur={() => setTimeout(() => setOpen(false), 150)}
+            onBlur={() => window.setTimeout(() => setOpen(false), 150)}
             placeholder="Search products, brands and categories..."
             aria-label="Search products"
+            aria-expanded={open}
+            aria-controls="timora-search-suggestions"
             className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
           {query && (
@@ -62,21 +116,22 @@ export function SearchBar({ className }: { className?: string }) {
       </form>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-lg border border-border bg-popover shadow-lg">
+        <div id="timora-search-suggestions" className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-lg border border-border bg-popover shadow-lg">
           {!query && (
             <div className="grid gap-4 p-4 sm:grid-cols-2">
               <div>
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  <Clock className="size-3.5" aria-hidden /> Recent
+                  <Clock className="size-3.5" aria-hidden /> Recent searches
                 </p>
                 <ul className="space-y-1">
-                  {recent.map((t) => (
-                    <li key={t}>
+                  {recent.map((term) => (
+                    <li key={term}>
                       <button
-                        onMouseDown={() => submit(t)}
+                        type="button"
+                        onMouseDown={() => submit(term)}
                         className="w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent"
                       >
-                        {t}
+                        {term}
                       </button>
                     </li>
                   ))}
@@ -84,16 +139,17 @@ export function SearchBar({ className }: { className?: string }) {
               </div>
               <div>
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  <TrendingUp className="size-3.5" aria-hidden /> Popular
+                  <TrendingUp className="size-3.5" aria-hidden /> Popular searches
                 </p>
                 <ul className="space-y-1">
-                  {popular.map((t) => (
-                    <li key={t}>
+                  {popular.map((term) => (
+                    <li key={term}>
                       <button
-                        onMouseDown={() => submit(t)}
+                        type="button"
+                        onMouseDown={() => submit(term)}
                         className="w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent"
                       >
-                        {t}
+                        {term}
                       </button>
                     </li>
                   ))}
@@ -104,45 +160,61 @@ export function SearchBar({ className }: { className?: string }) {
 
           <div className="border-t border-border p-2">
             <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {query ? "Products" : "Popular products"}
+              {query ? "Live catalogue matches" : "Recently added products"}
             </p>
-            {matches.length === 0 ? (
-              <p className="px-2 py-3 text-sm text-muted-foreground">
-                No products match “{query}”. Try a different term.
-              </p>
+            {loading ? (
+              <p role="status" className="px-2 py-3 text-sm text-muted-foreground">Searching the live catalogue…</p>
+            ) : searchError ? (
+              <div className="px-2 py-3">
+                <p role="status" className="text-sm text-muted-foreground">Quick suggestions are temporarily unavailable.</p>
+                {query.trim() && <button type="button" onMouseDown={() => submit(query)} className="mt-2 text-sm font-medium text-primary hover:underline">Search all products for “{query.trim()}”</button>}
+              </div>
+            ) : matches.length === 0 ? (
+              <div className="px-2 py-3">
+                <p className="text-sm text-muted-foreground">{query.trim() ? `No product names match “${query.trim()}”.` : "No active products are available yet."}</p>
+                {query.trim() && <button type="button" onMouseDown={() => submit(query)} className="mt-2 text-sm font-medium text-primary hover:underline">Search the full catalogue</button>}
+              </div>
             ) : (
               <ul>
-                {matches.map((p) => (
-                  <li key={p.id}>
-                    <Link
-                      href={`/product/${p.slug}`}
-                      onMouseDown={() => setOpen(false)}
-                      className="flex items-center gap-3 rounded px-2 py-2 hover:bg-accent"
-                    >
-                      <div className="grid size-10 shrink-0 place-items-center rounded bg-secondary">
-                        <Image src={p.image || "/placeholder.svg"} alt="" width={32} height={32} className="object-contain" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.brand}</p>
-                      </div>
-                    </Link>
-                  </li>
-                ))}
+                {matches.map((product) => {
+                  const image = product.image_url || product.images?.[0] || "/placeholder.svg"
+                  return (
+                    <li key={product.id}>
+                      <Link
+                        href={`/product/${product.slug}`}
+                        onMouseDown={() => setOpen(false)}
+                        className="flex items-center gap-3 rounded px-2 py-2 hover:bg-accent"
+                      >
+                        <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded bg-secondary">
+                          <Image src={image} alt="" width={40} height={40} unoptimized className="size-10 object-contain" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{product.name}</p>
+                          <p className="text-xs text-muted-foreground">{product.category || "Timora collection"}</p>
+                        </div>
+                      </Link>
+                    </li>
+                  )
+                })}
               </ul>
+            )}
+            {query.trim() && !searchError && (
+              <button type="button" onMouseDown={() => submit(query)} className="mt-1 w-full rounded px-2 py-2 text-left text-xs font-medium text-primary hover:bg-accent">
+                View all results for “{query.trim()}” →
+              </button>
             )}
           </div>
 
           {!query && (
             <div className="flex flex-wrap gap-2 border-t border-border p-3">
-              {categories.slice(0, 5).map((c) => (
+              {categories.slice(0, 5).map((category) => (
                 <Link
-                  key={c.slug}
-                  href={`/category/${c.slug}`}
+                  key={category.slug}
+                  href={`/products?category=${encodeURIComponent(category.slug)}`}
                   onMouseDown={() => setOpen(false)}
                   className="rounded-full border border-border px-3 py-1 text-xs font-medium hover:bg-accent"
                 >
-                  {c.name}
+                  {category.name}
                 </Link>
               ))}
             </div>
