@@ -56,6 +56,7 @@ type PublicCampaign = {
   headline: string | null
   description: string | null
   image_url: string
+  media_type?: "image" | "video"
   destination_url: string
   product_id: string | null
   starts_at: string | null
@@ -80,7 +81,7 @@ export function AdPlacement({ placement, className = "" }: Props) {
         const supabase = createClient()
         const { data, error } = await supabase
           .from("ad_public_campaigns")
-          .select("id,campaign_type,placement,headline,description,image_url,destination_url,product_id,starts_at,ends_at,advertiser_type")
+          .select("id,campaign_type,placement,headline,description,image_url,destination_url,product_id,starts_at,ends_at,advertiser_type,media_type")
           .eq("placement", placement)
           .limit(1)
         if (error) throw error
@@ -130,7 +131,7 @@ export function AdPlacement({ placement, className = "" }: Props) {
     <section ref={placementRef} aria-label={label} className={`mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12 ${className}`}>
       <div className="group relative isolate overflow-hidden rounded-2xl border border-[#c9a96e]/25 bg-[#10100e]">
         <div className="absolute inset-0 -z-10">
-          <img src={campaign.image_url} alt="" aria-hidden="true" className="size-full object-cover opacity-35 transition duration-700 group-hover:scale-[1.02]" />
+          {campaign.media_type === "video" ? <video src={campaign.image_url} aria-hidden="true" autoPlay muted loop playsInline className="size-full object-cover opacity-35 transition duration-700 group-hover:scale-[1.02]" /> : <img src={campaign.image_url} alt="" aria-hidden="true" className="size-full object-cover opacity-35 transition duration-700 group-hover:scale-[1.02]" />}
           <div className="absolute inset-0 bg-gradient-to-r from-[#0b0b0a] via-[#0b0b0a]/85 to-[#0b0b0a]/25" />
         </div>
         <div className="grid min-h-48 gap-5 p-5 sm:min-h-56 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-8 lg:p-10">
