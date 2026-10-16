@@ -97,6 +97,13 @@ const friendlyError = (error: unknown) => {
   return "Something went wrong. Please try again."
 }
 const formatDate = (value: string | null) => value ? new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "Not scheduled"
+const toLocalDateTimeInput = (value: string | null) => {
+  if (!value) return ""
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ""
+  const pad = (part: number) => String(part).padStart(2, "0")
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
 const safeExternalUrl = (value: string) => {
   try {
     const url = new URL(value)
@@ -127,6 +134,7 @@ export default function AdminAdvertisingPage() {
   const [advertiserEmail, setAdvertiserEmail] = useState("")
   const [advertiserWebsite, setAdvertiserWebsite] = useState("")
   const [campaignName, setCampaignName] = useState("")
+  const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null)
   const [campaignType, setCampaignType] = useState<Campaign["campaign_type"]>("timora_promotion")
   const [placement, setPlacement] = useState<Campaign["placement"]>("homepage_hero")
   const [advertiserId, setAdvertiserId] = useState("")
@@ -337,7 +345,7 @@ export default function AdminAdvertisingPage() {
     setNotice("")
     try {
       const supabase = createClient()
-      const { error: insertError } = await supabase.from("ad_campaigns").insert({
+      const campaignPayload = {
         advertiser_id: advertiserId,
         campaign_name: campaignName.trim(),
         campaign_type: campaignType,
@@ -349,10 +357,12 @@ export default function AdminAdvertisingPage() {
         product_id: productId || null,
         starts_at: startsAt ? new Date(startsAt).toISOString() : null,
         ends_at: endsAt ? new Date(endsAt).toISOString() : null,
-        status: "draft",
-        created_by: userId,
-      })
-      if (insertError) throw insertError
+      }
+      const result = editingCampaignId
+        ? await supabase.from("ad_campaigns").update(campaignPayload).eq("id", editingCampaignId)
+        : await supabase.from("ad_campaigns").insert({ ...campaignPayload, status: "draft", created_by: userId })
+      if (result.error) throw result.error
+      setEditingCampaignId(null)
       setCampaignName("")
       setHeadline("")
       setDescription("")
@@ -370,7 +380,24 @@ export default function AdminAdvertisingPage() {
     }
   }
 
-  async function changeCampaignStatus(campaign: Campaign, action: "submit" | "publish" | "pause") {
+  function startEditingCampaign(campaign: Campaign) {
+    setEditingCampaignId(campaign.id)
+    setCampaignName(campaign.campaign_name)
+    setCampaignType(campaign.campaign_type)
+    setPlacement(campaign.placement)
+    setAdvertiserId(campaign.advertiser_id)
+    setHeadline(campaign.headline ?? "")
+    setDescription(campaign.description ?? "")
+    setImageUrl(campaign.image_url)
+    setDestinationUrl(campaign.destination_url)
+    setProductId(campaign.product_id ?? "")
+    setStartsAt(toLocalDateTimeInput(campaign.starts_at))
+    setEndsAt(toLocalDateTimeInput(campaign.ends_at))
+    setNotice("Editing a saved campaign. Changes to a paused or draft campaign will not publish it.")
+    document.getElementById("campaign-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  async function changeCampaignStatus(campaign: Campaign, action: "submit" | "publish" | "pause" | "archive") {
     setBusyCampaign(campaign.id)
     setError("")
     setNotice("")
@@ -378,7 +405,7 @@ export default function AdminAdvertisingPage() {
       const supabase = createClient()
       const now = new Date()
       const scheduledInFuture = Boolean(campaign.starts_at && new Date(campaign.starts_at) > now)
-      const status = action === "submit" ? "pending_approval" : action === "pause" ? "paused" : scheduledInFuture ? "scheduled" : "live"
+      const status = action === "submit" ? "pending_approval" : action === "pause" ? "paused" : action === "archive" ? "archived" : scheduledInFuture ? "scheduled" : "live"
       const updates: Record<string, string | null> = { status }
       if (action === "publish") {
         updates.approved_by = userId
@@ -386,7 +413,7 @@ export default function AdminAdvertisingPage() {
       }
       const { error: updateError } = await supabase.from("ad_campaigns").update(updates).eq("id", campaign.id)
       if (updateError) throw updateError
-      setNotice(action === "submit" ? "Campaign submitted for approval." : action === "pause" ? "Campaign paused." : status === "scheduled" ? "Campaign approved and scheduled." : "Campaign published.")
+      setNotice(action === "submit" ? "Campaign submitted for approval." : action === "pause" ? "Campaign paused." : action === "archive" ? "Campaign archived." : status === "scheduled" ? "Campaign approved and scheduled." : "Campaign published.")
       await loadData()
     } catch (err) {
       setError(`Could not update campaign: ${friendlyError(err)}`)
@@ -492,8 +519,8 @@ export default function AdminAdvertisingPage() {
         )}
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-          <section className="rounded-2xl border border-[#d4af37]/20 bg-white/[0.025] p-5 sm:p-7">
-            <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">Create campaign</h2><p className="mt-1 text-sm text-white/45">New campaigns start as drafts and are not shown publicly.</p></div><div className="grid size-10 place-items-center rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/10 text-[#d4af37]"><Plus className="size-5" /></div></div>
+          <section id="campaign-form" className="scroll-mt-24 rounded-2xl border border-[#d4af37]/20 bg-white/[0.025] p-5 sm:p-7">
+            <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">{editingCampaignId ? "Edit campaign" : "Create campaign"}</h2><p className="mt-1 text-sm text-white/45">{editingCampaignId ? "Editing preserves the current campaign status." : "New campaigns start as drafts and are not shown publicly."}</p></div><div className="grid size-10 place-items-center rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/10 text-[#d4af37]"><Plus className="size-5" /></div></div>
             <form onSubmit={createCampaign} className="space-y-4">
               <label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Campaign name</span><input required minLength={1} maxLength={160} value={campaignName} onChange={(e) => setCampaignName(e.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-sm outline-none focus:border-[#d4af37]/50" placeholder="Diwali collection promotion" /></label>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -507,13 +534,13 @@ export default function AdminAdvertisingPage() {
               <div className="rounded-xl border border-dashed border-[#d4af37]/30 bg-[#d4af37]/[0.03] p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-3"><ImagePlus className="mt-0.5 size-5 shrink-0 text-[#d4af37]" /><div><p className="text-sm font-medium">Campaign creative</p><p className="mt-1 text-xs leading-5 text-white/45">JPG, PNG, WebP or AVIF · maximum 8 MB</p></div></div><label className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-white/15 px-3 text-xs hover:border-[#d4af37]/40">{uploading ? <LoaderCircle className="size-4 animate-spin" /> : <Upload className="size-4" />}{uploading ? "Uploading..." : "Upload image"}<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploading} onChange={(event) => void uploadCreative(event)} className="sr-only" /></label></div><label className="mt-3 block"><span className="mb-1 block text-xs text-white/50">Or image URL (HTTPS)</span><input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." className="min-h-10 w-full rounded-lg border border-white/10 bg-black/30 px-3 text-sm" /></label>{imageUrl && <div className="mt-3 overflow-hidden rounded-lg border border-white/10"><img src={imageUrl} alt="Campaign creative preview" className="max-h-48 w-full object-contain" /></div>}</div>
               <label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Destination URL or Timora path</span><input required value={destinationUrl} onChange={(e) => setDestinationUrl(e.target.value)} placeholder="/products/example" className="min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-sm" /><span className="mt-1 block text-[11px] text-white/35">Use a same-site path or a verified HTTPS external destination.</span></label>
               <div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Start date (optional)</span><input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111] px-3 text-sm" /></label><label className="block"><span className="mb-2 block text-xs font-medium text-white/60">End date (optional)</span><input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111] px-3 text-sm" /></label></div>
-              <button type="submit" disabled={saving || uploading || !campaignName.trim() || !advertiserId} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#d4af37] px-5 text-sm font-semibold text-black transition hover:bg-[#e4c878] disabled:cursor-not-allowed disabled:opacity-50">{saving ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}Save campaign draft</button>
+              <button type="submit" disabled={saving || uploading || !campaignName.trim() || !advertiserId} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#d4af37] px-5 text-sm font-semibold text-black transition hover:bg-[#e4c878] disabled:cursor-not-allowed disabled:opacity-50">{saving ? <LoaderCircle className="size-4 animate-spin" /> : editingCampaignId ? <CheckCircle2 className="size-4" /> : <Plus className="size-4" />}{editingCampaignId ? "Save campaign changes" : "Save campaign draft"}</button>{editingCampaignId && <button type="button" onClick={() => { setEditingCampaignId(null); setCampaignName(""); setHeadline(""); setDescription(""); setImageUrl(""); setDestinationUrl("/"); setProductId(""); setStartsAt(""); setEndsAt(""); }} className="min-h-10 w-full rounded-xl border border-white/10 text-xs text-white/60">Cancel editing</button>}
             </form>
           </section>
 
           <section className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.02]">
             <div className="flex flex-col gap-3 border-b border-white/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"><div><h2 className="font-semibold">Campaign library</h2><p className="mt-1 text-xs text-white/45">{campaigns.length} campaigns loaded</p></div><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="min-h-10 rounded-lg border border-white/10 bg-[#111] px-3 text-xs"><option value="all">All statuses</option>{["draft","pending_approval","approved","scheduled","live","paused","rejected","expired","archived"].map((status) => <option key={status} value={status}>{status.replaceAll("_", " ")}</option>)}</select></div>
-            {loading && campaigns.length === 0 ? <div className="flex items-center justify-center gap-3 px-5 py-12 text-sm text-white/50"><LoaderCircle className="size-5 animate-spin text-[#d4af37]" />Loading campaigns...</div> : filteredCampaigns.length === 0 ? <div className="px-5 py-12 text-center"><Megaphone className="mx-auto mb-3 size-8 text-white/20" /><p className="font-medium">No campaigns here yet</p><p className="mt-1 text-sm text-white/40">Create a draft to begin.</p></div> : <ul className="divide-y divide-white/[0.07]">{filteredCampaigns.map((campaign) => <li key={campaign.id} className="p-4 sm:p-5"><div className="flex gap-3"><div className="size-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/20">{/* Campaign images are uploaded to the public creative bucket. */}<img src={campaign.image_url} alt="" className="size-full object-cover" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="break-words text-sm font-medium">{campaign.campaign_name}</p><span className={`rounded-full border px-2 py-0.5 text-[10px] ${statusStyles[campaign.status] ?? statusStyles.draft}`}>{campaign.status.replaceAll("_", " ")}</span></div><p className="mt-1 text-xs text-white/45">{campaign.advertisers?.business_name ?? "Advertiser"} · {placementLabels[campaign.placement]}</p><p className="mt-1 text-[11px] text-white/35">{formatDate(campaign.starts_at)} → {formatDate(campaign.ends_at)}</p><a href={campaign.destination_url} target={campaign.destination_url.startsWith("/") ? undefined : "_blank"} rel="noreferrer" className="mt-2 inline-flex items-center gap-1 break-all text-[11px] text-[#e4c878] hover:underline"><ExternalLink className="size-3 shrink-0" />Preview destination</a></div></div><div className="mt-3 flex flex-wrap gap-2">{campaign.status === "draft" && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "submit")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-sky-300/20 px-3 text-xs text-sky-200 hover:bg-sky-300/5 disabled:opacity-50"><Send className="size-3.5" />Submit for approval</button>}{canPublish && ["draft","pending_approval","approved","scheduled","paused"].includes(campaign.status) && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "publish")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#d4af37] px-3 text-xs font-semibold text-black hover:bg-[#e4c878] disabled:opacity-50">{busyCampaign === campaign.id ? <LoaderCircle className="size-3.5 animate-spin" /> : <BadgeCheck className="size-3.5" />}{campaign.starts_at && new Date(campaign.starts_at) > new Date() ? "Approve & schedule" : "Approve & publish"}</button>}{["live","scheduled","approved"].includes(campaign.status) && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "pause")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-orange-300/20 px-3 text-xs text-orange-200 hover:bg-orange-300/5 disabled:opacity-50"><Pause className="size-3.5" />Pause</button>}</div></li>)}</ul>}
+            {loading && campaigns.length === 0 ? <div className="flex items-center justify-center gap-3 px-5 py-12 text-sm text-white/50"><LoaderCircle className="size-5 animate-spin text-[#d4af37]" />Loading campaigns...</div> : filteredCampaigns.length === 0 ? <div className="px-5 py-12 text-center"><Megaphone className="mx-auto mb-3 size-8 text-white/20" /><p className="font-medium">No campaigns here yet</p><p className="mt-1 text-sm text-white/40">Create a draft to begin.</p></div> : <ul className="divide-y divide-white/[0.07]">{filteredCampaigns.map((campaign) => <li key={campaign.id} className="p-4 sm:p-5"><div className="flex gap-3"><div className="size-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/20">{/* Campaign images are uploaded to the public creative bucket. */}<img src={campaign.image_url} alt="" className="size-full object-cover" /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="break-words text-sm font-medium">{campaign.campaign_name}</p><span className={`rounded-full border px-2 py-0.5 text-[10px] ${statusStyles[campaign.status] ?? statusStyles.draft}`}>{campaign.status.replaceAll("_", " ")}</span></div><p className="mt-1 text-xs text-white/45">{campaign.advertisers?.business_name ?? "Advertiser"} · {placementLabels[campaign.placement]}</p><p className="mt-1 text-[11px] text-white/35">{formatDate(campaign.starts_at)} → {formatDate(campaign.ends_at)}</p><a href={campaign.destination_url} target={campaign.destination_url.startsWith("/") ? undefined : "_blank"} rel="noreferrer" className="mt-2 inline-flex items-center gap-1 break-all text-[11px] text-[#e4c878] hover:underline"><ExternalLink className="size-3 shrink-0" />Preview destination</a></div></div><div className="mt-3 flex flex-wrap gap-2">{["draft","paused","rejected"].includes(campaign.status) && <button type="button" onClick={() => startEditingCampaign(campaign)} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs text-white/65 hover:bg-white/5"><Plus className="size-3.5" />Edit</button>}{campaign.status === "draft" && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "submit")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-sky-300/20 px-3 text-xs text-sky-200 hover:bg-sky-300/5 disabled:opacity-50"><Send className="size-3.5" />Submit for approval</button>}{canPublish && ["draft","pending_approval","approved","scheduled","paused"].includes(campaign.status) && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "publish")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-[#d4af37] px-3 text-xs font-semibold text-black hover:bg-[#e4c878] disabled:opacity-50">{busyCampaign === campaign.id ? <LoaderCircle className="size-3.5 animate-spin" /> : <BadgeCheck className="size-3.5" />}{campaign.starts_at && new Date(campaign.starts_at) > new Date() ? "Approve & schedule" : "Approve & publish"}</button>}{["live","scheduled","approved"].includes(campaign.status) && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "pause")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-orange-300/20 px-3 text-xs text-orange-200 hover:bg-orange-300/5 disabled:opacity-50"><Pause className="size-3.5" />Pause</button>}{["draft","pending_approval","paused","rejected","expired"].includes(campaign.status) && <button type="button" disabled={busyCampaign === campaign.id} onClick={() => void changeCampaignStatus(campaign, "archive")} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs text-white/45 disabled:opacity-50">Archive</button>}</div></li>)}</ul>}
             <div className="border-t border-white/10 px-5 py-4 text-xs leading-5 text-white/40 sm:px-6"><p>Public placements are connected for eligible campaigns. Analytics are best-effort and depend on the event pipeline, attribution session and verified order states.</p>{canViewAnalytics && <p className="mt-1">Analytics permission detected; event reporting will appear when ingestion and attribution are complete.</p>}</div>
           </section>
         </div>
