@@ -60,10 +60,10 @@ function normalizeQuantity(product: Product, quantity: number): number {
   return Math.min(limit, Math.max(1, Math.floor(quantity)))
 }
 
-function normalizeVariant(product: Product, variant: string): string {
-  if (product.colors?.includes(variant)) return variant
-
-  return product.colors?.[0] ?? "Default"
+function normalizeVariant(_product: Product, _variant: string): string {
+  // The live order API and database currently support only the Default option.
+  // Normalize old localStorage entries so stale preview colours cannot make checkout fail.
+  return "Default"
 }
 
 function restoreCartLine(value: unknown): CartLine | null {
