@@ -78,3 +78,10 @@ Audit basis: source review of `main` on 16 October 2026. This is a code-level au
 - [x] Made the Drive converter link more prominent in the Products page header and added a second shortcut beside the main product image URL field.
 - [ ] Apply the employee RPC repair migration in Supabase, then verify that the admin can load authorized employees, assign tasks, and see task progress. No live Supabase connection was available to apply or test this migration here.
 - [ ] The converter button is present in `main`; if it is absent on the live site, the running deployment is still serving an older commit. Verify after Vercel can build/deploy successfully. No deployment was initiated.
+
+## Employee task assignment repair — 16 October 2026
+
+- [x] Added migration `202610160002_fix_employee_task_assignment_rls.sql` with a role-checked database function for task assignment. It validates the signed-in admin, title length, priority, and that the assignee has the employee role; the assigning user is taken from the authenticated session.
+- [x] Updated the Employee work page to use the new function instead of a direct browser insert.
+- [ ] Apply this migration to the Supabase project used by the live website, then test assignment and verify the task appears for both admin and assigned employee. GitHub changes alone do not update the database.
+- [ ] Vercel build-rate-limit is still blocking successful build verification. Official Vercel documentation says Hobby accounts allow 32 builds per rolling 3600-second window; the exact remaining wait for this account is not visible from GitHub.
