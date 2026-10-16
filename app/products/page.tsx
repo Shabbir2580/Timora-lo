@@ -171,8 +171,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     sortedProducts.sort((a, b) => Number(b.stock !== "out_of_stock") - Number(a.stock !== "out_of_stock"))
   }
 
-  const heading = selectedCategory ? selectedCategory.name : dealsOnly ? "Today's Deals" : query ? "Search Results" : "Explore All Products"
-  const activeFilterCount = Number(Boolean(query)) + Number(dealsOnly) + Number(Boolean(categorySlug)) + Number(validMinPrice !== null) + Number(validMaxPrice !== null) + Number(inStockOnly)
+  const heading = query ? "Search Results" : dealsOnly ? "Today's Deals" : selectedCategory ? selectedCategory.name : "Explore All Products"
+  const activeFilterCount = Number(dealsOnly) + Number(Boolean(categorySlug)) + Number(validMinPrice !== null) + Number(validMaxPrice !== null) + Number(inStockOnly)
   const clearUrl = buildProductsUrl({ q: params.q?.trim() || undefined })
 
   return (
