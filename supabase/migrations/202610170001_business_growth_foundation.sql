@@ -203,6 +203,10 @@ begin
     if new.status not in ('draft','pending_approval') and not public.timora_has_staff_permission('publish_advertisements') then
       raise exception 'publishing permission required';
     end if;
+    if (new.approved_by is not null or new.published_by is not null)
+      and not public.timora_has_staff_permission('publish_advertisements') then
+      raise exception 'publishing permission required to set approval history';
+    end if;
   else
     if new.created_by is distinct from old.created_by then raise exception 'campaign creator cannot be changed'; end if;
     if (new.approved_by is distinct from old.approved_by or new.published_by is distinct from old.published_by)
@@ -243,6 +247,9 @@ begin
     if new.created_by <> auth.uid() then raise exception 'created_by must match the signed-in user'; end if;
     if new.status not in ('draft','pending_approval','rejected') and not public.timora_has_staff_permission('publish_marketing_content') then
       raise exception 'marketing publishing permission required';
+    end if;
+    if new.approved_by is not null and not public.timora_has_staff_permission('publish_marketing_content') then
+      raise exception 'marketing publishing permission required to set approval history';
     end if;
   else
     if new.created_by is distinct from old.created_by then raise exception 'content creator cannot be changed'; end if;
