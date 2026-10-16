@@ -10,6 +10,7 @@ import { RelatedProducts } from "@/components/store/related-products"
 import { RecentlyViewedProducts } from "@/components/store/recently-viewed-products"
 import { ProductCompareToggle } from "@/components/store/product-compare-toggle"
 import { PriceStockAlertButton } from "@/components/store/price-stock-alert-button"
+import { PincodeDeliveryChecker } from "@/components/store/pincode-delivery-checker"
 
 export const dynamic = "force-dynamic"
 
@@ -249,6 +250,7 @@ export default async function ProductDetailPage({
               inStock: product.stock !== "out_of_stock",
               updatedAt: new Date().toISOString(),
             }} />
+            <PincodeDeliveryChecker productName={product.name} />
 
             <div className="mt-7 border-t border-white/10 pt-5">
               <h2 className="text-sm font-semibold">Product information</h2>
