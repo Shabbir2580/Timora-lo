@@ -129,7 +129,7 @@ begin
   if new.customer_id is null
      or new.order_status <> 'delivered'
      or new.payment_status <> 'paid'
-     or coalesce(new.total_paise, 0) < 10000 then
+     or coalesce(new.total_paise, 0) <= 0 then
     return new;
   end if;
 
@@ -138,9 +138,11 @@ begin
   v_total_paise := new.total_paise;
   v_points := floor(v_total_paise::numeric / 10000)::integer;
 
-  insert into public.loyalty_points_ledger(customer_id, order_id, points, entry_type)
-  values (v_customer_id, v_order_id, v_points, 'order_earned')
-  on conflict (customer_id, order_id, entry_type) do nothing;
+  if v_points > 0 then
+    insert into public.loyalty_points_ledger(customer_id, order_id, points, entry_type)
+    values (v_customer_id, v_order_id, v_points, 'order_earned')
+    on conflict (customer_id, order_id, entry_type) do nothing;
+  end if;
 
   -- Referral bonuses are awarded only once per referred customer and only
   -- after their first successfully paid and delivered order.
