@@ -8,6 +8,7 @@ import { ProductGallery } from "./product-gallery"
 import { ProductReviews } from "@/components/store/product-reviews"
 import { RelatedProducts } from "@/components/store/related-products"
 import { RecentlyViewedProducts } from "@/components/store/recently-viewed-products"
+import { ProductCompareToggle } from "@/components/store/product-compare-toggle"
 
 export const dynamic = "force-dynamic"
 
@@ -228,6 +229,17 @@ export default async function ProductDetailPage({
             </p>
 
             <ProductActions product={product} />
+            <ProductCompareToggle item={{
+              id: product.id,
+              slug: product.slug,
+              name: product.name,
+              category: product.category,
+              price: product.price,
+              mrp: product.mrp,
+              image: product.image,
+              description: product.description,
+              stockCount: product.stockCount ?? 0,
+            }} />
 
             <div className="mt-7 border-t border-white/10 pt-5">
               <h2 className="text-sm font-semibold">Product information</h2>
