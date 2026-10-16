@@ -143,7 +143,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       ...(product.tags ?? []),
       ...(product.highlights ?? []),
     ].join(" ").toLowerCase()
-    const matchesQuery = !query || searchableText.includes(query)
+    const searchTerms = query.split(/\s+/).filter(Boolean)
+    const matchesQuery = searchTerms.length === 0 || searchTerms.every((term) => searchableText.includes(term))
     const matchesDeals = !dealsOnly || product.badges.includes("SALE")
     const productCategorySlug = product.categorySlug.toLowerCase()
     const matchesCategory = !categorySlug || (
@@ -316,7 +317,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             </div>
             <h2 className="text-xl font-semibold">{databaseError ? "Catalogue unavailable" : "No products match these filters"}</h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-              {databaseError ? "We couldn’t load the catalogue. Try again in a moment." : "Try a different search, broaden the price range, or remove a filter to see more products."}
+              {databaseError ? "We couldn’t load the catalogue. Try again in a moment." : priceRangeInvalid ? "Your minimum price is higher than your maximum price. Adjust the range to see products." : "Try a different search, broaden the price range, or remove a filter to see more products."}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               {!databaseError && <Link href={clearUrl} className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground hover:opacity-90">Clear filters</Link>}
