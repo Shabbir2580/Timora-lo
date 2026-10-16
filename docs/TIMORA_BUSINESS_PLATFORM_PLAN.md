@@ -93,3 +93,15 @@ The default Important Employee preset should enable advertising management, camp
 ## Foundation schema draft
 
 The proposed 202610170001_business_growth_foundation.sql adds permission grants, advertiser/campaign records, analytics event storage, Instagram content planning, business expenses and staff audit records. It is only a source migration draft. Before applying it, review the live migration history and run it against a non-production Supabase project. Publishing-transition enforcement, validated event ingestion, conversion attribution, audit-write functions and dashboard integration are explicit follow-up work; the schema alone is not a complete or production-ready feature.
+
+## Source implementation progress — 17 October 2026
+
+The first implementation slice now exists in the repository:
+- Admin employee management includes Important Employee promotion, permission tuning, direct-publishing permission and financial-report permission.
+- The advertising workspace supports advertiser records, image uploads to a proposed public creative bucket, campaign drafts, approval/submission, trusted publishing, pause controls and date-filtered reporting.
+- The homepage reads eligible campaigns from a public-safe view and records best-effort impression/click events.
+- The customer order-history flow attempts to attribute verified paid/collected orders to a recent ad click in the same browser session.
+- The Instagram marketing workspace stores drafts, creatives, captions, hashtags and planned times. It does not claim a post was published externally.
+- The source migration includes permission checks, publication guards, purchase eligibility checks, deduplication keys, and audit records for campaign/marketing state changes.
+
+These are source changes only. The migration has not been applied to any database, the repository could not be cloned for a local build in this environment, and no successful type-check, SQL execution, browser test or deployment is confirmed. The next step is static review and non-production migration/build validation before extending the remaining roadmap modules.
