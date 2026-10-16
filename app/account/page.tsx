@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import {
-  ArrowRight, BadgeCheck, ChevronRight, GitCompareArrows, Heart, LogOut, MapPin, Package, Pencil,
+  ArrowRight, BadgeCheck, ChevronRight, Gift, GitCompareArrows, Heart, LogOut, MapPin, Package, Pencil,
   RefreshCw, ShieldCheck, ShoppingBag, Truck,
 } from "lucide-react"
 
@@ -77,6 +77,7 @@ export default function AccountPage() {
     { href: "/orders", title: "Your orders", detail: "Track, return or view invoices", icon: Package },
     { href: "/addresses", title: "Manage addresses", detail: "Add, edit or choose a default address", icon: MapPin },
     { href: "/wishlist", title: "Your wishlist", detail: "Products you saved for later", icon: Heart },
+    { href: "/rewards", title: "Rewards & referrals", detail: "Earn points and invite friends", icon: Gift },
     { href: "/compare", title: "Compare products", detail: "Review saved products side by side", icon: GitCompareArrows },
     { href: "/checkout", title: "Buy again", detail: "Find your next favourite", icon: ShoppingBag },
     { href: "/returns", title: "Returns & help", detail: "Get help with an order", icon: RefreshCw },
