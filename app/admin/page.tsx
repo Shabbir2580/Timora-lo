@@ -297,7 +297,7 @@ export default function AdminDashboardPage() {
     { title: "Employee access", desc: "Authorize staff and manage roles", href: "/admin/employees", icon: Users, adminOnly: true, tag: `${metrics.employees} employees` },
     { title: "Assigned work", desc: "Assign tasks and track employee progress", href: "/admin/tasks", icon: ClipboardList, adminOnly: false, tag: "Task board", adsOnly: false },
     { title: "Advertising & marketing", desc: "Campaigns, featured products and marketing creatives", href: "/admin/advertising", icon: Activity, adminOnly: false, tag: "Growth Studio", adsOnly: true },
-  ].filter((item) => (role === "admin" || !item.adminOnly) && (!item.adsOnly || role === "admin" || canManageAds))
+  ].filter((item) => (role === "admin" || !item.adminOnly) && (!("adsOnly" in item) || !item.adsOnly || role === "admin" || canManageAds))
 
   return (
     <main className="min-h-screen bg-[#090a0b] text-[#f6f5f0]"><style jsx global>{`@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }`}</style>
