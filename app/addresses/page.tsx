@@ -83,22 +83,28 @@ export default function AddressesPage() {
     if (!/^\d{6}$/.test(form.pincode.trim())) { setError("Enter a valid 6-digit PIN code."); return }
     setSaving(true)
     try {
-      if (makeDefault) {
-        const { error: clearError } = await supabase.from("addresses").update({ is_default: false }).eq("user_id", userId)
-        if (clearError) throw clearError
-      }
+      const keepExistingDefault = Boolean(editingId && !makeDefault && addresses.some(address => address.id === editingId && address.is_default))
       const payload = {
         user_id: userId, full_name: form.full_name.trim(), phone, address: form.address.trim(),
         landmark: form.landmark.trim() || null, city: form.city.trim(), state: form.state.trim(),
         pincode: form.pincode.trim(), delivery_note: form.delivery_note.trim() || null,
-        address_label: form.address_label, is_default: makeDefault || addresses.length === 0,
+        address_label: form.address_label, is_default: keepExistingDefault,
       }
+      let savedAddressId = editingId
       if (editingId) {
-        const { error: updateError } = await supabase.from("addresses").update(payload).eq("id", editingId).eq("user_id", userId)
+        const { data, error: updateError } = await supabase.from("addresses")
+          .update(payload).eq("id", editingId).eq("user_id", userId).select("id").single()
         if (updateError) throw updateError
+        savedAddressId = data.id
       } else {
-        const { error: insertError } = await supabase.from("addresses").insert(payload)
+        const { data, error: insertError } = await supabase.from("addresses")
+          .insert(payload).select("id").single()
         if (insertError) throw insertError
+        savedAddressId = data.id
+      }
+      if (makeDefault || addresses.length === 0) {
+        const { error: defaultError } = await supabase.rpc("set_customer_default_address", { p_address_id: savedAddressId })
+        if (defaultError) throw defaultError
       }
       await loadAddresses(userId)
       setFormOpen(false); setNotice(editingId ? "Address updated successfully." : "Address saved successfully.")
@@ -112,9 +118,7 @@ export default function AddressesPage() {
     if (address.is_default) return
     setWorkingId(address.id); setError(""); setNotice("")
     try {
-      const { error: clearError } = await supabase.from("addresses").update({ is_default: false }).eq("user_id", userId)
-      if (clearError) throw clearError
-      const { error: setError } = await supabase.from("addresses").update({ is_default: true }).eq("id", address.id).eq("user_id", userId)
+      const { error: setError } = await supabase.rpc("set_customer_default_address", { p_address_id: address.id })
       if (setError) throw setError
       await loadAddresses(userId); setNotice("Default delivery address updated.")
     } catch {
@@ -126,7 +130,7 @@ export default function AddressesPage() {
     if (!window.confirm("Delete this saved address?")) return
     setWorkingId(address.id); setError(""); setNotice("")
     try {
-      const { error: deleteError } = await supabase.from("addresses").delete().eq("id", address.id).eq("user_id", userId)
+      const { error: deleteError } = await supabase.rpc("delete_customer_address", { p_address_id: address.id })
       if (deleteError) throw deleteError
       await loadAddresses(userId)
       setNotice("Address deleted.")
