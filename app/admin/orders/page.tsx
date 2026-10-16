@@ -93,6 +93,7 @@ export default function AdminOrdersPage() {
           .from("orders")
           .select("id,customer_id,customer_name,customer_email,customer_phone,address,landmark,city,state,pincode,delivery_note,subtotal_paise,shipping_paise,discount_paise,coupon_code,total_paise,order_status,payment_status,payment_provider,payment_reference,cod_approved_by,cod_approved_at,cod_rejection_reason,cod_collected_at,tracking_number,courier_name,shipped_at,delivered_at,payment_verified_at,created_at")
           .order("created_at", { ascending: false })
+          .order("id", { ascending: true })
           .range(offset, offset + pageSize - 1)
         if (ordersError) throw ordersError
         const page = (data ?? []) as CodOrder[]
