@@ -22,8 +22,8 @@ assert.match(checkout, /revoke all on function public\.create_order_atomic[\s\S]
 assert.match(cancellation, /set search_path\s*=\s*''/i, "Cancellation SECURITY DEFINER RPCs must use an empty search_path.");
 assert.match(cancellation, /usage_count = greatest\(0, usage_count - 1\)/i, "Cancellation and expiry must release coupon usage.");
 assert.match(cancellation, /for update skip locked/i, "Expiry must avoid concurrent workers processing the same order.");
-assert.match(reviewAccess, /revoke execute on function public\.moderate_product_review\(uuid, text\) from anon/i, "Anonymous callers must not execute review moderation.");
-assert.match(reviewAccess, /revoke execute on function public\.submit_product_review\(uuid, integer, text, text\) from anon/i, "Anonymous callers must not execute authenticated review submission.");
+assert.match(reviewAccess, /revoke execute on function public\.moderate_product_review\(uuid, text\) from public, anon/i, "Anonymous callers must not execute review moderation.");
+assert.match(reviewAccess, /revoke execute on function public\.submit_product_review\(uuid, integer, text, text\) from public, anon/i, "Anonymous callers must not execute authenticated review submission.");
 assert.doesNotMatch(notifications, /['\"]order_update['\"]/i, "Notification migration must not use an unsupported notification type.");
 assert.doesNotMatch(notifications, /create trigger/i, "Notification migration must not add duplicate order notification triggers.");
 
