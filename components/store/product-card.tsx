@@ -18,7 +18,8 @@ export function ProductCard({ product }: { product: Product }) {
   const isLiveProduct = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(product.id)
   const isPreview = !isLiveProduct
   const outOfStock = product.stock === "out_of_stock"
-  const discountPercent = product.mrp > product.price && product.mrp > 0
+  const explicitlyOnSale = (product.tags ?? []).some((tag) => tag.trim().toLowerCase() === "sale")
+  const discountPercent = explicitlyOnSale && product.mrp > product.price && product.mrp > 0
     ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
     : 0
   const hasSaleBadge = product.badges.some((badge) => badge.toLowerCase().includes("sale") || badge.toLowerCase().includes("off"))
@@ -54,7 +55,7 @@ export function ProductCard({ product }: { product: Product }) {
               {discountPercent}% off
             </span>
           )}
-          {(product.tags ?? []).slice(0, 2).map((tag) => (
+          {(product.tags ?? []).filter((tag) => tag.trim().toLowerCase() !== "sale").slice(0, 2).map((tag) => (
             <span key={tag} className="max-w-28 truncate rounded border border-[#c9a96e]/35 bg-[#0b0b0a]/90 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[#e5cb91] shadow-sm" title={tag}>
               {tag}
             </span>
