@@ -42,6 +42,13 @@ begin
       and payment_status = 'pending';
 
     if found then
+      -- Match the interactive expiry/cancellation path: release the coupon
+      -- usage reservation as well as stock when an unpaid order expires.
+      if v_order.coupon_code is not null then
+        update public.coupons
+        set usage_count = greatest(0, usage_count - 1), updated_at = now()
+        where code = v_order.coupon_code;
+      end if;
       v_count := v_count + 1;
     end if;
   end loop;
