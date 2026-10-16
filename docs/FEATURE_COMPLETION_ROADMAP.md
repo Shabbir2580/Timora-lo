@@ -89,3 +89,6 @@ This roadmap tracks source changes separately from live verification. No item is
 
 - [x] Renamed the generic product grid previously titled “Flash Sale” to “Featured collection,” because no sale schedule or actual sale-only filter was connected to that section.
 - [ ] Continue auditing duplicate product mappers, review purchase eligibility, checkout edge cases, and role permissions; live database migration state and production behavior remain unverified.
+
+- [x] Hardened the catalogue and product-detail SALE badge mappers against malformed/non-finite prices and non-string tag values.
+- [ ] Keep source-only fixes separate from release verification: no successful build, live Supabase migration check, or production browser test has been confirmed in this session.
