@@ -49,6 +49,7 @@ function shortId(id: string) {
 export default function AdminDashboardPage() {
   const router = useRouter()
   const [role, setRole] = useState<Role | null>(null)
+  const [canManageAds, setCanManageAds] = useState(false)
   const [checking, setChecking] = useState(true)
   const [loading, setLoading] = useState(false)
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
@@ -181,6 +182,15 @@ export default function AdminDashboardPage() {
         if (active) {
           const currentRole = staff.role as Role
           setRole(currentRole)
+          if (currentRole === "employee") {
+            // The advertising migration is staged separately; a missing table must not break the existing employee dashboard.
+            const { data: extraPermissions, error: extraPermissionError } = await supabase
+              .from("staff_permissions")
+              .select("manage_advertisements")
+              .eq("user_id", user.id)
+              .maybeSingle()
+            if (!extraPermissionError) setCanManageAds(Boolean(extraPermissions?.manage_advertisements))
+          }
           await loadDashboard(currentRole)
         }
       } catch (err) {
@@ -285,8 +295,9 @@ export default function AdminDashboardPage() {
     { title: "Reviews & ratings", desc: "Review submissions and moderation", href: "/admin/reviews", icon: Star, adminOnly: false, tag: "Moderation" },
     { title: "Coupons & offers", desc: "Discounts, expiry dates and usage limits", href: "/admin/coupons", icon: BadgePercent, adminOnly: true, tag: `${metrics.coupons} coupons` },
     { title: "Employee access", desc: "Authorize staff and manage roles", href: "/admin/employees", icon: Users, adminOnly: true, tag: `${metrics.employees} employees` },
-    { title: "Assigned work", desc: "Assign tasks and track employee progress", href: "/admin/tasks", icon: ClipboardList, adminOnly: false, tag: "Task board" },
-  ].filter((item) => role === "admin" || !item.adminOnly)
+    { title: "Assigned work", desc: "Assign tasks and track employee progress", href: "/admin/tasks", icon: ClipboardList, adminOnly: false, tag: "Task board", adsOnly: false },
+    { title: "Advertising & marketing", desc: "Campaigns, featured products and marketing creatives", href: "/admin/advertising", icon: Activity, adminOnly: false, tag: "Growth Studio", adsOnly: true },
+  ].filter((item) => (role === "admin" || !item.adminOnly) && (!item.adsOnly || role === "admin" || canManageAds))
 
   return (
     <main className="min-h-screen bg-[#090a0b] text-[#f6f5f0]"><style jsx global>{`@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }`}</style>
@@ -313,7 +324,7 @@ export default function AdminDashboardPage() {
         <div className="mx-auto max-w-[1600px] px-4 py-7 sm:px-7 sm:py-9 lg:px-10">
           <section className="animate-in relative overflow-hidden rounded-2xl border border-[#d9b65d]/20 bg-[radial-gradient(ellipse_at_top_right,rgba(217,182,93,0.13),transparent_48%),linear-gradient(120deg,#151513,#101112_60%,#12110d)] p-5 sm:p-8 lg:p-9">
             <div className="pointer-events-none absolute -right-12 -top-20 size-64 animate-pulse rounded-full border border-[#d9b65d]/20 sm:size-80" /><div className="pointer-events-none absolute -right-2 -top-10 size-48 rounded-full border border-[#d9b65d]/10 sm:size-64" />
-            <div className="relative max-w-2xl"><div className="inline-flex items-center gap-2 rounded-full border border-[#d9b65d]/25 bg-black/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.17em] text-[#e5cd8c]"><ShieldCheck className="size-3.5" /> {role === "admin" ? "Administrator workspace" : "Employee workspace"}</div><h2 className="mt-5 max-w-xl text-3xl font-medium leading-tight tracking-tight sm:text-4xl lg:text-[42px]">{role === "admin" ? <>Your store, <span className="font-serif italic text-[#d9b65d]">at a glance.</span></> : <>Make every order <span className="font-serif italic text-[#d9b65d]">feel effortless.</span></>}</h2><p className="mt-3 max-w-xl text-sm leading-6 text-white/50">{role === "admin" ? "Monitor store performance, resolve order issues, and keep your catalogue and team running smoothly." : "Your workspace for order handling and assigned tasks. Check priorities, update progress, and keep every customer order moving."}</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/admin/orders" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#d9b65d] px-4 text-sm font-semibold text-[#17140b] transition hover:bg-[#ead49b]">Open orders <ArrowRight className="size-4" /></Link>{role === "admin" && <Link href="/admin/products" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-black/15 px-4 text-sm text-white/80 transition hover:border-[#d9b65d]/40">Manage catalogue <Package className="size-4" /></Link>}</div></div>
+            <div className="relative max-w-2xl"><div className="inline-flex items-center gap-2 rounded-full border border-[#d9b65d]/25 bg-black/20 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.17em] text-[#e5cd8c]"><ShieldCheck className="size-3.5" /> {role === "admin" ? "Administrator workspace" : "Employee workspace"}</div><h2 className="mt-5 max-w-xl text-3xl font-medium leading-tight tracking-tight sm:text-4xl lg:text-[42px]">{role === "admin" ? <>Your store, <span className="font-serif italic text-[#d9b65d]">at a glance.</span></> : <>Make every order <span className="font-serif italic text-[#d9b65d]">feel effortless.</span></>}</h2><p className="mt-3 max-w-xl text-sm leading-6 text-white/50">{role === "admin" ? "Monitor store performance, resolve order issues, and keep your catalogue and team running smoothly." : "Your workspace for order handling and assigned tasks. Check priorities, update progress, and keep every customer order moving."}</p><div className="mt-6 flex flex-wrap gap-3"><Link href="/admin/orders" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#d9b65d] px-4 text-sm font-semibold text-[#17140b] transition hover:bg-[#ead49b]">Open orders <ArrowRight className="size-4" /></Link>{role === "admin" && <Link href="/admin/products" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/15 bg-black/15 px-4 text-sm text-white/80 transition hover:border-[#d9b65d]/40">Manage catalogue <Package className="size-4" /></Link>}{(role === "admin" || canManageAds) && <Link href="/admin/advertising" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#d9b65d]/30 bg-black/15 px-4 text-sm text-[#e4cc8d] transition hover:border-[#d9b65d]/50"><Activity className="size-4" />Growth Studio</Link>}</div></div>
           </section>
 
           {error && <div role="alert" className="mt-5 flex items-start gap-3 rounded-xl border border-red-300/20 bg-red-300/[0.07] p-4 text-sm text-red-200"><AlertTriangle className="mt-0.5 size-4 shrink-0" /><span>{error}</span></div>}
