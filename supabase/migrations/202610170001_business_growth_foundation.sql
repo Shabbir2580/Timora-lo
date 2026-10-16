@@ -455,4 +455,88 @@ using (bucket_id = 'ad-creatives' and public.timora_has_staff_permission('manage
 -- No client insert grant on raw analytics events and no client write grants on audit records.
 -- Validated event ingestion, conversion attribution, and audit-write RPCs are follow-up work.
 
+
+create or replace function public.record_ad_event(
+  p_event_key uuid,
+  p_campaign_id uuid,
+  p_event_type text,
+  p_placement text,
+  p_product_id uuid default null,
+  p_order_id uuid default null,
+  p_click_id uuid default null,
+  p_session_key text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_campaign public.ad_campaigns%rowtype;
+  v_order public.orders%rowtype;
+  v_click_id uuid;
+  v_value_paise bigint := null;
+  v_rows integer := 0;
+begin
+  if p_event_key is null or p_campaign_id is null then raise exception 'event and campaign IDs are required'; end if;
+  if p_event_type not in ('impression','click','add_to_cart','purchase') then raise exception 'invalid ad event type'; end if;
+  if p_placement not in ('homepage_hero','featured_product','category_banner','deals_banner','homepage_secondary') then raise exception 'invalid ad placement'; end if;
+  if p_session_key is not null and p_session_key !~ '^[A-Za-z0-9_-]{8,100} then raise exception 'invalid session key'; end if;
+
+  select * into v_campaign from public.ad_campaigns where id = p_campaign_id;
+  if not found or v_campaign.placement <> p_placement or not public.timora_campaign_is_public(p_campaign_id) then
+    raise exception 'campaign is not available for this placement';
+  end if;
+
+  if p_event_type <> 'purchase' then
+    if p_order_id is not null then raise exception 'order IDs are only accepted for purchase events'; end if;
+    if v_campaign.product_id is not null and p_product_id is not null and p_product_id <> v_campaign.product_id then
+      raise exception 'product does not match the campaign';
+    end if;
+    v_click_id := case when p_event_type = 'click' then coalesce(p_click_id, p_event_key) else p_click_id end;
+  else
+    if auth.uid() is null or p_order_id is null or p_click_id is null then
+      return jsonb_build_object('recorded', false, 'reason', 'purchase_requires_authenticated_order_and_click');
+    end if;
+    select * into v_order from public.orders
+      where id = p_order_id and customer_id = auth.uid();
+    if not found or v_order.payment_status <> 'paid' or v_order.order_status = 'cancelled'
+      or (v_order.payment_provider = 'cod' and v_order.cod_collected_at is null)
+      or (v_order.payment_provider <> 'cod' and v_order.payment_verified_at is null) then
+      return jsonb_build_object('recorded', false, 'reason', 'order_not_confirmed_paid');
+    end if;
+    if v_campaign.product_id is not null and not exists (
+      select 1 from public.order_items oi
+      where oi.order_id = v_order.id and oi.product_id = v_campaign.product_id::text
+    ) then
+      return jsonb_build_object('recorded', false, 'reason', 'campaign_product_not_in_order');
+    end if;
+    if not exists (
+      select 1 from public.ad_events click_event
+      where click_event.campaign_id = p_campaign_id
+        and click_event.event_type = 'click'
+        and click_event.click_id = p_click_id
+        and click_event.occurred_at >= now() - interval '30 days'
+        and click_event.occurred_at <= now()
+    ) then
+      return jsonb_build_object('recorded', false, 'reason', 'no_eligible_click');
+    end if;
+    v_click_id := p_click_id;
+    v_value_paise := greatest(0, v_order.total_paise);
+  end if;
+
+  insert into public.ad_events (
+    event_key, campaign_id, event_type, placement, product_id, order_id,
+    click_id, session_key, value_paise
+  ) values (
+    p_event_key, p_campaign_id, p_event_type, p_placement, p_product_id, p_order_id,
+    v_click_id, p_session_key, v_value_paise
+  ) on conflict do nothing;
+  get diagnostics v_rows = row_count;
+  return jsonb_build_object('recorded', v_rows = 1);
+end
+$function$;
+revoke all on function public.record_ad_event(uuid,uuid,text,text,uuid,uuid,uuid,text) from public;
+grant execute on function public.record_ad_event(uuid,uuid,text,text,uuid,uuid,uuid,text) to anon, authenticated;
+
 commit;
