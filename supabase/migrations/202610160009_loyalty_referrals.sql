@@ -171,9 +171,14 @@ begin
 end
 $function$;
 
+drop trigger if exists on_order_insert_award_timora_points on public.orders;
+create trigger on_order_insert_award_timora_points
+after insert on public.orders
+for each row execute function public.award_timora_loyalty_points();
+
 drop trigger if exists on_order_delivered_award_timora_points on public.orders;
 create trigger on_order_delivered_award_timora_points
-after insert or update of order_status, payment_status, total_paise
+after update of order_status, payment_status, total_paise
 on public.orders
 for each row execute function public.award_timora_loyalty_points();
 
