@@ -56,7 +56,7 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [products, setProducts] = useState<ProductRow[]>([])
   const [metrics, setMetrics] = useState({
-    orders: 0, pending: 0, products: 0, activeProducts: 0,
+    orders: 0, pending: 0, products: 0, activeProducts: 0, lowStockCount: 0,
     customers: 0, reviews: 0, coupons: 0, employees: 0, revenue: 0,
     monthlyRevenue: 0, previousMonthRevenue: 0, paidOrders: 0, monthlyOrders: 0,
   })
@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
         supabase.from("orders").select("customer_id"),
         supabase.from("product_reviews").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id,customer_name,total_paise,order_status,payment_status,payment_provider,created_at").order("created_at", { ascending: false }).limit(7),
-        supabase.from("products").select("id,name,stock,price,is_active").order("stock", { ascending: true }).limit(100),
+        supabase.from("products").select("id,name,stock,price,is_active", { count: "exact" }).eq("is_active", true).lte("stock", 5).order("stock", { ascending: true }).limit(100),
       ])
 
       const failed = [allOrders, pendingOrders, allProducts, activeProducts, customerRows, reviewRows, recentOrders, productRows].find((result) => result.error)
@@ -143,6 +143,7 @@ export default function AdminDashboardPage() {
         pending: pendingOrders.count ?? 0,
         products: allProducts.count ?? 0,
         activeProducts: activeProducts.count ?? 0,
+        lowStockCount: productRows.count ?? 0,
         customers: customerIds.size,
         reviews: reviewRows.count ?? 0,
         coupons,
@@ -248,7 +249,7 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const lowStock = useMemo(() => products.filter((product) => product.is_active && product.stock <= 5), [products])
+  const lowStock = products
   const signOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -280,7 +281,7 @@ export default function AdminDashboardPage() {
 
   const shortcuts = [
     { title: "Order management", desc: "Payments, COD approvals, fulfilment and tracking", href: "/admin/orders", icon: ShoppingBag, adminOnly: false, tag: metrics.pending ? `${metrics.pending} pending` : "Up to date" },
-    { title: "Products & inventory", desc: "Edit listings, prices, stock and visibility", href: "/admin/products", icon: Boxes, adminOnly: false, tag: `${lowStock.length} low stock` },
+    { title: "Products & inventory", desc: "Edit listings, prices, stock and visibility", href: "/admin/products", icon: Boxes, adminOnly: false, tag: `${metrics.lowStockCount} low stock` },
     { title: "Reviews & ratings", desc: "Review submissions and moderation", href: "/admin/reviews", icon: Star, adminOnly: false, tag: "Moderation" },
     { title: "Coupons & offers", desc: "Discounts, expiry dates and usage limits", href: "/admin/coupons", icon: BadgePercent, adminOnly: true, tag: `${metrics.coupons} coupons` },
     { title: "Employee access", desc: "Authorize staff and manage roles", href: "/admin/employees", icon: Users, adminOnly: true, tag: `${metrics.employees} employees` },
