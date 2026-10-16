@@ -102,7 +102,7 @@ export default function AdminTasksPage() {
       if (currentRole === "admin") {
         if (staffResult.error) {
           setStaff([])
-          setStaffError(`Could not load employees: ${staffResult.error.message}. Apply migration 202610150007_employee_task_approval_and_names.sql in Supabase, then refresh.`)
+          setStaffError(`Could not load employees: ${staffResult.error.message}. Apply migration 202610160001_fix_employee_member_rpc_result.sql in Supabase, then refresh.`)
         } else {
           setStaff(((staffResult.data ?? []) as Staff[]).filter((member) => member.role === "employee"))
         }
