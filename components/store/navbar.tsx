@@ -39,9 +39,9 @@ export function Navbar() {
         <Link
           href="/"
           aria-label="Timora home"
-          className="group flex shrink-0 flex-col"
+          className="group flex shrink-0 items-center"
         >
-          <Image src="/timora-logo.svg" alt="Timora" width={64} height={64} priority className="size-14 rounded-lg object-contain" />
+          <Image src="/timora-wordmark.svg" alt="Timora" width={240} height={60} priority className="h-12 w-44 object-contain xl:h-14 xl:w-52" />
           <span className="sr-only">Timora — Curated for your lifestyle</span>
         </Link>
 
@@ -130,9 +130,9 @@ export function Navbar() {
           <Link
             href="/"
             aria-label="Timora home"
-            className="flex min-w-0 flex-col items-center"
+            className="flex min-w-0 items-center justify-center"
           >
-            <Image src="/timora-logo.svg" alt="Timora" width={58} height={58} priority className="size-12 rounded-lg object-contain sm:size-14" />
+            <Image src="/timora-wordmark.svg" alt="Timora" width={220} height={55} priority className="h-10 w-36 object-contain sm:h-12 sm:w-44" />
             <span className="sr-only">Timora — Curated for your lifestyle</span>
           </Link>
 
