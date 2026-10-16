@@ -39,23 +39,35 @@ export function SearchBar({ className }: { className?: string }) {
       setSearchError(false)
       try {
         const supabase = createClient()
-        let request = supabase
+        const term = query.trim()
+        const baseQuery = () => supabase
           .from("products")
           .select("id,name,slug,category,image_url,images")
           .eq("is_active", true)
           .order("created_at", { ascending: false })
           .limit(4)
 
-        const term = query.trim()
+        let found: SearchProduct[]
         if (term) {
-          // The full results page searches the complete live catalogue. These
-          // quick suggestions intentionally search product names only.
-          request = request.ilike("name", `%${term.replace(/[%_\\]/g, "\\$&")}%`)
+          // Search both product names and category labels in the live catalogue.
+          const escapedTerm = term.replace(/[%_\\]/g, "\\$&")
+          const [nameResult, categoryResult] = await Promise.all([
+            baseQuery().ilike("name", \`%\${escapedTerm}%\`),
+            baseQuery().ilike("category", \`%\${escapedTerm}%\`),
+          ])
+          if (nameResult.error) throw nameResult.error
+          if (categoryResult.error) throw categoryResult.error
+          const unique = new Map<string, SearchProduct>()
+          for (const product of [...(nameResult.data ?? []), ...(categoryResult.data ?? [])]) {
+            unique.set(product.id, product as SearchProduct)
+          }
+          found = [...unique.values()].slice(0, 4)
+        } else {
+          const { data, error } = await baseQuery()
+          if (error) throw error
+          found = (data ?? []) as SearchProduct[]
         }
-
-        const { data, error } = await request
-        if (error) throw error
-        if (active) setMatches((data ?? []) as SearchProduct[])
+        if (active) setMatches(found)
       } catch (error) {
         console.error("Could not load live search suggestions:", error)
         if (active) {
@@ -96,7 +108,7 @@ export function SearchBar({ className }: { className?: string }) {
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setOpen(true)}
             onBlur={() => window.setTimeout(() => setOpen(false), 150)}
-            placeholder="Search products, brands and categories..."
+            placeholder="Search products and categories..."
             aria-label="Search products"
             aria-expanded={open}
             aria-controls="timora-search-suggestions"
