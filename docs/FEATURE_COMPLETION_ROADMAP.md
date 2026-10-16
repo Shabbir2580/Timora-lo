@@ -61,6 +61,17 @@ This roadmap tracks source changes separately from live verification. No item is
 - Do not deploy unless the owner explicitly says to deploy.
 - After each change, record the commit and the remaining verification needed.
 
+## Additional source fixes — 16 October 2026
+- [x] Fixed media URL validation to validate the original URL before transforming Google Drive image links into the site's internal image proxy path.
+- [x] Preserved safe same-site image paths when editing existing products, so previously normalized image URLs do not fail validation.
+- [x] Changed automatic SALE badges/discount labels to require an explicit `sale` product tag as well as a valid compare-at price above the selling price. The Deals page now uses this explicit designation.
+- [x] Added customer-order-page review links for delivered, paid order items and an explanation that reviews unlock after delivery and payment confirmation.
+- [x] Added a wider Timora wordmark for desktop and mobile navigation so the brand is more legible at small sizes.
+- [ ] Verify media URL handling with regular HTTPS image URLs, Google Drive links, YouTube links, and existing products with normalized paths.
+- [ ] Verify sale labels against live product records; existing incorrect `sale` tags or compare-at prices may still need data cleanup.
+- [ ] Verify review eligibility and submission against the live Supabase schema and an actual delivered, paid test order.
+- [ ] Build and run browser smoke tests. No successful build is confirmed yet.
+
 ## Work completed in this iteration — 16 October 2026
 - [x] Added an admin-only CSV export for the currently filtered/searched orders, including order/customer/payment/shipping fields and item summaries. Customer-controlled cell values are escaped to reduce spreadsheet formula-injection risk.
 - [x] Fixed dashboard low-stock alerts to query active products with stock at or below five directly; the dashboard now uses the database's exact count rather than counting only the first 100 arbitrary catalogue rows.
