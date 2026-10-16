@@ -12,6 +12,9 @@ export function ProductReviews({ productId, productName }: { productId: string; 
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [canReview, setCanReview] = useState(false)
+  const [checkingEligibility, setCheckingEligibility] = useState(false)
+  const [eligibilityError, setEligibilityError] = useState("")
   const [rating, setRating] = useState(5)
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
@@ -40,11 +43,64 @@ export function ProductReviews({ productId, productName }: { productId: string; 
 
   useEffect(() => { void loadReviews() }, [loadReviews])
 
+  useEffect(() => {
+    let cancelled = false
+
+    async function checkReviewEligibility() {
+      setCanReview(false)
+      setEligibilityError("")
+      if (!isLiveProduct || !userId) {
+        setCheckingEligibility(false)
+        return
+      }
+
+      setCheckingEligibility(true)
+      try {
+        const supabase = createClient()
+        const { data: orders, error: ordersError } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("customer_id", userId)
+          .eq("order_status", "delivered")
+          .eq("payment_status", "paid")
+
+        if (ordersError) throw ordersError
+        const orderIds = (orders ?? []).map((order) => order.id)
+
+        if (orderIds.length === 0) {
+          if (!cancelled) setCanReview(false)
+          return
+        }
+
+        const { data: matchingItems, error: itemsError } = await supabase
+          .from("order_items")
+          .select("id")
+          .eq("product_id", productId)
+          .in("order_id", orderIds)
+          .limit(1)
+
+        if (itemsError) throw itemsError
+        if (!cancelled) setCanReview((matchingItems ?? []).length > 0)
+      } catch {
+        if (!cancelled) {
+          setCanReview(false)
+          setEligibilityError("We couldn't verify your purchase right now. Please try again later.")
+        }
+      } finally {
+        if (!cancelled) setCheckingEligibility(false)
+      }
+    }
+
+    void checkReviewEligibility()
+    return () => { cancelled = true }
+  }, [isLiveProduct, productId, userId])
+
   async function submitReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")
     setNotice("")
     if (!userId) { setError("Please sign in before submitting a review."); return }
+    if (!canReview) { setError("Only customers with a delivered and paid order for this product can review it."); return }
     setSending(true)
     try {
       const supabase = createClient()
@@ -74,7 +130,7 @@ export function ProductReviews({ productId, productName }: { productId: string; 
           </div>
           <aside className="rounded-xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
             <h3 className="font-semibold">Write a review</h3>
-            {!userId ? <p className="mt-2 text-sm leading-6 text-white/55">Sign in with the account used for your order to submit a verified-purchase review.</p> : <><p className="mt-2 text-sm leading-6 text-white/55">Reviews are reserved for verified purchases. You can submit a review after your order has been delivered and payment is complete.</p><form onSubmit={submitReview} className="mt-4 space-y-3">
+            {!userId ? <p className="mt-2 text-sm leading-6 text-white/55">Sign in with the account used for your order to submit a verified-purchase review.</p> : checkingEligibility ? <p className="mt-2 text-sm leading-6 text-white/55">Checking your purchase history…</p> : eligibilityError ? <p role="alert" className="mt-2 text-sm leading-6 text-red-200">{eligibilityError}</p> : !canReview ? <p className="mt-2 text-sm leading-6 text-white/55">You can review this product after an order containing this exact product has been delivered and payment is complete.</p> : <><p className="mt-2 text-sm leading-6 text-white/55">Verified purchase confirmed. Your review will appear after staff approval.</p><form onSubmit={submitReview} className="mt-4 space-y-3">
               <label className="block text-xs text-white/60">Rating<select value={rating} onChange={(event) => setRating(Number(event.target.value))} className="mt-1.5 min-h-10 w-full rounded-lg border border-white/10 bg-[#0b0b0a] px-3 text-sm text-white outline-none focus:border-[#c9a96e]">{[5,4,3,2,1].map((value) => <option key={value} value={value}>{value} star{value === 1 ? "" : "s"}</option>)}</select></label>
               <label className="block text-xs text-white/60">Title<input required minLength={1} maxLength={100} value={title} onChange={(event) => setTitle(event.target.value)} className="mt-1.5 min-h-10 w-full rounded-lg border border-white/10 bg-[#0b0b0a] px-3 text-sm text-white outline-none focus:border-[#c9a96e]" placeholder="Summarize your experience"/></label>
               <label className="block text-xs text-white/60">Your review<textarea required minLength={5} maxLength={2000} rows={4} value={body} onChange={(event) => setBody(event.target.value)} className="mt-1.5 w-full rounded-lg border border-white/10 bg-[#0b0b0a] px-3 py-2 text-sm text-white outline-none focus:border-[#c9a96e]" placeholder="What should other shoppers know?"/></label>
