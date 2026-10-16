@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { ArrowUpRight, Sparkles } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -68,6 +68,8 @@ function isInternalPath(value: string) {
 
 export function AdPlacement({ placement, className = "" }: Props) {
   const [campaign, setCampaign] = useState<PublicCampaign | null>(null)
+  const placementRef = useRef<HTMLElement | null>(null)
+  const impressionRecorded = useRef<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -98,7 +100,18 @@ export function AdPlacement({ placement, className = "" }: Props) {
   }, [placement])
 
   useEffect(() => {
-    if (campaign) void recordCampaignEvent(campaign, "impression")
+    if (!campaign || !placementRef.current || impressionRecorded.current === campaign.id) return
+    const node = placementRef.current
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0]
+      if (entry?.isIntersecting && entry.intersectionRatio >= 0.5) {
+        impressionRecorded.current = campaign.id
+        void recordCampaignEvent(campaign, "impression")
+        observer.disconnect()
+      }
+    }, { threshold: [0.5] })
+    observer.observe(node)
+    return () => observer.disconnect()
   }, [campaign])
 
   if (!campaign) return null
@@ -112,7 +125,7 @@ export function AdPlacement({ placement, className = "" }: Props) {
   const external = !isInternalPath(destination)
 
   return (
-    <section aria-label={label} className={`mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12 ${className}`}>
+    <section ref={placementRef} aria-label={label} className={`mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12 ${className}`}>
       <div className="group relative isolate overflow-hidden rounded-2xl border border-[#c9a96e]/25 bg-[#10100e]">
         <div className="absolute inset-0 -z-10">
           <img src={campaign.image_url} alt="" aria-hidden="true" className="size-full object-cover opacity-35 transition duration-700 group-hover:scale-[1.02]" />
