@@ -340,7 +340,7 @@ export default function AdminOrdersPage() {
   }).length
 
   const query = search.trim().toLowerCase()
-  const visibleOrders = orders.filter((order) => {
+  const visibleOrders = orders.filter((order) => order.order_status !== "cancelled").filter((order) => {
     const matchesFilter = filter === "all"
       || (filter === "awaiting" && order.order_status === "pending_payment" && order.payment_status === "pending")
       || (filter === "cod" && order.payment_provider === "cod")
