@@ -35,6 +35,8 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Database migration contract checks
+        run: pnpm check:db-migrations
       - name: TypeScript validation
         run: pnpm exec tsc --noEmit
       # Build with non-secret placeholders: this validates compilation and route
