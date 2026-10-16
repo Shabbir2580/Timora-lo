@@ -72,25 +72,36 @@ export default function AdminDashboardPage() {
     try {
       const supabase = createClient()
       const [
-        allOrders, pendingOrders, allProducts, activeProducts, customerRows,
+        allOrders, pendingOrders, allProducts, activeProducts,
         reviewRows, recentOrders, productRows,
       ] = await Promise.all([
         supabase.from("orders").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id", { count: "exact", head: true }).eq("order_status", "pending_payment"),
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("orders").select("customer_id"),
         supabase.from("product_reviews").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id,customer_name,total_paise,order_status,payment_status,payment_provider,created_at").order("created_at", { ascending: false }).limit(7),
         supabase.from("products").select("id,name,stock,price,is_active", { count: "exact" }).eq("is_active", true).lte("stock", 5).order("stock", { ascending: true }).limit(100),
       ])
 
-      const failed = [allOrders, pendingOrders, allProducts, activeProducts, customerRows, reviewRows, recentOrders, productRows].find((result) => result.error)
+      const failed = [allOrders, pendingOrders, allProducts, activeProducts, reviewRows, recentOrders, productRows].find((result) => result.error)
       if (failed?.error) throw failed.error
 
       const recent = (recentOrders.data ?? []) as OrderRow[]
       const productList = (productRows.data ?? []) as ProductRow[]
-      const customerIds = new Set((customerRows.data ?? []).map((row) => row.customer_id).filter(Boolean))
+      // Fetch customer IDs in explicit pages; a single PostgREST response can be row-capped.
+      const customerIds = new Set<string>()
+      for (let offset = 0; ; offset += 500) {
+        const { data: customerPage, error: customerPageError } = await supabase
+          .from("orders")
+          .select("customer_id")
+          .range(offset, offset + 499)
+        if (customerPageError) throw customerPageError
+        for (const row of customerPage ?? []) {
+          if (row.customer_id) customerIds.add(row.customer_id)
+        }
+        if (!customerPage || customerPage.length < 500) break
+      }
       // Financial statistics are queried only for admins or employees explicitly granted sales analytics.
       let paidRevenue = 0
       let monthlyRevenue = 0
@@ -100,11 +111,26 @@ export default function AdminDashboardPage() {
       let coupons = 0
       let employees = 0
       if (currentRole === "admin" || allowSalesAnalytics) {
-        const { data: paidRows, error: paidRowsError } = await supabase
-          .from("orders")
-          .select("total_paise,order_status,payment_provider,payment_verified_at,cod_collected_at,created_at")
-          .eq("payment_status", "paid")
-        if (paidRowsError) throw paidRowsError
+        // Page through every paid order so lifetime and monthly financial metrics
+        // don't silently stop at the API's configured maximum response size.
+        const paidRows: {
+          total_paise: number
+          order_status: string
+          payment_provider: string | null
+          payment_verified_at: string | null
+          cod_collected_at: string | null
+          created_at: string
+        }[] = []
+        for (let offset = 0; ; offset += 500) {
+          const { data: paidPage, error: paidPageError } = await supabase
+            .from("orders")
+            .select("total_paise,order_status,payment_provider,payment_verified_at,cod_collected_at,created_at")
+            .eq("payment_status", "paid")
+            .range(offset, offset + 499)
+          if (paidPageError) throw paidPageError
+          paidRows.push(...((paidPage ?? []) as typeof paidRows))
+          if (!paidPage || paidPage.length < 500) break
+        }
         if (currentRole === "admin") {
           const [couponCount, staffRows] = await Promise.all([
             supabase.from("coupons").select("id", { count: "exact", head: true }),
