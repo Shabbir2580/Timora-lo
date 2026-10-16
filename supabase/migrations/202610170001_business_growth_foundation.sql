@@ -226,6 +226,15 @@ begin
     and not exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin') then
     raise exception 'only admins can set campaign cost and budget';
   end if;
+  if tg_op = 'INSERT' then
+    insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
+    values (auth.uid(), 'campaign_created', 'ad_campaign', new.id::text,
+      jsonb_build_object('status', new.status, 'placement', new.placement, 'campaign_type', new.campaign_type));
+  elsif new.status is distinct from old.status or new.advertiser_id is distinct from old.advertiser_id then
+    insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
+    values (auth.uid(), 'campaign_updated', 'ad_campaign', new.id::text,
+      jsonb_build_object('old_status', old.status, 'new_status', new.status, 'placement', new.placement));
+  end if;
   new.updated_at := now();
   return new;
 end
@@ -260,6 +269,15 @@ begin
       and not public.timora_has_staff_permission('publish_marketing_content') then
       raise exception 'marketing publishing permission required';
     end if;
+  end if;
+  if tg_op = 'INSERT' then
+    insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
+    values (auth.uid(), 'marketing_content_created', 'marketing_content', new.id::text,
+      jsonb_build_object('status', new.status, 'content_type', new.content_type));
+  elsif new.status is distinct from old.status then
+    insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
+    values (auth.uid(), 'marketing_content_status_changed', 'marketing_content', new.id::text,
+      jsonb_build_object('old_status', old.status, 'new_status', new.status));
   end if;
   new.updated_at := now();
   return new;
@@ -506,8 +524,8 @@ declare
   v_rows integer := 0;
 begin
   if p_event_key is null or p_campaign_id is null then raise exception 'event and campaign IDs are required'; end if;
-  if p_event_type not in ('impression','click','add_to_cart','purchase') then raise exception 'invalid ad event type'; end if;
-  if p_placement not in ('homepage_hero','featured_product','category_banner','deals_banner','homepage_secondary') then raise exception 'invalid ad placement'; end if;
+  if p_event_type is null or p_event_type not in ('impression','click','add_to_cart','purchase') then raise exception 'invalid ad event type'; end if;
+  if p_placement is null or p_placement not in ('homepage_hero','featured_product','category_banner','deals_banner','homepage_secondary') then raise exception 'invalid ad placement'; end if;
   if p_session_key is not null and p_session_key !~ '^[A-Za-z0-9_-]{8,100} then raise exception 'invalid session key'; end if;
 
   select * into v_campaign from public.ad_campaigns where id = p_campaign_id;
