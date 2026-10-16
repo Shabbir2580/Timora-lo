@@ -11,8 +11,10 @@ const inter = Inter({
   display: "swap",
 })
 
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://timora-by-sk.vercel.app").replace(/\/$/, "")
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://timora-by-sk.vercel.app"),
+  metadataBase: new URL(siteUrl),
   title: "Timora | Timeless Style. Modern Shopping.",
   description:
     "Discover watches, audio essentials, and lifestyle accessories at Timora. Explore our curated collection and find your next favourite.",
