@@ -18,7 +18,10 @@ begin
     if new.status is null or new.status <> 'requested' then
       raise exception 'new return requests must start as requested';
     end if;
-    new.updated_at := coalesce(new.updated_at, now());
+    if new.refund_amount_paise is not null then
+      raise exception 'refund amount cannot be set when a return request is created';
+    end if;
+    new.updated_at := now();
     return new;
   end if;
 
