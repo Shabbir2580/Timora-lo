@@ -119,18 +119,24 @@ export function ProductReviews({ productId, productName }: { productId: string; 
       if (rpcError) throw rpcError
       let photoWarning = ""
       if (photos.length && userId) {
+        const uploadedPaths: string[] = []
         try {
-          const paths: string[] = []
           for (const file of photos) {
             const extension = file.type === "image/jpeg" ? "jpg" : file.type === "image/png" ? "png" : "webp"
             const path = userId + "/" + Date.now() + "-" + crypto.randomUUID() + "." + extension
             const { error: uploadError } = await supabase.storage.from("product-review-photos").upload(path, file, { contentType: file.type, upsert: false })
             if (uploadError) throw uploadError
-            paths.push(path)
+            uploadedPaths.push(path)
           }
-          const { error: attachError } = await supabase.rpc("attach_product_review_photos", { p_product_id: productId, p_image_urls: paths })
+          const { error: attachError } = await supabase.rpc("attach_product_review_photos", { p_product_id: productId, p_image_urls: uploadedPaths })
           if (attachError) throw attachError
         } catch (photoError) {
+          // The review itself is already saved. Remove any uploaded files that
+          // could not be attached so failed uploads do not leave public orphans.
+          if (uploadedPaths.length) {
+            const { error: cleanupError } = await supabase.storage.from("product-review-photos").remove(uploadedPaths)
+            if (cleanupError) console.error("Could not clean up unattached review photos:", cleanupError)
+          }
           console.error("Review was submitted but photo upload failed:", photoError)
           photoWarning = " Your review was submitted, but the photos could not be attached."
         }
