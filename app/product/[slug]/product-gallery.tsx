@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { SmartImage, normalizeImageUrl } from "@/components/store/smart-image"
 import { useState } from "react"
 
 type ProductGalleryProps = {
@@ -9,54 +9,9 @@ type ProductGalleryProps = {
   productName: string
 }
 
-function normalizeImageUrl(value: string) {
-  const trimmed = value.trim()
-  // Drive's /file/d/.../view URL is a preview page, not an image URL.
-  const driveMatch = trimmed.match(/^https?:\/\/drive\.google\.com\/file\/d\/([^/?#]+)/i)
-  if (driveMatch) return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`
-  return trimmed
-}
-
-function GalleryImage({
-  src,
-  alt,
-  priority = false,
-  thumbnail = false,
-}: {
-  src: string
-  alt: string
-  priority?: boolean
-  thumbnail?: boolean
-}) {
-  const normalizedSrc = normalizeImageUrl(src)
+function GalleryImage({ src, alt, priority = false, thumbnail = false }: { src: string; alt: string; priority?: boolean; thumbnail?: boolean }) {
   const className = thumbnail ? "object-contain p-2" : "object-contain p-8 sm:p-14"
-
-  // Remote hosts (including Drive and image-hosting services) should load directly.
-  // next/image requires remote host allowlisting and can otherwise show a blank image.
-  if (/^https?:\/\//i.test(normalizedSrc)) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={normalizedSrc}
-        alt={alt}
-        loading={priority ? "eager" : "lazy"}
-        decoding="async"
-        referrerPolicy="no-referrer"
-        className={`absolute inset-0 h-full w-full ${className}`}
-      />
-    )
-  }
-
-  return (
-    <Image
-      src={normalizedSrc}
-      alt={alt}
-      fill
-      priority={priority}
-      sizes={thumbnail ? "120px" : "(max-width: 768px) 100vw, 50vw"}
-      className={className}
-    />
-  )
+  return <SmartImage src={src} alt={alt} priority={priority} fill className={className} />
 }
 
 export function ProductGallery({ images, videos = [], productName }: ProductGalleryProps) {
