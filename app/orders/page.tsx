@@ -353,14 +353,16 @@ export default function CustomerOrdersPage() {
                                 <p className="mt-1 text-xs text-white/45">
                                   Qty {item.quantity}{item.variant && item.variant !== "Default" ? ` · ${item.variant}` : ""}
                                 </p>
-                                {order.order_status === "delivered" && order.payment_status === "paid" && item.product_slug && (
+                                {order.order_status === "delivered" && order.payment_status === "paid" && item.product_slug ? (
                                   <Link
                                     href={`/product/${encodeURIComponent(item.product_slug)}#reviews-heading`}
                                     className="mt-2 inline-flex min-h-8 items-center rounded-full border border-[#c9a96e]/40 px-3 text-xs font-medium text-[#dfc797] transition hover:bg-[#c9a96e]/10"
                                   >
                                     Write a review
                                   </Link>
-                                )}
+                                ) : order.order_status !== "cancelled" && item.product_slug ? (
+                                  <p className="mt-2 text-[11px] text-white/40">Review available after delivery and payment confirmation.</p>
+                                ) : null}
                               </div>
                               <p className="shrink-0 text-sm">{formatPrice(item.line_total_paise)}</p>
                             </div>
