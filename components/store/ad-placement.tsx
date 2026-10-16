@@ -5,6 +5,47 @@ import Link from "next/link"
 import { ArrowUpRight, Sparkles } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
+function getSessionKey() {
+  try {
+    const key = "timora_ad_session"
+    const current = sessionStorage.getItem(key)
+    if (current) return current
+    const created = crypto.randomUUID()
+    sessionStorage.setItem(key, created)
+    return created
+  } catch {
+    return crypto.randomUUID()
+  }
+}
+
+async function recordCampaignEvent(campaign: PublicCampaign, eventType: "impression" | "click") {
+  const eventKey = crypto.randomUUID()
+  const sessionKey = getSessionKey()
+  try {
+    const supabase = createClient()
+    const { error } = await supabase.rpc("record_ad_event", {
+      p_event_key: eventKey,
+      p_campaign_id: campaign.id,
+      p_event_type: eventType,
+      p_placement: campaign.placement,
+      p_product_id: campaign.product_id,
+      p_order_id: null,
+      p_click_id: eventType === "click" ? eventKey : null,
+      p_session_key: sessionKey,
+    })
+    if (error) return
+    if (eventType === "click") {
+      try {
+        sessionStorage.setItem("timora_last_ad_click", JSON.stringify({ campaignId: campaign.id, clickId: eventKey, at: Date.now() }))
+      } catch {
+        // Attribution remains best-effort when session storage is unavailable.
+      }
+    }
+  } catch {
+    // Analytics failure must never block navigation or shopping.
+  }
+}
+
 type Placement = "homepage_hero" | "featured_product" | "category_banner" | "deals_banner" | "homepage_secondary"
 type PublicCampaign = {
   id: string
@@ -56,6 +97,10 @@ export function AdPlacement({ placement, className = "" }: Props) {
     return () => { active = false }
   }, [placement])
 
+  useEffect(() => {
+    if (campaign) void recordCampaignEvent(campaign, "impression")
+  }, [campaign])
+
   if (!campaign) return null
 
   const label = campaign.campaign_type === "external_ad"
@@ -81,9 +126,9 @@ export function AdPlacement({ placement, className = "" }: Props) {
           </div>
           <div className="flex items-end sm:items-center sm:justify-end">
             {external ? (
-              <a href={destination} target="_blank" rel="noopener noreferrer sponsored" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-5 text-xs font-semibold text-[#17140b] transition hover:bg-[#e4c878]">Explore promotion <ArrowUpRight size={15} /></a>
+              <a href={destination} onClick={() => void recordCampaignEvent(campaign, "click")} target="_blank" rel="noopener noreferrer sponsored" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-5 text-xs font-semibold text-[#17140b] transition hover:bg-[#e4c878]">Explore promotion <ArrowUpRight size={15} /></a>
             ) : (
-              <Link href={destination} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-5 text-xs font-semibold text-[#17140b] transition hover:bg-[#e4c878]">Explore promotion <ArrowUpRight size={15} /></Link>
+              <Link href={destination} onClick={() => void recordCampaignEvent(campaign, "click")} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-5 text-xs font-semibold text-[#17140b] transition hover:bg-[#e4c878]">Explore promotion <ArrowUpRight size={15} /></Link>
             )}
           </div>
         </div>
