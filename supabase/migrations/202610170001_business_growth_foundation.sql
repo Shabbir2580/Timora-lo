@@ -360,8 +360,10 @@ select id, advertiser_type, business_name, status
 from public.advertisers
 where public.timora_has_staff_permission('manage_advertisements')
    or public.timora_has_staff_permission('manage_advertisers');
-revoke all on public.ad_advertiser_options from public;
-grant select on public.ad_advertiser_options to authenticated;
+-- Remove explicit grants as well as PUBLIC defaults so reruns cannot preserve
+-- stale anonymous or write privileges on this staff-only view.
+revoke all privileges on table public.ad_advertiser_options from public, anon, authenticated;
+grant select on table public.ad_advertiser_options to authenticated;
 
 drop policy if exists "Authorized staff manage advertisers" on public.advertisers;
 create policy "Authorized staff manage advertisers" on public.advertisers for all to authenticated
@@ -379,8 +381,10 @@ select c.id, c.campaign_type, c.placement, c.headline, c.description, c.image_ur
 from public.ad_campaigns c
 join public.advertisers a on a.id = c.advertiser_id
 where public.timora_campaign_is_public(c.id);
-revoke all on public.ad_public_campaigns from public;
-grant select on public.ad_public_campaigns to anon, authenticated;
+-- This view intentionally exposes only public-safe creative fields, read-only.
+-- Explicitly clear stale grants before restoring SELECT for storefront reads.
+revoke all privileges on table public.ad_public_campaigns from public, anon, authenticated;
+grant select on table public.ad_public_campaigns to anon, authenticated;
 drop policy if exists "Authorized staff read campaigns" on public.ad_campaigns;
 create policy "Authorized staff read campaigns" on public.ad_campaigns for select to authenticated
 using (public.timora_has_staff_permission('manage_advertisements') or public.timora_has_staff_permission('view_advertisement_analytics'));
