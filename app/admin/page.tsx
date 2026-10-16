@@ -187,6 +187,7 @@ export default function AdminDashboardPage() {
         }
         if (active) {
           const currentRole = staff.role as Role
+          let salesAccess = currentRole === "admin"
           setRole(currentRole)
           if (currentRole === "employee") {
             // The advertising migration is staged separately; a missing table must not break the existing employee dashboard.
@@ -197,10 +198,11 @@ export default function AdminDashboardPage() {
               .maybeSingle()
             if (!extraPermissionError) {
               setCanManageAds(Boolean(extraPermissions?.manage_advertisements))
-              setCanViewSalesAnalytics(Boolean(extraPermissions?.view_sales_analytics))
+              salesAccess = Boolean(extraPermissions?.view_sales_analytics)
+              setCanViewSalesAnalytics(salesAccess)
             }
           }
-          await loadDashboard(currentRole, currentRole === "admin" || canViewSalesAnalytics)
+          await loadDashboard(currentRole, salesAccess)
         }
       } catch (err) {
         if (active) setError(err instanceof Error ? err.message : "Could not verify staff access.")
