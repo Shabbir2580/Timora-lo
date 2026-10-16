@@ -288,7 +288,7 @@ export default function AdminOrdersPage() {
       if (deleteError) {
         const message = deleteError.message || "Unknown database error."
         if (message.includes("admin_delete_order") && (message.includes("schema cache") || message.includes("Could not find the function"))) {
-          throw new Error("Order deletion is not enabled in the database yet. Apply supabase/migrations/202610150006_admin_delete_orders.sql in the Timora Supabase SQL Editor, then try again.")
+          throw new Error("Order deletion is not enabled in the database yet. Apply supabase/migrations/202610160006_guard_admin_order_deletion.sql in the Timora Supabase SQL Editor, then try again.")
         }
         throw new Error(message)
       }
@@ -410,14 +410,14 @@ export default function AdminOrdersPage() {
           <div><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#d4af37]">Order management</p><h1 className="mt-2 text-3xl font-medium sm:text-4xl">All Orders</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">Showing all orders by default. The summary cards count every order in the database; use the filters to narrow the list. Delete unwanted test orders to remove them from all order views.</p></div>
           <div className="flex flex-wrap gap-2">
             {role === "admin" && <button type="button" onClick={exportVisibleOrders} disabled={visibleOrders.length === 0} className="min-h-10 rounded-full border border-emerald-300/25 px-4 text-xs font-medium text-emerald-200 transition hover:bg-emerald-300/10 disabled:cursor-not-allowed disabled:opacity-40">Export CSV ({visibleOrders.length})</button>}
-            {([ ["awaiting","Awaiting review"], ["payment","Payment pending"], ["cod","COD orders"], ["all","All orders"] ] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`min-h-10 rounded-full px-4 text-xs font-medium ${filter === value ? "bg-[#d4af37] text-[#17130c]" : "border border-white/15 text-white/65"}`}>{label}</button>)}
+            {([ ["awaiting","Awaiting review"], ["payment","Unpaid active orders"], ["cod","COD orders"], ["all","All orders"] ] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`min-h-10 rounded-full px-4 text-xs font-medium ${filter === value ? "bg-[#d4af37] text-[#17130c]" : "border border-white/15 text-white/65"}`}>{label}</button>)}
           </div>
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-[#11110f] p-4"><div className="flex items-center gap-2 text-xs text-white/50"><Clock3 className="size-4 text-[#d4af37]" />Awaiting review</div><p className="mt-3 text-2xl font-semibold">{orders.filter((o) => o.payment_provider === "cod" && o.order_status === "pending_payment" && o.payment_status === "pending").length}</p></div>
           <div className="rounded-xl border border-white/10 bg-[#11110f] p-4"><div className="flex items-center gap-2 text-xs text-white/50"><PackageCheck className="size-4 text-emerald-300" />Approved</div><p className="mt-3 text-2xl font-semibold">{orders.filter((o) => Boolean(o.cod_approved_at) && o.order_status !== "cancelled").length}</p></div>
-          <div className="rounded-xl border border-white/10 bg-[#11110f] p-4"><div className="flex items-center gap-2 text-xs text-white/50"><CreditCard className="size-4 text-amber-200" />Payment pending</div><p className="mt-3 text-2xl font-semibold">{orders.filter((o) => o.payment_status !== "paid" && o.order_status !== "cancelled").length}</p></div>
+          <div className="rounded-xl border border-white/10 bg-[#11110f] p-4"><div className="flex items-center gap-2 text-xs text-white/50"><CreditCard className="size-4 text-amber-200" />Unpaid active orders</div><p className="mt-3 text-2xl font-semibold">{orders.filter((o) => o.payment_status !== "paid" && o.order_status !== "cancelled").length}</p></div>
           <div className="col-span-2 rounded-xl border border-white/10 bg-[#11110f] p-4 sm:col-span-1"><div className="flex items-center gap-2 text-xs text-white/50"><XCircle className="size-4 text-red-300" />Cancelled</div><p className="mt-3 text-2xl font-semibold">{orders.filter((o) => o.order_status === "cancelled").length}</p></div>
         </div>
 
