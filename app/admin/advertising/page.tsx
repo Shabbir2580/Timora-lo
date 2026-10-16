@@ -320,8 +320,12 @@ export default function AdminAdvertisingPage() {
       setError("External advertisements must link to a valid HTTPS destination.")
       return
     }
-    if (campaignType === "featured_product" && !productId) {
-      setError("Choose a product for a featured product campaign.")
+    if (campaignType === "featured_product" && selectedAdvertiser.advertiser_type === "timora" && !productId) {
+      setError("Choose a Timora product for a featured product campaign.")
+      return
+    }
+    if (campaignType === "featured_product" && selectedAdvertiser.advertiser_type === "external" && !safeExternalUrl(destinationUrl.trim())) {
+      setError("An external sponsored product card must link to the advertiser's HTTPS destination.")
       return
     }
     if (startsAt && endsAt && new Date(endsAt) <= new Date(startsAt)) {
