@@ -105,12 +105,6 @@ begin
   end if;
 
   -- Validate and calculate from the locked live catalogue, never client prices.
-  if v_coupon_found then
-    update public.coupons
-    set usage_count = usage_count + 1, updated_at = now()
-    where id = v_coupon.id;
-  end if;
-
   for v_item in select value from jsonb_array_elements(p_items)
   loop
     v_product_id := (v_item->>'productId')::uuid;
@@ -171,6 +165,12 @@ begin
     v_subtotal, v_shipping, v_discount, v_coupon_code, v_total,
     'pending_payment', 'pending', p_payment_provider, null
   ) returning id into v_order_id;
+
+  if v_coupon_found then
+    update public.coupons
+    set usage_count = usage_count + 1, updated_at = now()
+    where id = v_coupon.id;
+  end if;
 
   for v_item in select value from jsonb_array_elements(p_items)
   loop
