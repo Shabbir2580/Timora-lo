@@ -276,10 +276,11 @@ drop policy if exists "Public can read active ad campaigns" on public.ad_campaig
 create or replace view public.ad_public_campaigns
 with (security_barrier = true)
 as
-select id, campaign_type, placement, headline, description, image_url, destination_url,
-       product_id, starts_at, ends_at
-from public.ad_campaigns
-where public.timora_campaign_is_public(id);
+select c.id, c.campaign_type, c.placement, c.headline, c.description, c.image_url, c.destination_url,
+       c.product_id, c.starts_at, c.ends_at, a.advertiser_type
+from public.ad_campaigns c
+join public.advertisers a on a.id = c.advertiser_id
+where public.timora_campaign_is_public(c.id);
 revoke all on public.ad_public_campaigns from public;
 grant select on public.ad_public_campaigns to anon, authenticated;
 drop policy if exists "Authorized staff read campaigns" on public.ad_campaigns;
