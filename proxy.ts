@@ -31,24 +31,10 @@ export async function proxy(request: NextRequest) {
     },
   })
 
-  const { data, error } = await supabase.auth.getClaims()
-  const signedIn = !error && Boolean(data?.claims?.sub)
-
-  if (request.nextUrl.pathname === "/checkout" && !signedIn) {
-    const loginUrl = new URL("/login", request.url)
-    loginUrl.searchParams.set(
-      "next",
-      `${request.nextUrl.pathname}${request.nextUrl.search}`,
-    )
-
-    const redirectResponse = NextResponse.redirect(loginUrl)
-
-    response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie)
-    })
-
-    return redirectResponse
-  }
+  // Refresh the session without blocking guest checkout.
+  // Guests may prepare a WhatsApp request, but /api/orders still requires
+  // authentication before creating a database order or reserving stock.
+  await supabase.auth.getClaims()
 
   return response
 }
