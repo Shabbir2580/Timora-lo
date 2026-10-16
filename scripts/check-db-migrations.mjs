@@ -7,6 +7,11 @@ const checkout = read("supabase/migrations/202610170010_fix_checkout_coupon_vali
 const cancellation = read("supabase/migrations/202610170011_restore_coupon_usage_on_cancel.sql");
 const reviewAccess = read("supabase/migrations/202610170012_restrict_anonymous_review_rpcs.sql");
 const notifications = read("supabase/migrations/202610170007_order_status_notifications.sql");
+const returnGuards = read("supabase/migrations/202610170006_return_lifecycle_guards.sql");
+const checkoutPage = read("app/checkout/page.tsx");
+const orderApi = read("app/api/orders/route.ts");
+const proxy = read("proxy.ts");
+const adminReturns = read("app/admin/returns/page.tsx");
 
 assert.match(checkout, /set search_path\s*=\s*''/i, "Checkout SECURITY DEFINER RPC must use an empty search_path.");
 assert.match(checkout, /v_subtotal\s*>=\s*99900/i, "Free-shipping threshold must remain ₹999.");
@@ -21,5 +26,11 @@ assert.match(reviewAccess, /revoke execute on function public\.moderate_product_
 assert.match(reviewAccess, /revoke execute on function public\.submit_product_review\(uuid, integer, text, text\) from anon/i, "Anonymous callers must not execute authenticated review submission.");
 assert.doesNotMatch(notifications, /['\"]order_update['\"]/i, "Notification migration must not use an unsupported notification type.");
 assert.doesNotMatch(notifications, /create trigger/i, "Notification migration must not add duplicate order notification triggers.");
+
+assert.match(checkoutPage, /if \(!userId\)[\s\S]*?paymentMethod === "whatsapp"/i, "Guest checkout must preserve the WhatsApp request flow.");
+assert.match(orderApi, /supabase\.auth\.getUser\(\)/i, "Order creation must require a verified signed-in user.");
+assert.doesNotMatch(proxy, /NextResponse\.redirect\(loginUrl\)/i, "The checkout proxy must not block guest WhatsApp requests.");
+assert.match(returnGuards, /when 'requested' then new\.status in \('under_review', 'rejected'\)/i, "Return request initial transitions must be guarded.");
+assert.match(adminReturns, /requested: \["under_review", "rejected"\]/i, "Admin return controls must match the database transition guard.");
 
 console.log("Timora database migration contract checks passed.");
