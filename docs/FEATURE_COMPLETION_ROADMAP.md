@@ -92,3 +92,23 @@ This roadmap tracks source changes separately from live verification. No item is
 
 - [x] Hardened the catalogue and product-detail SALE badge mappers against malformed/non-finite prices and non-string tag values.
 - [ ] Keep source-only fixes separate from release verification: no successful build, live Supabase migration check, or production browser test has been confirmed in this session.
+
+
+## Business Growth Platform — source implementation started (17 October 2026)
+
+- [x] Added a versioned source migration for granular Important Employee permissions, advertiser records, campaigns, event storage, Instagram content planning, business expenses and staff audit history.
+- [x] Added an admin-only permission-management RPC that records promotion, permission changes and revocations in the audit log.
+- [x] Added database guards for direct campaign/marketing publishing, protected approval history and restricted campaign budget/cost edits to admins.
+- [x] Added a public campaign view exposing only safe creative fields; internal advertiser contacts, staff IDs, budgets and costs are not exposed to anonymous visitors.
+- [x] Added a public campaign renderer and connected homepage secondary/featured placements. The storefront fails gracefully if the migration is not yet applied.
+- [x] Added a campaign management workspace with creative uploads, advertiser records, campaign draft/approval/publish/pause workflow and date-filtered analytics reporting.
+- [x] Added an Instagram content planner for drafts, media, hashtags, approval and planned schedules. It explicitly does not claim to publish to Instagram without a Meta integration.
+- [x] Added best-effort impression and click events plus purchase attribution for eligible verified orders linked to a recent same-session ad click.
+- [x] Added Important Employee promotion and individual permission controls to the admin employee directory; added authorized Growth Studio navigation and sales-collection metrics.
+- [ ] Review the migration against the target project's actual migration history and run it in a non-production Supabase project. No database migration has been applied by this source change.
+- [ ] Run a successful TypeScript check and production build. This environment could not clone the repository for local execution; no build success is claimed.
+- [ ] Test upload permissions, campaign status transitions, public creative visibility, advertiser isolation, event deduplication, attribution and dashboard access using separate admin/employee/customer accounts.
+- [ ] Add consent-aware persistent attribution, rate limiting/abuse controls for public analytics events, and conversion reconciliation tests.
+- [ ] Connect remaining campaign placements (homepage hero, category and deals), add campaign editing/archiving UX, and implement actual Meta/Instagram publishing only after credentials and API permissions are configured.
+- [ ] Implement the remaining roadmap modules incrementally: expense/profit reporting UI, customer loyalty/referrals, back-in-stock and consent-based abandoned-cart messaging, support queue, inventory history, notifications, report exports, A/B tests and external advertiser billing.
+- [ ] Do not deploy or apply live database changes without explicit owner approval.
