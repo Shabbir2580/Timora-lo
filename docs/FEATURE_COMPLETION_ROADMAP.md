@@ -105,6 +105,7 @@ This roadmap tracks source changes separately from live verification. No item is
 - [x] Added an Instagram content planner for drafts, media, hashtags, approval and planned schedules. It explicitly does not claim to publish to Instagram without a Meta integration.
 - [x] Added best-effort impression and click events plus purchase attribution for eligible verified orders linked to a recent same-session ad click.
 - [x] Added Important Employee promotion and individual permission controls to the admin employee directory; added authorized Growth Studio navigation and sales-collection metrics.
+- [x] Added a permission-gated finance workspace for verified collections, recorded business expenses, expense CSV export and a clearly labelled collections-minus-recorded-expenses figure (not claimed as net profit).
 - [ ] Review the migration against the target project's actual migration history and run it in a non-production Supabase project. No database migration has been applied by this source change.
 - [ ] Run a successful TypeScript check and production build. This environment could not clone the repository for local execution; no build success is claimed.
 - [ ] Test upload permissions, campaign status transitions, public creative visibility, advertiser isolation, event deduplication, attribution and dashboard access using separate admin/employee/customer accounts.
