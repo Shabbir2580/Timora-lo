@@ -50,7 +50,8 @@ function toProduct(row: DatabaseProduct): Product {
         ? "low_stock"
         : "in_stock"
 
-  const badges: ProductBadge[] = mrp > price ? ["SALE"] : []
+  const explicitlyOnSale = Array.isArray(row.tags) && row.tags.some((tag) => tag.trim().toLowerCase() === "sale")
+  const badges: ProductBadge[] = explicitlyOnSale && mrp > price ? ["SALE"] : []
 
   return {
     id: row.id,
@@ -137,8 +138,7 @@ export default async function ProductsPage({
 
     const matchesDeals =
       !dealsOnly ||
-      product.badges.includes("SALE") ||
-      product.price < product.mrp
+      product.badges.includes("SALE")
 
     const productCategorySlug = product.categorySlug.toLowerCase()
     const matchesCategory =
