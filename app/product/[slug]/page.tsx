@@ -139,7 +139,7 @@ export default async function ProductDetailPage({
               }).format(product.price)}
             </p>
 
-            {product.mrp > product.price && (
+            {product.badges.includes("SALE") && product.mrp > product.price && (
               <p className="mt-1 text-sm text-white/45 line-through">
                 MRP{" "}
                 {new Intl.NumberFormat("en-IN", {
