@@ -4,7 +4,9 @@
 
 begin;
 
-create or replace function public.create_order_atomic(
+drop function if exists public.create_order_atomic(text,text,text,text,text,text,text,text,text,text,jsonb,text);
+
+create function public.create_order_atomic(
   p_customer_name text,
   p_customer_email text,
   p_customer_phone text,
