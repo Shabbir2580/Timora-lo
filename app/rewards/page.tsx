@@ -152,7 +152,7 @@ export default function RewardsPage() {
                 <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
                   {summary.entries.map((entry) => (
                     <div key={entry.id} className="flex flex-col gap-2 border-b border-white/[0.07] p-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                      <div className="min-w-0"><p className="text-sm font-medium">{entryLabels[entry.entry_type] ?? "Rewards activity"}</p><p className="mt-1 text-xs text-white/40">{formatDate(entry.created_at)} · Order #{entry.order_id.slice(0, 8).toUpperCase()}</p></div>
+                      <div className="min-w-0"><p className="text-sm font-medium">{entryLabels[entry.entry_type] ?? "Rewards activity"}</p><p className="mt-1 text-xs text-white/40">{formatDate(entry.created_at)}{entry.entry_type === "order_earned" ? ` · Order #${entry.order_id.slice(0, 8).toUpperCase()}` : ""}</p></div>
                       <p className="shrink-0 text-sm font-semibold text-[#e4cd9b]">+{entry.points} pts</p>
                     </div>
                   ))}
