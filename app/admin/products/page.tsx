@@ -494,6 +494,11 @@ export default function AdminProductsPage() {
   }
 
   async function deleteProduct(product: Product) {
+    if (role !== "admin") {
+      setError("Only an administrator can permanently delete products.")
+      return
+    }
+
     const confirmed = window.confirm(
       `Permanently delete "${product.name}"? This cannot be undone.`
     )
@@ -520,8 +525,8 @@ export default function AdminProductsPage() {
         .eq("user_id", user.id)
         .maybeSingle()
 
-      if (roleError || !staff || !["admin", "employee"].includes(staff.role)) {
-        setError("Only authorized Timora staff can permanently delete products.")
+      if (roleError || staff?.role !== "admin") {
+        setError("Only an administrator can permanently delete products.")
         return
       }
 
@@ -1107,14 +1112,14 @@ export default function AdminProductsPage() {
                             >
                               {product.is_active ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                             </button>
-                            {(role === "admin" || role === "employee") && (<button
+                            {role === "admin" && <button
                               type="button"
                               onClick={() => void deleteProduct(product)}
                               aria-label={`Delete ${product.name}`}
                               className="grid size-9 place-items-center rounded-lg text-red-300/70 hover:bg-red-400/10 hover:text-red-300"
                             >
                               <Trash2 className="size-4" />
-                            </button>)}
+                            </button>}
 
                           </div>
                         </td>
