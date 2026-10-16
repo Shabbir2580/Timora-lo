@@ -22,7 +22,6 @@ export function ProductCard({ product }: { product: Product }) {
   const discountPercent = explicitlyOnSale && product.mrp > product.price && product.mrp > 0
     ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
     : 0
-  const hasSaleBadge = product.badges.some((badge) => badge.toLowerCase().includes("sale") || badge.toLowerCase().includes("off"))
 
   function handleAddToCart() {
     if (outOfStock || isPreview) return
@@ -86,8 +85,8 @@ export function ProductCard({ product }: { product: Product }) {
 
       <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-3.5">
         <Link href={`/product/${product.slug}`} className="flex flex-1 flex-col gap-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {product.brand}
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground sm:text-[11px]">
+            {product.category || product.brand}
           </span>
           <h3 className="line-clamp-2 text-sm font-medium leading-snug text-foreground">
             {product.name}
