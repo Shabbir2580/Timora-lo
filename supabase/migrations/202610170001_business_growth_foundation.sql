@@ -663,4 +663,14 @@ $function$;
 revoke all on function public.get_advertising_analytics(date,date) from public;
 grant execute on function public.get_advertising_analytics(date,date) to authenticated;
 
+
+-- Explicitly remove anonymous execution from privileged staff functions.
+-- These functions still enforce authorization internally, but should not be callable by anon.
+revoke all on function public.manage_staff_permissions(uuid, jsonb) from anon;
+revoke all on function public.get_advertising_analytics(date, date) from anon;
+revoke all on function public.timora_has_staff_permission(text) from anon;
+grant execute on function public.manage_staff_permissions(uuid, jsonb) to authenticated;
+grant execute on function public.get_advertising_analytics(date, date) to authenticated;
+grant execute on function public.timora_has_staff_permission(text) to authenticated;
+
 commit;
