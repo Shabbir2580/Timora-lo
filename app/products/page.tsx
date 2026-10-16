@@ -8,6 +8,7 @@ import {
   type StockState,
 } from "@/lib/data"
 import { ProductCard } from "@/components/store/product-card"
+import { AdPlacement } from "@/components/store/ad-placement"
 import { createClient } from "@/lib/supabase/server"
 
 type ProductsPageProps = {
@@ -271,6 +272,8 @@ export default async function ProductsPage({
             </Link>
           </div>
         ) : null}
+
+        {dealsOnly ? <AdPlacement placement="deals_banner" className="mb-6" /> : categorySlug && !query ? <AdPlacement placement="category_banner" className="mb-6" /> : null}
 
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">Sort products</p>
