@@ -293,13 +293,18 @@ export default function AdminProductsPage() {
         return false
       }
     }
+    // Existing products may already store a safe same-site path after Drive URL
+    // normalization. Preserve those paths when editing; reject protocol-relative URLs.
+    const isSafeLocalImagePath = (value: string) =>
+      value.startsWith("/") && !value.startsWith("//") && !value.includes("\\\\") && !value.includes("..")
+    const isValidImageValue = (value: string) => isValidHttpUrl(value) || isSafeLocalImagePath(value)
 
-    if (rawMainImage && !isValidHttpUrl(rawMainImage)) {
-      setError("Enter a valid image URL beginning with https:// or http://.")
+    if (rawMainImage && !isValidImageValue(rawMainImage)) {
+      setError("Enter a valid image URL beginning with https:// or http://, or keep an existing site image path.")
       setSaving(false)
       return
     }
-    const invalidAdditionalImage = rawAdditionalImages.find((url) => !isValidHttpUrl(url))
+    const invalidAdditionalImage = rawAdditionalImages.find((url) => !isValidImageValue(url))
     if (invalidAdditionalImage) {
       setError(`Invalid additional image URL: ${invalidAdditionalImage}`)
       setSaving(false)
