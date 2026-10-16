@@ -577,10 +577,10 @@ export default function AdminProductsPage() {
               href="/admin/image-url-converter"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d4af37]/35 px-4 text-sm font-medium text-[#e4c878] transition hover:bg-[#d4af37]/10"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d4af37]/50 bg-[#d4af37]/10 px-4 text-sm font-semibold text-[#f0d98c] shadow-[0_0_0_1px_rgba(212,175,55,0.08)] transition hover:bg-[#d4af37]/20"
             >
               <ExternalLink className="size-4" />
-              Image URL Converter
+              Drive Image Converter
             </Link>
             <button
               type="button"
@@ -764,9 +764,21 @@ export default function AdminProductsPage() {
                 </span>
               </label>
 
-              <label className="text-xs text-white/65 sm:col-span-2">
-                Main image URL (image 1 of up to 6)
+              <div className="text-xs text-white/65 sm:col-span-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label htmlFor="main-product-image-url">Main image URL (image 1 of up to 6)</label>
+                  <Link
+                    href="/admin/image-url-converter"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-[#d4af37]/35 bg-[#d4af37]/[0.08] px-3 text-[11px] font-semibold text-[#e4c878] hover:bg-[#d4af37]/15"
+                  >
+                    <ExternalLink className="size-3.5" />
+                    Convert Drive link
+                  </Link>
+                </div>
                 <input
+                  id="main-product-image-url"
                   className={inputClass}
                   type="url"
                   value={form.image_url}
@@ -776,7 +788,7 @@ export default function AdminProductsPage() {
                 <span className="mt-1 block text-[11px] text-white/40">
                   Use a publicly accessible image URL. Add up to 5 more image URLs below.
                 </span>
-              </label>
+              </div>
 
               <label className="text-xs text-white/65 sm:col-span-2">
                 Additional product image URLs (one per line, up to 5)
