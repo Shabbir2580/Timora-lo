@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import {
   Activity, ArrowRight, BadgePercent, Boxes, CheckCircle2, ChevronRight, ClipboardList, Clock3,
   LayoutDashboard, LogOut, Package, RefreshCw, ShieldCheck,
-  ShoppingBag, Star, Users, Wallet, AlertTriangle, Trash2, ExternalLink,
+  ShoppingBag, Star, Users, Wallet, AlertTriangle, Trash2, ExternalLink, Sparkles,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
