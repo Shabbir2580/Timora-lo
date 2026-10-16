@@ -11,8 +11,6 @@ import {
   ShieldCheck,
 } from "lucide-react"
 
-const TIMORA_SITE_URL = "https://timora-by-sk.vercel.app"
-
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [error, setError] = useState("")
@@ -37,10 +35,11 @@ export default function ForgotPasswordPage() {
       const safeNext = requestedNext && requestedNext.startsWith("/") && !requestedNext.startsWith("//")
         ? requestedNext
         : "/"
-      const resetPath = new URL("/reset-password", TIMORA_SITE_URL)
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
+      const resetPath = new URL("/reset-password", siteUrl)
       resetPath.searchParams.set("next", safeNext)
 
-      const redirectTo = new URL("/auth/callback", TIMORA_SITE_URL)
+      const redirectTo = new URL("/auth/callback", siteUrl)
       redirectTo.searchParams.set("next", `${resetPath.pathname}${resetPath.search}`)
 
       const { error } = await supabase.auth.resetPasswordForEmail(
