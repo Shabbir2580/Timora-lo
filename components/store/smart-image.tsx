@@ -45,7 +45,7 @@ export function SmartImage({ src, alt, className = "", fill = false, priority = 
   const candidates = getImageCandidates(src)
   const [candidateIndex, setCandidateIndex] = useState(0)
   useEffect(() => setCandidateIndex(0), [src])
-  const currentSrc = candidates[Math.min(candidateIndex, candidates.length - 1)] || "/placeholder.svg"
+  const currentSrc = candidateIndex >= candidates.length ? "/placeholder.svg" : candidates[candidateIndex] || "/placeholder.svg"
   const layoutClass = fill ? "absolute inset-0 h-full w-full" : "max-w-full"
 
   return (
