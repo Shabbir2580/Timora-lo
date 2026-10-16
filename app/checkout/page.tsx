@@ -165,6 +165,16 @@ export default function CheckoutPage() {
       setForm(toAddressForm(preferred))
       setIsDefault(preferred.is_default)
       setAddressEditorOpen(false)
+    } else {
+      // Never retain a previous account's address when the current account has none.
+      setSelectedAddressId("")
+      setForm((previous) => ({
+        ...emptyAddress,
+        fullName: previous.fullName,
+        phone: previous.phone,
+      }))
+      setIsDefault(true)
+      setAddressEditorOpen(true)
     }
   }, [supabase])
 
@@ -179,7 +189,15 @@ export default function CheckoutPage() {
       if (!active) return
 
       if (error || !data.user) {
+        // Clear account-specific state on sign-out so a different customer cannot
+        // see or accidentally submit the previous customer's delivery details.
         setUserId(null)
+        setEmail("")
+        setAddresses([])
+        setSelectedAddressId("")
+        setIsDefault(false)
+        setAddressEditorOpen(true)
+        setForm(emptyAddress)
         setLoadingProfile(false)
         setProfileMessage(
           "Sign in to save addresses and have your account details filled in automatically.",
@@ -190,6 +208,10 @@ export default function CheckoutPage() {
       const user = data.user
       setUserId(user.id)
       setEmail(user.email ?? "")
+      setAddresses([])
+      setSelectedAddressId("")
+      setIsDefault(false)
+      setAddressEditorOpen(true)
 
       const metadataName =
         typeof user.user_metadata?.full_name === "string"
@@ -197,11 +219,18 @@ export default function CheckoutPage() {
           : typeof user.user_metadata?.name === "string"
             ? user.user_metadata.name
             : ""
+      const metadataPhone =
+        typeof user.user_metadata?.phone === "string"
+          ? user.user_metadata.phone
+          : typeof user.user_metadata?.phone_number === "string"
+            ? user.user_metadata.phone_number
+            : ""
 
-      setForm((previous) => ({
-        ...previous,
-        fullName: previous.fullName || metadataName,
-      }))
+      setForm({
+        ...emptyAddress,
+        fullName: metadataName,
+        phone: metadataPhone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10),
+      })
 
       await loadAddresses(user.id)
 
@@ -269,15 +298,6 @@ export default function CheckoutPage() {
     setAddressMessage("")
 
     try {
-      if (isDefault) {
-        const { error: defaultError } = await supabase
-          .from("addresses")
-          .update({ is_default: false })
-          .eq("user_id", userId)
-
-        if (defaultError) throw defaultError
-      }
-
       const payload = {
         user_id: userId,
         full_name: form.fullName.trim(),
@@ -289,9 +309,11 @@ export default function CheckoutPage() {
         pincode: form.pincode.trim(),
         delivery_note: form.deliveryNote.trim() || null,
         address_label: form.addressLabel.trim() || "Home",
-        is_default: isDefault || addresses.length === 0,
+        // Default selection is applied through the atomic database RPC below.
+        is_default: false,
       }
 
+      let savedAddressId = selectedAddressId
       if (selectedAddressId) {
         const { error } = await supabase
           .from("addresses")
@@ -308,7 +330,16 @@ export default function CheckoutPage() {
           .single()
 
         if (error) throw error
-        if (data?.id) setSelectedAddressId(data.id)
+        savedAddressId = data.id
+        setSelectedAddressId(data.id)
+      }
+
+      if (isDefault || addresses.length === 0) {
+        const { error: defaultError } = await supabase.rpc(
+          "set_customer_default_address",
+          { p_address_id: savedAddressId },
+        )
+        if (defaultError) throw defaultError
       }
 
       await loadAddresses(userId)
@@ -334,11 +365,9 @@ export default function CheckoutPage() {
     )
     if (!confirmed) return
 
-    const { error } = await supabase
-      .from("addresses")
-      .delete()
-      .eq("id", addressId)
-      .eq("user_id", userId)
+    const { error } = await supabase.rpc("delete_customer_address", {
+      p_address_id: addressId,
+    })
 
     if (error) {
       setAddressMessage("We couldn't delete that address. Please try again.")
@@ -365,24 +394,12 @@ export default function CheckoutPage() {
   async function makeDefault(address: Address) {
     if (!userId) return
 
-    const { error: clearError } = await supabase
-      .from("addresses")
-      .update({ is_default: false })
-      .eq("user_id", userId)
-
-    if (clearError) {
-      setAddressMessage("Couldn't update the default address.")
-      return
-    }
-
-    const { error } = await supabase
-      .from("addresses")
-      .update({ is_default: true })
-      .eq("id", address.id)
-      .eq("user_id", userId)
+    const { error } = await supabase.rpc("set_customer_default_address", {
+      p_address_id: address.id,
+    })
 
     if (error) {
-      setAddressMessage("Couldn't update the default address.")
+      setAddressMessage("Couldn't update the default address. Please ensure the latest address migration has been applied.")
       return
     }
 
