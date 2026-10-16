@@ -163,7 +163,7 @@ export default function AdminAdvertisingPage() {
     try {
       const supabase = createClient()
       const [advertiserResult, campaignResult, productResult] = await Promise.all([
-        supabase.from("advertisers").select("id,advertiser_type,business_name,contact_name,contact_email,website_url,status").order("created_at", { ascending: false }),
+        supabase.from("ad_advertiser_options").select("id,advertiser_type,business_name,status").order("business_name", { ascending: true }),
         supabase.from("ad_campaigns").select("*,advertisers(business_name)").order("created_at", { ascending: false }).limit(100),
         supabase.from("products").select("id,name,slug").order("name", { ascending: true }).limit(500),
       ])
@@ -172,7 +172,11 @@ export default function AdminAdvertisingPage() {
       if (productResult.error) throw productResult.error
       const loadedAdvertisers = (advertiserResult.data ?? []) as Advertiser[]
       setAdvertisers(loadedAdvertisers)
-      setCampaigns((campaignResult.data ?? []) as Campaign[])
+      const advertiserNames = new Map(loadedAdvertisers.map((item) => [item.id, item.business_name]))
+      setCampaigns(((campaignResult.data ?? []) as Campaign[]).map((item) => ({
+        ...item,
+        advertisers: { business_name: advertiserNames.get(item.advertiser_id) ?? "Advertiser" },
+      })))
       setProducts((productResult.data ?? []) as Product[])
       setAdvertiserId((current) => current || loadedAdvertisers.find((item) => item.advertiser_type === "timora" && item.status === "active")?.id || loadedAdvertisers[0]?.id || "")
     } catch (err) {
@@ -242,7 +246,7 @@ export default function AdminAdvertisingPage() {
         contact_email: advertiserEmail.trim().toLowerCase() || null,
         website_url: advertiserWebsite.trim() || null,
         created_by: userId,
-      }).select("id,advertiser_type,business_name,contact_name,contact_email,website_url,status").single()
+      }).select("id,advertiser_type,business_name,status").single()
       if (insertError) throw insertError
       setAdvertisers((current) => [data as Advertiser, ...current])
       setAdvertiserId(data.id)
