@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
+import { SmartImage } from "@/components/store/smart-image"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import type { User } from "@supabase/supabase-js"
@@ -409,7 +409,7 @@ export default function HomePage() {
           <div className="relative mx-auto w-full max-w-xl home-reveal home-reveal-delay-2 lg:max-w-none">
             <div className="absolute -inset-3 rounded-[45%] bg-[#c9a96e]/5 blur-3xl" />
             <div className="home-hero-image relative aspect-[4/4.5] overflow-hidden rounded-[48%_48%_8px_8px] border border-white/10 bg-[#d7cbb6]">
-              <Image
+              <SmartImage
                 src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1200&q=90"
                 alt="Elegant wristwatch from the Timora-inspired collection"
                 fill
@@ -446,7 +446,7 @@ export default function HomePage() {
             </div>
             <Link href="/products?category=attar" className="home-floating-fragrance group absolute -bottom-5 -left-2 z-20 hidden w-48 items-center gap-3 rounded-2xl border border-[#d8bc88]/25 bg-[#11110f]/95 p-2.5 shadow-2xl backdrop-blur sm:flex lg:-left-8">
               <div className="relative h-16 w-14 shrink-0 overflow-hidden rounded-xl bg-[#332516]">
-                <Image src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=240&q=80" alt="Attar fragrance bottle" fill sizes="56px" className="object-cover transition duration-500 group-hover:scale-110" />
+                <SmartImage src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=240&q=80" alt="Attar fragrance bottle" fill sizes="56px" className="object-cover transition duration-500 group-hover:scale-110" />
               </div>
               <div className="min-w-0">
                 <p className="text-[8px] uppercase tracking-[0.18em] text-[#d8bc88]">A new signature</p>
@@ -533,7 +533,7 @@ export default function HomePage() {
             <article key={product.id} className="group min-w-0">
               <div className={`relative aspect-[4/4.8] overflow-hidden rounded-xl ${product.tone}`}>
                 <Link href={`/product/${product.slug}`} className="block h-full w-full">
-                  <Image
+                  <SmartImage
                     src={product.image}
                     alt={product.name}
                     fill
@@ -650,7 +650,7 @@ export default function HomePage() {
                   <article key={product.id} className="group min-w-0">
                     <div className="relative aspect-[4/4.8] overflow-hidden rounded-xl bg-[#e8e1d6]">
                       <Link href={`/product/${product.slug}`} className="block size-full">
-                        <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover transition duration-700 group-hover:scale-105" />
+                        <SmartImage src={product.image} alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover transition duration-700 group-hover:scale-105" />
                       </Link>
                       <span className="absolute left-2 top-2 rounded-full border border-[#c9a96e]/45 bg-[#0b0b0a]/90 px-2 py-1 text-[8px] font-semibold uppercase tracking-wide text-[#e5cb91] sm:left-3 sm:top-3 sm:text-[9px]">
                         {collection.title === "Best sellers" ? "BEST SELLER" : "TRENDING"}
@@ -684,22 +684,22 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           <Link href="/products?category=watches" className="group relative col-span-2 aspect-[16/9] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15] lg:col-span-1 lg:aspect-[4/5]">
-            <Image src="https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=1000&q=85" alt="Close-up of a classic wristwatch" fill sizes="(max-width: 1024px) 90vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
+            <SmartImage src="https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=1000&q=85" alt="Close-up of a classic wristwatch" fill sizes="(max-width: 1024px) 90vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
             <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">The finishing touch</p><p className="mt-1 text-lg font-light sm:text-2xl">Watches</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Explore collection <ArrowUpRight size={13} /></span></div>
           </Link>
           <Link href="/products?category=headphones" className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15]">
-            <Image src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=85" alt="Premium audio headphones" fill sizes="(max-width: 640px) 45vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
+            <SmartImage src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=85" alt="Premium audio headphones" fill sizes="(max-width: 640px) 45vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
             <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">Sound, considered</p><p className="mt-1 text-lg font-light sm:text-2xl">Audio</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Find your sound <ArrowUpRight size={13} /></span></div>
           </Link>
           <Link href="/products?category=accessories" className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15]">
-            <Image src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1000&q=85" alt="Elegant everyday bag accessory" fill sizes="(max-width: 1024px) 90vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
+            <SmartImage src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1000&q=85" alt="Elegant everyday bag accessory" fill sizes="(max-width: 1024px) 90vw, 33vw" className="object-cover transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
             <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">The finishing touch</p><p className="mt-1 text-lg font-light sm:text-2xl">Accessories</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Explore details <ArrowUpRight size={13} /></span></div>
           </Link>
           <Link href="/products?category=attar" className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-[#201c15]">
-            <Image src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=900&q=85" alt="Amber attar fragrance bottle" fill sizes="(max-width: 640px) 45vw, 25vw" className="object-cover transition duration-700 group-hover:scale-105" />
+            <SmartImage src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=900&q=85" alt="Amber attar fragrance bottle" fill sizes="(max-width: 640px) 45vw, 25vw" className="object-cover transition duration-700 group-hover:scale-105" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
             <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6"><p className="text-[9px] uppercase tracking-[0.2em] text-[#e5cb91]">A scent of your own</p><p className="mt-1 text-lg font-light sm:text-2xl">Attar & Ittar</p><span className="mt-2 inline-flex items-center gap-2 text-[10px] text-white/75">Explore fragrance <ArrowUpRight size={13} /></span></div>
           </Link>
