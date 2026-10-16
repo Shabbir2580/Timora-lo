@@ -541,7 +541,8 @@ begin
     end if;
     v_click_id := case when p_event_type = 'click' then coalesce(p_click_id, p_event_key) else p_click_id end;
   else
-    if v_campaign.campaign_type = 'external_ad' then
+    if v_campaign.campaign_type = 'external_ad'
+      or exists (select 1 from public.advertisers a where a.id = v_campaign.advertiser_id and a.advertiser_type = 'external') then
       return jsonb_build_object('recorded', false, 'reason', 'external_ad_purchase_tracking_not_supported');
     end if;
     if auth.uid() is null or p_order_id is null or p_click_id is null then
