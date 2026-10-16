@@ -74,7 +74,7 @@ export function ProductReviews({ productId, productName }: { productId: string; 
 
         const { data: matchingItems, error: itemsError } = await supabase
           .from("order_items")
-          .select("id")
+          .select("product_id")
           .eq("product_id", productId)
           .in("order_id", orderIds)
           .limit(1)
