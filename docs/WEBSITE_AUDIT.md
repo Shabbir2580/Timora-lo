@@ -101,3 +101,13 @@ Audit basis: source review of `main` on 16 October 2026. This is a code-level au
 - [x] Chunked order-item lookups into groups of 10 order IDs and grouped items by order ID, avoiding oversized item responses and repeated full-array filtering for each order.
 - [ ] Verify in a test environment with more orders than the configured API row limit, and test refresh, filters, monthly metrics, CSV export, and order actions.
 - [ ] No build, browser test, live Supabase query, or deployment was performed for this source change.
+
+
+## Follow-up checkout audit — 17 October 2026
+
+- [x] Confirmed `public/payment/timora-upi-qr.png` exists in the repository; this verifies the referenced asset path exists, but does not verify that the QR belongs to Timora's intended merchant account. Check the displayed merchant name with a low-value test payment before launch.
+- [ ] **Release blocker — product options conflict with checkout:** the product/cart data model supports colour variants, but `app/api/orders/route.ts` rejects every selected variant other than `Default`, and the atomic-order SQL also rejects non-default variants. A customer can select a colour that the order service refuses. Resolve by implementing inventory-backed variants end to end, or clearly disable variant selection for products that have no configured variants; do not merely remove the server-side validation.
+- [ ] **Address default selection is not atomic:** `app/addresses/page.tsx` and checkout clear all existing default flags before inserting/updating the new default. If the subsequent write fails, the customer may be left with no default address. Replace with a transaction/RPC or safely recover the previous default; test failed writes and concurrent updates.
+- [ ] **Payment is manual, not gateway-verified:** the UPI QR section explicitly tells customers to confirm payment manually; staff RPC marks payment paid after manual verification. The QR asset's presence is not proof of merchant ownership, and no automatic UPI/Razorpay verification was confirmed.
+- [ ] Review the actual deployed database function definitions and migration history before applying repair migrations. The historical atomic-order migration returns a table while the later repair migration changes the function to JSONB by dropping/recreating it; do not rerun the repair migration blindly against a database with dependencies or unconfirmed state.
+- [ ] No successful build or browser/end-to-end check has been confirmed for the latest `main` commit. GitHub reports no completed check runs for the current documentation commit.
