@@ -16,6 +16,7 @@ import {
   LogOut,
   Search,
   ExternalLink,
+  UploadCloud,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -102,6 +103,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loadingProducts, setLoadingProducts] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState<ProductForm>(emptyForm)
@@ -228,6 +230,65 @@ export default function AdminProductsPage() {
     value: ProductForm[K]
   ) {
     setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  async function uploadProductVideo(file: File) {
+    setError("")
+    setNotice("")
+
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim()
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET?.trim()
+    if (!cloudName || !uploadPreset) {
+      setError("Cloudinary upload is not configured yet. Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET in the app environment, then reload.")
+      return
+    }
+
+    const currentVideos = form.videos.split("\n").map((value) => value.trim()).filter(Boolean)
+    if (currentVideos.length >= 2) {
+      setError("Each product can have up to 2 videos. Remove a video URL before uploading another.")
+      return
+    }
+
+    const allowedTypes = ["video/mp4", "video/webm", "video/quicktime"]
+    if (!allowedTypes.includes(file.type)) {
+      setError("Choose an MP4, WebM, or MOV video.")
+      return
+    }
+    const maxBytes = 100 * 1024 * 1024
+    if (file.size > maxBytes) {
+      setError("The video must be 100 MB or smaller. Compress it before uploading.")
+      return
+    }
+
+    setUploadingVideo(true)
+    try {
+      const body = new FormData()
+      body.append("file", file)
+      body.append("upload_preset", uploadPreset)
+      body.append("folder", "timora/products")
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/video/upload`,
+        { method: "POST", body }
+      )
+      const result = await response.json() as {
+        secure_url?: string
+        error?: { message?: string }
+      }
+      if (!response.ok || !result.secure_url) {
+        throw new Error(result.error?.message || "Cloudinary could not upload this video.")
+      }
+
+      const latestVideos = form.videos.split("\n").map((value) => value.trim()).filter(Boolean)
+      if (latestVideos.length >= 2) {
+        throw new Error("The product already has 2 video URLs. The upload completed, but its URL was not added; copy this URL from Cloudinary: " + result.secure_url)
+      }
+      updateField("videos", [...latestVideos, result.secure_url].join("\n"))
+      setNotice("Video uploaded to Cloudinary. Save the product to publish the video on its product page.")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not upload the product video.")
+    } finally {
+      setUploadingVideo(false)
+    }
   }
 
   async function saveProduct(event: React.FormEvent<HTMLFormElement>) {
@@ -810,11 +871,33 @@ export default function AdminProductsPage() {
                 <textarea className={`${inputClass} min-h-24 resize-y`} value={form.additional_images} onChange={(event) => updateField("additional_images", event.target.value)} placeholder={"https://example.com/product-side.jpg\\nhttps://example.com/product-back.jpg"} />
               </label>
 
-              <label className="text-xs text-white/65 sm:col-span-2">
-                Product video URLs (one per line, up to 2)
-                <textarea className={`${inputClass} min-h-20 resize-y`} value={form.videos} onChange={(event) => updateField("videos", event.target.value)} placeholder={"https://example.com/product-demo.mp4\\nhttps://example.com/product-detail.mp4"} />
-                <span className="mt-1 block text-[11px] text-white/40">Use direct public MP4/WebM links. YouTube links can be added in a future update.</span>
-              </label>
+              <div className="text-xs text-white/65 sm:col-span-2">
+                <label className="block">
+                  Product video URLs (one per line, up to 2)
+                  <textarea className={`${inputClass} min-h-20 resize-y`} value={form.videos} onChange={(event) => updateField("videos", event.target.value)} placeholder={"https://res.cloudinary.com/your-cloud/video/upload/sample.mp4"} />
+                </label>
+                <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.025] p-3">
+                  <label className="flex cursor-pointer flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                      <span className="flex items-center gap-2 text-sm font-medium text-white/85"><UploadCloud className="size-4 text-[#d4af37]" />Upload a video to Cloudinary</span>
+                      <span className="mt-1 block text-[11px] leading-5 text-white/45">MP4, WebM, or MOV · max 100 MB · up to 2 videos per product. Uploading does not publish it until you save the product.</span>
+                    </span>
+                    <span className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-full border border-[#d4af37]/30 px-4 text-xs text-[#e4c878]">{uploadingVideo ? "Uploading…" : "Choose video"}</span>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      disabled={uploadingVideo || saving}
+                      className="sr-only"
+                      onChange={(event) => {
+                        const file = event.currentTarget.files?.[0]
+                        event.currentTarget.value = ""
+                        if (file) void uploadProductVideo(file)
+                      }}
+                    />
+                  </label>
+                  <p className="mt-2 text-[10px] leading-4 text-white/35">Requires an unsigned Cloudinary upload preset restricted to video uploads and a folder, plus NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET environment variables.</p>
+                </div>
+              </div>
 
               {form.image_url && (
                 <div className="sm:col-span-2">
