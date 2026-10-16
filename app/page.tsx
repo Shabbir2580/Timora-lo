@@ -349,111 +349,95 @@ export default function HomePage() {
         )}
       </header>
 
-      {/* Hero */}
-      <section className="relative home-hero">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_75%_45%,rgba(173,133,66,0.13),transparent_42%)]" />
-        <div className="relative mx-auto grid max-w-[1440px] items-center gap-8 px-5 pb-14 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:grid-cols-[1fr_0.9fr] lg:gap-12 lg:px-12 lg:py-20">
-          <div className="relative z-10 max-w-2xl home-reveal">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#c9a96e]/35 bg-[#c9a96e]/5 px-3.5 py-2 text-[9px] font-medium uppercase tracking-[0.22em] text-[#d9bd8c] sm:text-[10px]">
+      {/* Editorial hero — asymmetric, image-led and responsive */}
+      <section className="relative isolate overflow-hidden border-b border-white/[0.08] bg-[#0b0b0a]">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_76%_32%,rgba(201,169,110,0.16),transparent_36%),linear-gradient(115deg,transparent_42%,rgba(201,169,110,0.035)_100%)]" />
+        <div className="relative mx-auto grid max-w-[1600px] items-center gap-10 px-5 pb-16 pt-12 sm:px-8 sm:pb-20 sm:pt-16 lg:min-h-[690px] lg:grid-cols-[0.92fr_1.08fr] lg:gap-8 lg:px-12 lg:py-20 xl:px-16">
+          <div className="relative z-10 max-w-2xl home-reveal lg:py-8">
+            <div className="mb-7 inline-flex items-center gap-2 border-y border-[#c9a96e]/35 py-2.5 pr-4 text-[9px] font-medium uppercase tracking-[0.24em] text-[#d9bd8c] sm:text-[10px]">
               <Sparkles size={13} />
-              THE ART OF EVERYDAY LUXURY
+              A considered way to live
             </div>
 
-            <h1 className="text-[clamp(3.2rem,8vw,6.8rem)] font-light leading-[0.99] tracking-[-0.065em]">
-              Your style.
+            <h1 className="max-w-[760px] font-serif text-[clamp(3.5rem,8vw,7.8rem)] font-normal leading-[0.88] tracking-[-0.065em]">
+              The art of
               <br />
-              <span className="font-medium text-[#d6b77e]">Your signature.</span>
+              <span className="ml-[0.12em] italic text-[#d6b77e]">being</span>
+              <br />
+              <span className="text-white/90">distinct.</span>
             </h1>
 
-            <p className="mt-6 max-w-md text-sm leading-7 text-white/55 sm:mt-8 sm:text-base sm:leading-8">
-              Discover statement watches, immersive audio, considered accessories and soulful attar fragrances — curated to make everyday moments feel unmistakably yours.
-            </p>
+            <div className="mt-8 grid max-w-xl grid-cols-[3px_1fr] gap-4 sm:mt-10 sm:gap-5">
+              <span className="bg-[#c9a96e]" />
+              <p className="max-w-md text-sm leading-7 text-white/60 sm:text-base sm:leading-8">
+                Watches with presence. Audio that draws you in. Accessories with purpose. Attar that leaves a memory. Find the details that feel like you.
+              </p>
+            </div>
 
             <div className="mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row">
               <Link
                 href="/products"
-                className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#c9a96e] px-7 text-xs font-semibold uppercase tracking-[0.13em] text-[#17130c] transition hover:bg-[#dfc797]"
+                className="group inline-flex min-h-12 items-center justify-center gap-4 self-start rounded-full bg-[#c9a96e] px-7 text-xs font-semibold uppercase tracking-[0.13em] text-[#17130c] transition hover:bg-[#dfc797]"
               >
-                Explore collection <ArrowUpRight size={16} />
+                Explore the collection <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </Link>
               <Link
                 href="#featured-products"
-                className="inline-flex min-h-12 items-center justify-center gap-3 rounded-full border border-white/20 px-7 text-xs font-medium uppercase tracking-[0.13em] transition hover:border-[#c9a96e] hover:text-[#d9bd8c]"
+                className="inline-flex min-h-12 items-center justify-center gap-3 self-start px-3 text-xs font-medium uppercase tracking-[0.13em] text-white/65 transition hover:text-[#dfc797]"
               >
-                Discover the edit <ArrowDownRight size={16} />
+                The latest edit <ArrowDownRight size={16} />
               </Link>
             </div>
 
-            <div className="mt-10 grid max-w-sm grid-cols-3 border-t border-white/10 pt-6 sm:mt-14">
-              <div>
-                <p className="text-lg font-medium sm:text-xl">01</p>
-                <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/40 sm:text-[10px]">
-                  Thoughtful
-                </p>
-              </div>
-              <div className="border-l border-white/10 pl-4 sm:pl-6">
-                <p className="text-lg font-medium sm:text-xl">02</p>
-                <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/40 sm:text-[10px]">
-                  Timeless
-                </p>
-              </div>
-              <div className="border-l border-white/10 pl-4 sm:pl-6">
-                <p className="text-lg font-medium sm:text-xl">03</p>
-                <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/40 sm:text-[10px]">
-                  Personal
-                </p>
-              </div>
+            <div className="mt-12 flex max-w-lg items-center gap-5 border-t border-white/10 pt-5 sm:mt-16 sm:gap-8">
+              <div><p className="font-serif text-2xl italic text-[#d6b77e]">01</p><p className="mt-1 text-[9px] uppercase tracking-[0.16em] text-white/45">Thoughtful</p></div>
+              <span className="h-9 w-px bg-white/10" />
+              <div><p className="font-serif text-2xl italic text-[#d6b77e]">02</p><p className="mt-1 text-[9px] uppercase tracking-[0.16em] text-white/45">Timeless</p></div>
+              <span className="h-9 w-px bg-white/10" />
+              <div><p className="font-serif text-2xl italic text-[#d6b77e]">03</p><p className="mt-1 text-[9px] uppercase tracking-[0.16em] text-white/45">Personal</p></div>
             </div>
           </div>
 
-          <div className="relative mx-auto w-full max-w-xl home-reveal home-reveal-delay-2 lg:max-w-none">
-            <div className="absolute -inset-3 rounded-[45%] bg-[#c9a96e]/5 blur-3xl" />
-            <div className="home-hero-image relative aspect-[4/4.5] overflow-hidden rounded-[48%_48%_8px_8px] border border-white/10 bg-[#d7cbb6]">
-              <SmartImage
-                src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1200&q=90"
-                alt="Elegant wristwatch from the Timora-inspired collection"
-                fill
-                priority
-                sizes="(max-width: 1024px) 90vw, 45vw"
-                className="home-image-zoom object-cover object-center transition duration-700 hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/5" />
-              <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-3 sm:bottom-8 sm:left-8 sm:right-8">
-                <div>
-                  <p className="text-[9px] uppercase tracking-[0.24em] text-[#e4c995]">
-                    The signature edit
-                  </p>
-                  <p className="mt-2 text-xl font-light tracking-wide sm:text-2xl">
-                    Details that stay with you
-                  </p>
+          <div className="relative mx-auto w-full max-w-2xl home-reveal home-reveal-delay-2 lg:max-w-none">
+            <div aria-hidden="true" className="absolute -inset-4 rounded-[42%] bg-[#c9a96e]/[0.08] blur-3xl" />
+            <div className="relative grid grid-cols-[0.68fr_1fr] items-center gap-3 sm:gap-5 lg:gap-4 xl:gap-6">
+              <div className="relative mt-12 aspect-[3/4.6] overflow-hidden rounded-t-full border border-white/10 bg-[#d7cbb6] sm:mt-16">
+                <SmartImage
+                  src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=900&q=85"
+                  alt="Warm amber fragrance bottle"
+                  fill
+                  priority
+                  sizes="(max-width: 1024px) 38vw, 22vw"
+                  className="home-image-zoom object-cover transition duration-700 hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-3 right-3 sm:bottom-6 sm:left-5"><p className="text-[8px] uppercase tracking-[0.2em] text-[#e4c995] sm:text-[9px]">Scent, made personal</p><p className="mt-1 font-serif text-lg italic sm:text-2xl">Attar & Ittar</p></div>
+              </div>
+
+              <div className="relative">
+                <div className="relative aspect-[4/5.3] overflow-hidden rounded-t-full rounded-b-sm border border-white/10 bg-[#d7cbb6]">
+                  <SmartImage
+                    src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?auto=format&fit=crop&w=1200&q=90"
+                    alt="Sculptural wristwatch in warm studio light"
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 58vw, 38vw"
+                    className="home-image-zoom object-cover object-center transition duration-700 hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/5" />
+                  <div className="absolute bottom-5 left-4 right-4 sm:bottom-8 sm:left-7 sm:right-7">
+                    <p className="text-[9px] uppercase tracking-[0.24em] text-[#e4c995]">The signature edit</p>
+                    <p className="mt-2 max-w-xs font-serif text-2xl leading-tight sm:text-4xl">Details that stay with you.</p>
+                    <Link href="/products?category=watches" className="mt-4 inline-flex items-center gap-2 border-b border-[#d8bc88]/60 pb-1 text-[10px] uppercase tracking-[0.14em] text-white/85 hover:text-[#e5cb91]">Discover watches <ArrowUpRight size={13} /></Link>
+                  </div>
                 </div>
-                <Link
-                  href="/products"
-                  aria-label="Explore the signature collection"
-                  className="rounded-full border border-white/40 bg-black/20 p-3 backdrop-blur transition hover:bg-[#c9a96e] hover:text-black"
-                >
-                  <ArrowUpRight size={19} />
-                </Link>
+                <div className="absolute -right-1 top-6 hidden -translate-y-1/2 rotate-90 origin-right text-[9px] uppercase tracking-[0.28em] text-white/40 sm:block lg:-right-5">Timora / Objects of intention</div>
+              </div>
+
+              <div className="absolute -left-2 top-2 z-10 rounded-full border border-[#d8bc88]/30 bg-[#11110f]/95 px-4 py-2.5 shadow-xl backdrop-blur sm:left-8 sm:top-4">
+                <div className="flex items-center gap-2"><span className="size-1.5 rounded-full bg-[#c9a96e]" /><span className="text-[9px] uppercase tracking-[0.16em] text-white/75">Curated, not crowded</span></div>
               </div>
             </div>
-            <div className="absolute -left-2 top-8 hidden rounded-2xl border border-white/15 bg-[#151512]/90 px-4 py-3 shadow-xl backdrop-blur sm:block lg:-left-7">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#c9a96e]" />
-                <span className="text-[10px] uppercase tracking-[0.13em] text-white/80">
-                  Curated, not crowded
-                </span>
-              </div>
-            </div>
-            <Link href="/products?category=attar" className="home-floating-fragrance group absolute -bottom-5 -left-2 z-20 hidden w-48 items-center gap-3 rounded-2xl border border-[#d8bc88]/25 bg-[#11110f]/95 p-2.5 shadow-2xl backdrop-blur sm:flex lg:-left-8">
-              <div className="relative h-16 w-14 shrink-0 overflow-hidden rounded-xl bg-[#332516]">
-                <SmartImage src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=240&q=80" alt="Attar fragrance bottle" fill sizes="56px" className="object-cover transition duration-500 group-hover:scale-110" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[8px] uppercase tracking-[0.18em] text-[#d8bc88]">A new signature</p>
-                <p className="mt-1 text-sm font-medium">Attar & Ittar</p>
-                <p className="mt-1 inline-flex items-center gap-1 text-[10px] text-white/50 group-hover:text-[#e5cb91]">Discover fragrance <ArrowUpRight size={11} /></p>
-              </div>
-            </Link>
           </div>
         </div>
       </section>
