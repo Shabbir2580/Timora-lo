@@ -51,6 +51,7 @@ type Placement = "homepage_hero" | "featured_product" | "category_banner" | "dea
 type PublicCampaign = {
   id: string
   campaign_type: "timora_promotion" | "featured_product" | "external_ad"
+  advertiser_type: "timora" | "external"
   placement: Placement
   headline: string | null
   description: string | null
@@ -79,7 +80,7 @@ export function AdPlacement({ placement, className = "" }: Props) {
         const supabase = createClient()
         const { data, error } = await supabase
           .from("ad_public_campaigns")
-          .select("id,campaign_type,placement,headline,description,image_url,destination_url,product_id,starts_at,ends_at")
+          .select("id,campaign_type,placement,headline,description,image_url,destination_url,product_id,starts_at,ends_at,advertiser_type")
           .eq("placement", placement)
           .limit(1)
         if (error) throw error
@@ -117,7 +118,7 @@ export function AdPlacement({ placement, className = "" }: Props) {
 
   if (!campaign) return null
 
-  const label = campaign.campaign_type === "external_ad"
+  const label = campaign.advertiser_type === "external" || campaign.campaign_type === "external_ad"
     ? "Advertisement"
     : campaign.campaign_type === "featured_product"
       ? "Featured"
