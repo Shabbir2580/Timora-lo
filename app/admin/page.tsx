@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import {
   Activity, ArrowRight, BadgePercent, Boxes, CheckCircle2, ChevronRight, ClipboardList, Clock3,
@@ -290,7 +291,7 @@ export default function AdminDashboardPage() {
     <main className="min-h-screen bg-[#090a0b] text-[#f6f5f0]"><style jsx global>{`@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }`}</style>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-white/[0.07] bg-[#0c0d0e] xl:flex">
         <Link href="/" className="flex h-[88px] items-center gap-3 border-b border-white/[0.07] px-6">
-          <div className="grid size-10 place-items-center rounded-xl border border-[#d9b65d]/30 bg-[#d9b65d]/[0.08]"><span className="font-serif text-xl text-[#d9b65d]">T</span></div>
+          <Image src="/timora-logo.svg" alt="Timora" width={40} height={40} priority className="size-10 rounded-lg object-contain" />
           <div><p className="text-lg font-semibold tracking-[0.2em]">TIMORA<span className="text-[#d9b65d]">.</span></p><p className="text-[9px] uppercase tracking-[0.2em] text-white/35">Commerce console</p></div>
         </Link>
         <div className="px-4 pt-6"><p className="px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">Workspace</p><div className="mt-3 flex items-center gap-3 rounded-xl border border-[#d9b65d]/20 bg-[#d9b65d]/[0.08] px-3 py-3 text-sm text-[#ead49b]"><LayoutDashboard className="size-4" /> Overview <span className="ml-auto size-1.5 rounded-full bg-[#d9b65d]" /></div></div>
