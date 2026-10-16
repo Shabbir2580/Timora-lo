@@ -421,6 +421,37 @@ $function$;
 revoke all on function public.manage_staff_permissions(uuid, jsonb) from public;
 grant execute on function public.manage_staff_permissions(uuid, jsonb) to authenticated;
 
+
+-- Publicly readable creative files; writes remain permission-gated by RLS.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('ad-creatives', 'ad-creatives', true, 8388608, array['image/jpeg','image/png','image/webp','image/avif'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Authorized staff upload ad creatives" on storage.objects;
+create policy "Authorized staff upload ad creatives" on storage.objects
+for insert to authenticated
+with check (
+  bucket_id = 'ad-creatives'
+  and public.timora_has_staff_permission('manage_advertisements')
+  and lower(storage.extension(name)) in ('jpg','jpeg','png','webp','avif')
+);
+drop policy if exists "Authorized staff update ad creatives" on storage.objects;
+create policy "Authorized staff update ad creatives" on storage.objects
+for update to authenticated
+using (bucket_id = 'ad-creatives' and public.timora_has_staff_permission('manage_advertisements'))
+with check (
+  bucket_id = 'ad-creatives'
+  and public.timora_has_staff_permission('manage_advertisements')
+  and lower(storage.extension(name)) in ('jpg','jpeg','png','webp','avif')
+);
+drop policy if exists "Authorized staff delete ad creatives" on storage.objects;
+create policy "Authorized staff delete ad creatives" on storage.objects
+for delete to authenticated
+using (bucket_id = 'ad-creatives' and public.timora_has_staff_permission('manage_advertisements'));
+
 -- No client insert grant on raw analytics events and no client write grants on audit records.
 -- Validated event ingestion, conversion attribution, and audit-write RPCs are follow-up work.
 
