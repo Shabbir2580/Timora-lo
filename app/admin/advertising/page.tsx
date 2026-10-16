@@ -149,13 +149,13 @@ export default function AdminAdvertisingPage() {
       setAdvertisers(loadedAdvertisers)
       setCampaigns((campaignResult.data ?? []) as Campaign[])
       setProducts((productResult.data ?? []) as Product[])
-      if (!advertiserId && loadedAdvertisers.length) setAdvertiserId(loadedAdvertisers[0].id)
+      setAdvertiserId((current) => current || loadedAdvertisers[0]?.id || "")
     } catch (err) {
       setError(`Could not load advertising data. Confirm migration 202610170001_business_growth_foundation.sql is applied and staff permissions are correct. ${friendlyError(err)}`)
     } finally {
       setLoading(false)
     }
-  }, [advertiserId])
+  }, [])
 
   useEffect(() => {
     let active = true
