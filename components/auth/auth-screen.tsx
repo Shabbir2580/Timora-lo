@@ -60,6 +60,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
       const password = String(form.get("password") || "")
       const confirmPassword = String(form.get("confirmPassword") || "")
       const name = String(form.get("name") || "").trim()
+      const referralCode = String(form.get("referralCode") || searchParams.get("ref") || "").trim().toUpperCase().replace(/[^A-F0-9]/g, "").slice(0, 10)
 
       if (!email || !password) {
         setError("Enter your email address and password.")
@@ -112,7 +113,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
         email,
         password,
         options: {
-          data: { full_name: name },
+          data: { full_name: name, ...(referralCode ? { referral_code: referralCode } : {}) },
           emailRedirectTo,
         },
       })
@@ -326,6 +327,29 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                     required
                     className="h-12 w-full rounded-xl border border-[#deddd5] bg-white px-4 text-sm outline-none transition placeholder:text-[#aaa99f] focus:border-[#ad8d50] focus:ring-2 focus:ring-[#ad8d50]/15"
                   />
+                </div>
+              )}
+
+              {!isLogin && (
+                <div>
+                  <label
+                    htmlFor="referralCode"
+                    className="mb-2 block text-xs font-medium"
+                  >
+                    Referral code <span className="font-normal text-[#99988f]">(optional)</span>
+                  </label>
+                  <input
+                    id="referralCode"
+                    name="referralCode"
+                    type="text"
+                    autoComplete="off"
+                    defaultValue={searchParams.get("ref")?.toUpperCase().replace(/[^A-F0-9]/g, "").slice(0, 10) ?? ""}
+                    maxLength={10}
+                    pattern="[A-Fa-f0-9]{10}"
+                    placeholder="Enter a friend's 10-character code"
+                    className="h-12 w-full rounded-xl border border-[#deddd5] bg-white px-4 text-sm uppercase outline-none transition placeholder:normal-case placeholder:text-[#aaa99f] focus:border-[#ad8d50] focus:ring-2 focus:ring-[#ad8d50]/15"
+                  />
+                  <p className="mt-1.5 text-[11px] leading-5 text-[#8b8a81]">You and your friend can each earn bonus points after your first eligible order.</p>
                 </div>
               )}
 
