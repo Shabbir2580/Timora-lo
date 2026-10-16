@@ -70,3 +70,11 @@ Audit basis: source review of `main` on 16 October 2026. This is a code-level au
 
 - [x] Google Drive image proxy now applies an 8-second timeout per upstream request, enforces a 12 MB maximum while streaming, cancels rejected responses, and sends `X-Content-Type-Options: nosniff`. This limits oversized or stalled upstream image requests; the endpoint still needs a successful deployment and live test with public, private, missing, and oversized Drive files.
 - [ ] Re-run the production build and exercise the image converter after the Vercel build-rate limit is resolved. No build or production verification was performed as part of this source-only change.
+
+## Employee workspace and image converter follow-up — 16 October 2026
+
+- [x] Added migration `202610160001_fix_employee_member_rpc_result.sql` to drop/recreate the employee-list RPC with explicit casts for UUID, email/name text, role text, and timestamp output. This addresses the likely runtime row-type mismatch reported by the Employee work page; it must still be applied to the intended Supabase project before employee names can load.
+- [x] Updated the task page's error message to point to the repair migration rather than the older migration that may already be applied.
+- [x] Made the Drive converter link more prominent in the Products page header and added a second shortcut beside the main product image URL field.
+- [ ] Apply the employee RPC repair migration in Supabase, then verify that the admin can load authorized employees, assign tasks, and see task progress. No live Supabase connection was available to apply or test this migration here.
+- [ ] The converter button is present in `main`; if it is absent on the live site, the running deployment is still serving an older commit. Verify after Vercel can build/deploy successfully. No deployment was initiated.
