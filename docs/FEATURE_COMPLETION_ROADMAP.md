@@ -83,3 +83,6 @@ This roadmap tracks source changes separately from live verification. No item is
 - [x] Removed the hard-coded Flash Sale countdown because it was not connected to a real sale end time.
 - [x] Kept cancelled orders visible in customer order history; the page already had a cancelled-order status view, but its query filtered those records out.
 - [ ] Confirm these source changes with a successful build and browser checks; no build/test success is claimed.
+- [x] Removed fabricated category product counts from category cards; they now use a neutral “Explore collection” label until counts are sourced dynamically.
+- [x] Fixed the wishlist product mapper, which still generated SALE badges from compare-at price alone even after the catalogue fixes.
+- [ ] Audit all remaining product mappers for duplicate sale logic and run a successful type-check/build before release.
