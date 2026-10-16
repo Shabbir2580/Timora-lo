@@ -2,7 +2,7 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
+import { SmartImage } from "@/components/store/smart-image"
 import {
   Minus,
   Plus,
@@ -107,7 +107,7 @@ export default function CartPage() {
                     className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-secondary sm:size-32"
                     aria-label={`View ${product.name}`}
                   >
-                    <Image
+                    <SmartImage
                       src={product.image || "/placeholder.svg"}
                       alt={product.name}
                       fill
