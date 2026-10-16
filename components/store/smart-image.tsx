@@ -25,6 +25,7 @@ function getImageCandidates(value: string): string[] {
         const encodedId = encodeURIComponent(id)
         // Google Drive can respond differently depending on which public-image endpoint is used.
         return Array.from(new Set([
+          `/api/drive-image?id=${encodedId}`,
           `https://drive.google.com/thumbnail?id=${encodedId}&sz=w2000`,
           `https://drive.google.com/uc?export=view&id=${encodedId}`,
           `https://drive.google.com/uc?export=download&id=${encodedId}`,
