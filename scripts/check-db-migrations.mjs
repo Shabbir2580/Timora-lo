@@ -3,6 +3,7 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 
 const read = (path) => readFileSync(join(process.cwd(), path), "utf8");
+const adminDeleteAccess = read("supabase/migrations/202610170009_revoke_anon_admin_delete_order.sql");
 const checkout = read("supabase/migrations/202610170010_fix_checkout_coupon_validation.sql");
 const cancellation = read("supabase/migrations/202610170011_restore_coupon_usage_on_cancel.sql");
 const reviewAccess = read("supabase/migrations/202610170012_restrict_anonymous_review_rpcs.sql");
@@ -13,6 +14,7 @@ const orderApi = read("app/api/orders/route.ts");
 const proxy = read("proxy.ts");
 const adminReturns = read("app/admin/returns/page.tsx");
 
+assert.match(adminDeleteAccess, /revoke execute on function public\.admin_delete_order\(uuid\) from public, anon/i, "Admin-only order deletion must revoke PUBLIC and anonymous execution.");
 assert.match(checkout, /set search_path\s*=\s*''/i, "Checkout SECURITY DEFINER RPC must use an empty search_path.");
 assert.match(checkout, /v_subtotal\s*>=\s*99900/i, "Free-shipping threshold must remain ₹999.");
 assert.match(checkout, /v_shipping\s*:=\s*case\s+when\s+v_subtotal\s*>=\s*99900\s+then\s+0\s+else\s+8000/i, "Checkout must charge ₹80 below ₹999.");
