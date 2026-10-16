@@ -45,6 +45,8 @@ type CustomerOrder = {
   order_status: string
   payment_status: string
   payment_provider: string | null
+  payment_verified_at?: string | null
+  cod_collected_at?: string | null
   tracking_number: string | null
   courier_name: string | null
   shipped_at: string | null
@@ -174,7 +176,7 @@ export default function CustomerOrdersPage() {
       const { data, error: ordersError } = await supabase
         .from("orders")
         .select(
-          "id,customer_id,customer_name,address,landmark,city,state,pincode,subtotal_paise,shipping_paise,discount_paise,coupon_code,total_paise,order_status,payment_status,payment_provider,tracking_number,courier_name,shipped_at,delivered_at,cod_rejection_reason,created_at,updated_at",
+          "id,customer_id,customer_name,address,landmark,city,state,pincode,subtotal_paise,shipping_paise,discount_paise,coupon_code,total_paise,order_status,payment_status,payment_provider,payment_verified_at,cod_collected_at,tracking_number,courier_name,shipped_at,delivered_at,cod_rejection_reason,created_at,updated_at",
         )
         .eq("customer_id", user.id)
         .order("created_at", { ascending: false })
@@ -201,6 +203,46 @@ export default function CustomerOrdersPage() {
           order_items: items.filter((item) => item.order_id === order.id),
         })),
       )
+
+      // Best-effort conversion attribution: never let analytics failures affect order history.
+      // The click identifier is session-scoped until a consent-aware persistent attribution flow is added.
+      try {
+        const rawClick = sessionStorage.getItem("timora_last_ad_click")
+        const click = rawClick ? JSON.parse(rawClick) as {
+          campaignId?: string
+          clickId?: string
+          placement?: string
+          productId?: string | null
+          at?: number
+        } : null
+        const validClick = click
+          && typeof click.campaignId === "string"
+          && typeof click.clickId === "string"
+          && typeof click.placement === "string"
+          && typeof click.at === "number"
+          && click.at <= Date.now()
+          && Date.now() - click.at <= 30 * 24 * 60 * 60 * 1000
+        if (validClick && click) {
+          const attributedOrders = rows.filter((order) =>
+            new Date(order.created_at).getTime() >= click.at!
+            && order.payment_status === "paid"
+            && order.order_status !== "cancelled"
+            && (order.payment_provider === "cod" ? Boolean(order.cod_collected_at) : Boolean(order.payment_verified_at))
+          ).slice(0, 50)
+          await Promise.all(attributedOrders.map((order) => supabase.rpc("record_ad_event", {
+            p_event_key: crypto.randomUUID(),
+            p_campaign_id: click.campaignId,
+            p_event_type: "purchase",
+            p_placement: click.placement,
+            p_product_id: click.productId ?? null,
+            p_order_id: order.id,
+            p_click_id: click.clickId,
+            p_session_key: sessionStorage.getItem("timora_ad_session"),
+          })))
+        }
+      } catch {
+        // Attribution is optional; order history must remain available if storage or analytics fails.
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load your orders.")
     } finally {
