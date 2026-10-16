@@ -283,7 +283,6 @@ export default function AdminAdvertisingPage() {
       setError(isVideo ? "Video creatives must be 100 MB or smaller." : "Image and GIF creatives must be 15 MB or smaller.")
       return
     }
-    setMediaType(isVideo ? "video" : "image")
     setUploading(true)
     setError("")
     setNotice("")
@@ -300,6 +299,7 @@ export default function AdminAdvertisingPage() {
       const { data } = supabase.storage.from("ad-creatives").getPublicUrl(path)
       if (!data.publicUrl || !safeExternalUrl(data.publicUrl)) throw new Error("Could not create a secure public media URL.")
       setImageUrl(data.publicUrl)
+      setMediaType(isVideo ? "video" : "image")
       setNotice("Creative uploaded. Save the campaign draft to keep it.")
     } catch (err) {
       setError(`Could not upload creative: ${friendlyError(err)}. Confirm the ad-creatives storage bucket and policies are configured.`)
