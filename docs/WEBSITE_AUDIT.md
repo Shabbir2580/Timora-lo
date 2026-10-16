@@ -93,3 +93,11 @@ Audit basis: source review of `main` on 16 October 2026. This is a code-level au
 - [x] Found two migration files sharing the same Supabase version prefix `202610160001`. Renamed the order/review decision validation migration to `202610160003_validate_order_and_review_decisions.sql` so CLI migration ordering is unique. The SQL is idempotent, but confirm your Supabase migration history before running pending migrations.
 - [x] Changed the package metadata name from the generic `my-project` to `timora` for consistent project identity.
 - [ ] Verify all admin/employee navigation and the Back button in a deployed browser after Vercel allows a successful build. Source inspection is not live-browser verification.
+
+
+## Order history completeness — 17 October 2026
+
+- [x] Updated `app/admin/orders/page.tsx` to page through order records in batches of 500 instead of relying on a single PostgREST response, which can be capped by the project's row limit.
+- [x] Chunked order-item lookups into groups of 200 order IDs and grouped items by order ID, avoiding repeated full-array filtering for each order.
+- [ ] Verify in a test environment with more orders than the configured API row limit, and test refresh, filters, monthly metrics, CSV export, and order actions.
+- [ ] No build, browser test, live Supabase query, or deployment was performed for this source change.
