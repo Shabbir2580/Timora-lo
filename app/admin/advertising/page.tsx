@@ -166,7 +166,7 @@ export default function AdminAdvertisingPage() {
       setAdvertisers(loadedAdvertisers)
       setCampaigns((campaignResult.data ?? []) as Campaign[])
       setProducts((productResult.data ?? []) as Product[])
-      setAdvertiserId((current) => current || loadedAdvertisers[0]?.id || "")
+      setAdvertiserId((current) => current || loadedAdvertisers.find((item) => item.advertiser_type === "timora" && item.status === "active")?.id || loadedAdvertisers[0]?.id || "")
     } catch (err) {
       setError(`Could not load advertising data. Confirm migration 202610170001_business_growth_foundation.sql is applied and staff permissions are correct. ${friendlyError(err)}`)
     } finally {
@@ -301,6 +301,23 @@ export default function AdminAdvertisingPage() {
     const isInternalDestination = destinationUrl.startsWith("/") && !destinationUrl.startsWith("//")
     if (!isInternalDestination && !safeExternalUrl(destinationUrl)) {
       setError("Destination must be a same-site path or an HTTPS URL.")
+      return
+    }
+    const selectedAdvertiser = advertisers.find((item) => item.id === advertiserId)
+    if (!selectedAdvertiser) {
+      setError("Choose a valid advertiser.")
+      return
+    }
+    if (campaignType === "external_ad" && selectedAdvertiser.advertiser_type !== "external") {
+      setError("External advertisements must belong to an external business advertiser.")
+      return
+    }
+    if (campaignType === "timora_promotion" && selectedAdvertiser.advertiser_type !== "timora") {
+      setError("Timora promotions must use the Timora advertiser profile.")
+      return
+    }
+    if (campaignType === "external_ad" && !safeExternalUrl(destinationUrl.trim())) {
+      setError("External advertisements must link to a valid HTTPS destination.")
       return
     }
     if (campaignType === "featured_product" && !productId) {
