@@ -177,7 +177,6 @@ export default function CustomerOrdersPage() {
           "id,customer_id,customer_name,address,landmark,city,state,pincode,subtotal_paise,shipping_paise,discount_paise,coupon_code,total_paise,order_status,payment_status,payment_provider,tracking_number,courier_name,shipped_at,delivered_at,cod_rejection_reason,created_at,updated_at",
         )
         .eq("customer_id", user.id)
-        .neq("order_status", "cancelled")
         .order("created_at", { ascending: false })
 
       if (ordersError) throw ordersError
