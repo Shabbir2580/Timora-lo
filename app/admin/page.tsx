@@ -95,6 +95,7 @@ export default function AdminDashboardPage() {
         const { data: customerPage, error: customerPageError } = await supabase
           .from("orders")
           .select("customer_id")
+          .order("id", { ascending: true })
           .range(offset, offset + 499)
         if (customerPageError) throw customerPageError
         for (const row of customerPage ?? []) {
@@ -126,6 +127,7 @@ export default function AdminDashboardPage() {
             .from("orders")
             .select("total_paise,order_status,payment_provider,payment_verified_at,cod_collected_at,created_at")
             .eq("payment_status", "paid")
+            .order("id", { ascending: true })
             .range(offset, offset + 499)
           if (paidPageError) throw paidPageError
           paidRows.push(...((paidPage ?? []) as typeof paidRows))
