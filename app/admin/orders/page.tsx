@@ -348,8 +348,8 @@ export default function AdminOrdersPage() {
       order.total_paise, order.coupon_code, order.tracking_number, order.courier_name,
       (order.order_items ?? []).map((item) => `${item.product_name} x${item.quantity}`).join("; "),
     ])
-    const csv = [headers, ...rows].map((row) => row.map(cell).join(",")).join("\\r\\n")
-    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" })
+    const csv = [headers, ...rows].map((row) => row.map(cell).join(",")).join("\r\n")
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
