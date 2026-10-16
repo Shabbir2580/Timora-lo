@@ -539,4 +539,62 @@ $function$;
 revoke all on function public.record_ad_event(uuid,uuid,text,text,uuid,uuid,uuid,text) from public;
 grant execute on function public.record_ad_event(uuid,uuid,text,text,uuid,uuid,uuid,text) to anon, authenticated;
 
+
+create or replace function public.get_advertising_analytics(
+  p_from date default (current_date - 29),
+  p_to date default current_date
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $function$
+declare
+  v_result jsonb;
+  v_start timestamptz;
+  v_end timestamptz;
+begin
+  if auth.uid() is null or not public.timora_has_staff_permission('view_advertisement_analytics') then
+    raise exception 'advertising analytics permission required';
+  end if;
+  if p_from is null or p_to is null or p_to < p_from or p_to - p_from > 365 then
+    raise exception 'invalid analytics date range';
+  end if;
+  v_start := p_from::timestamptz;
+  v_end := (p_to + 1)::timestamptz;
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'campaign_id', c.id,
+    'campaign_name', c.campaign_name,
+    'advertiser_name', a.business_name,
+    'placement', c.placement,
+    'status', c.status,
+    'impressions', coalesce(e.impressions, 0),
+    'clicks', coalesce(e.clicks, 0),
+    'add_to_cart', coalesce(e.add_to_cart, 0),
+    'purchases', coalesce(e.purchases, 0),
+    'attributed_revenue_paise', coalesce(e.attributed_revenue_paise, 0),
+    'ctr_percent', case when coalesce(e.impressions, 0) = 0 then 0 else round(coalesce(e.clicks, 0)::numeric * 100 / e.impressions, 2) end
+  ) order by c.created_at desc), '[]'::jsonb)
+  into v_result
+  from public.ad_campaigns c
+  join public.advertisers a on a.id = c.advertiser_id
+  left join lateral (
+    select
+      count(*) filter (where event_type = 'impression')::bigint as impressions,
+      count(*) filter (where event_type = 'click')::bigint as clicks,
+      count(*) filter (where event_type = 'add_to_cart')::bigint as add_to_cart,
+      count(*) filter (where event_type = 'purchase')::bigint as purchases,
+      coalesce(sum(value_paise) filter (where event_type = 'purchase'), 0)::bigint as attributed_revenue_paise
+    from public.ad_events ev
+    where ev.campaign_id = c.id and ev.occurred_at >= v_start and ev.occurred_at < v_end
+  ) e on true;
+
+  return jsonb_build_object('from', p_from, 'to', p_to, 'campaigns', v_result);
+end
+$function$;
+revoke all on function public.get_advertising_analytics(date,date) from public;
+grant execute on function public.get_advertising_analytics(date,date) to authenticated;
+
 commit;
