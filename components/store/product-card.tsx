@@ -93,7 +93,7 @@ export function ProductCard({ product }: { product: Product }) {
             {product.name}
           </h3>
           <Rating value={product.rating} count={product.reviewCount} />
-          <Price price={product.price} mrp={product.mrp} className="mt-0.5" />
+          <Price price={product.price} mrp={product.mrp} sale={explicitlyOnSale} className="mt-0.5" />
         </Link>
 
         {product.stock === "low_stock" && (
