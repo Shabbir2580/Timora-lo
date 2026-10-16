@@ -81,7 +81,7 @@ $$;
 
 drop trigger if exists timora_order_customer_notification on public.orders;
 create trigger timora_order_customer_notification
-after insert or update of order_status, payment_status, tracking_number, courier_name
+after insert or update
 on public.orders
 for each row
 execute function public.timora_notify_customer_order_change();
