@@ -88,7 +88,7 @@ export default function AdminDashboardPage() {
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("product_reviews").select("id", { count: "exact", head: true }),
-        supabase.from("orders").select("id,customer_name,total_paise,order_status,payment_status,payment_provider,created_at").order("created_at", { ascending: false }).limit(7),
+        supabase.from("orders").select("id,customer_name,total_paise,order_status,payment_status,payment_provider,created_at").neq("order_status", "cancelled").order("created_at", { ascending: false }).limit(7),
         supabase.from("products").select("id,name,stock,price,is_active", { count: "exact" }).eq("is_active", true).lte("stock", 5).order("stock", { ascending: true }).limit(100),
       ])
 
