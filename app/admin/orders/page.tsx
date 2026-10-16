@@ -326,6 +326,38 @@ export default function AdminOrdersPage() {
     return matchesFilter && matchesSearch
   })
 
+  function exportVisibleOrders() {
+    if (role !== "admin" || visibleOrders.length === 0) return
+    const cell = (value: unknown) => {
+      let text = value == null ? "" : String(value)
+      // Prevent spreadsheet formula injection from customer-controlled text fields.
+      if (/^[=+@\\-\\t\\r]/.test(text)) text = "'" + text
+      return '"' + text.replace(/"/g, '""') + '"'
+    }
+    const headers = [
+      "Order ID", "Created At", "Customer", "Email", "Phone", "Address",
+      "City", "State", "PIN Code", "Order Status", "Payment Status",
+      "Payment Method", "Subtotal (paise)", "Shipping (paise)", "Discount (paise)",
+      "Total (paise)", "Coupon", "Tracking Number", "Courier", "Items",
+    ]
+    const rows = visibleOrders.map((order) => [
+      order.id, order.created_at, order.customer_name, order.customer_email,
+      order.customer_phone, order.address, order.city, order.state, order.pincode,
+      order.order_status, order.payment_status, order.payment_provider,
+      order.subtotal_paise, order.shipping_paise, order.discount_paise,
+      order.total_paise, order.coupon_code, order.tracking_number, order.courier_name,
+      (order.order_items ?? []).map((item) => `${item.product_name} x${item.quantity}`).join("; "),
+    ])
+    const csv = [headers, ...rows].map((row) => row.map(cell).join(",")).join("\\r\\n")
+    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `timora-orders-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (checkingAccess) {
     return <main className="grid min-h-screen place-items-center bg-[#0b0b0a] text-[#d4af37]"><p className="text-sm">Verifying staff access...</p></main>
   }
@@ -354,6 +386,7 @@ export default function AdminOrdersPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#d4af37]">Order management</p><h1 className="mt-2 text-3xl font-medium sm:text-4xl">All Orders</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">Showing all orders by default. The summary cards count every order in the database; use the filters to narrow the list. Delete unwanted test orders to remove them from all order views.</p></div>
           <div className="flex flex-wrap gap-2">
+            {role === "admin" && <button type="button" onClick={exportVisibleOrders} disabled={visibleOrders.length === 0} className="min-h-10 rounded-full border border-emerald-300/25 px-4 text-xs font-medium text-emerald-200 transition hover:bg-emerald-300/10 disabled:cursor-not-allowed disabled:opacity-40">Export CSV ({visibleOrders.length})</button>}
             {([ ["awaiting","Awaiting review"], ["payment","Payment pending"], ["cod","COD orders"], ["all","All orders"] ] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`min-h-10 rounded-full px-4 text-xs font-medium ${filter === value ? "bg-[#d4af37] text-[#17130c]" : "border border-white/15 text-white/65"}`}>{label}</button>)}
           </div>
         </div>
