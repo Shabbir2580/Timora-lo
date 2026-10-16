@@ -462,22 +462,22 @@ create policy "Authorized staff upload ad creatives" on storage.objects
 for insert to authenticated
 with check (
   bucket_id = 'ad-creatives'
-  and public.timora_has_staff_permission('manage_advertisements')
+  and (public.timora_has_staff_permission('manage_advertisements') or public.timora_has_staff_permission('manage_marketing_content'))
   and lower(storage.extension(name)) in ('jpg','jpeg','png','webp','avif')
 );
 drop policy if exists "Authorized staff update ad creatives" on storage.objects;
 create policy "Authorized staff update ad creatives" on storage.objects
 for update to authenticated
-using (bucket_id = 'ad-creatives' and public.timora_has_staff_permission('manage_advertisements'))
+using (bucket_id = 'ad-creatives' and (public.timora_has_staff_permission('manage_advertisements') or public.timora_has_staff_permission('manage_marketing_content')))
 with check (
   bucket_id = 'ad-creatives'
-  and public.timora_has_staff_permission('manage_advertisements')
+  and (public.timora_has_staff_permission('manage_advertisements') or public.timora_has_staff_permission('manage_marketing_content'))
   and lower(storage.extension(name)) in ('jpg','jpeg','png','webp','avif')
 );
 drop policy if exists "Authorized staff delete ad creatives" on storage.objects;
 create policy "Authorized staff delete ad creatives" on storage.objects
 for delete to authenticated
-using (bucket_id = 'ad-creatives' and public.timora_has_staff_permission('manage_advertisements'));
+using (bucket_id = 'ad-creatives' and (public.timora_has_staff_permission('manage_advertisements') or public.timora_has_staff_permission('manage_marketing_content')));
 
 -- No client insert grant on raw analytics events and no client write grants on audit records.
 -- Validated event ingestion, conversion attribution, and audit-write RPCs are follow-up work.
