@@ -508,8 +508,8 @@ create policy "Authorized staff delete ad creatives" on storage.objects
 for delete to authenticated
 using (bucket_id = 'ad-creatives' and (public.timora_has_staff_permission('manage_advertisements') or public.timora_has_staff_permission('manage_marketing_content')));
 
--- No client insert grant on raw analytics events and no client write grants on audit records.
--- Validated event ingestion, conversion attribution, and audit-write RPCs are follow-up work.
+-- Raw analytics events and audit records are written only through validated RPCs/triggers.
+-- Conversion attribution is best-effort and currently relies on a same-session click identifier.
 
 
 create or replace function public.record_ad_event(
