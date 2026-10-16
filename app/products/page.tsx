@@ -17,6 +17,9 @@ type ProductsPageProps = {
     deals?: string
     category?: string
     sort?: string
+    minPrice?: string
+    maxPrice?: string
+    inStock?: string
   }>
 }
 
@@ -94,6 +97,11 @@ export default async function ProductsPage({
   const dealsOnly = params.deals === "1"
   const categorySlug = (params.category ?? "").trim().toLowerCase()
   const sort = (params.sort ?? "newest").trim().toLowerCase()
+  const minPrice = params.minPrice?.trim() ? Number(params.minPrice) : null
+  const maxPrice = params.maxPrice?.trim() ? Number(params.maxPrice) : null
+  const inStockOnly = params.inStock === "1"
+  const validMinPrice = minPrice !== null && Number.isFinite(minPrice) && minPrice >= 0 ? minPrice : null
+  const validMaxPrice = maxPrice !== null && Number.isFinite(maxPrice) && maxPrice >= 0 ? maxPrice : null
 
   let databaseProducts: Product[] = []
   let databaseError = false
@@ -148,7 +156,11 @@ export default async function ProductsPage({
         ? ["attar", "ittar", "attar-ittar", "fragrance", "perfume-oils"].includes(productCategorySlug)
         : productCategorySlug === categorySlug)
 
-    return matchesQuery && matchesDeals && matchesCategory
+    const matchesMinPrice = validMinPrice === null || product.price >= validMinPrice
+    const matchesMaxPrice = validMaxPrice === null || product.price <= validMaxPrice
+    const matchesStock = !inStockOnly || product.stock !== "out_of_stock"
+
+    return matchesQuery && matchesDeals && matchesCategory && matchesMinPrice && matchesMaxPrice && matchesStock
   })
 
   const sortedProducts = [...filteredProducts]
@@ -159,6 +171,15 @@ export default async function ProductsPage({
     sortedProducts.sort((a, b) => b.price - a.price)
   } else if (sort === "name") {
     sortedProducts.sort((a, b) => a.name.localeCompare(b.name))
+  } else if (sort === "discount") {
+    sortedProducts.sort((a, b) => {
+      const discount = (product: Product) => product.mrp > product.price && product.mrp > 0
+        ? (product.mrp - product.price) / product.mrp
+        : 0
+      return discount(b) - discount(a)
+    })
+  } else if (sort === "availability") {
+    sortedProducts.sort((a, b) => Number(b.stock !== "out_of_stock") - Number(a.stock !== "out_of_stock"))
   }
 
   const heading = selectedCategory
@@ -281,36 +302,38 @@ export default async function ProductsPage({
           <form
             action="/products"
             method="get"
-            className="flex flex-wrap items-center gap-2"
+            className="grid w-full gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-6"
           >
             {query && <input type="hidden" name="q" value={params.q} />}
             {dealsOnly && <input type="hidden" name="deals" value="1" />}
-            {categorySlug && (
-              <input type="hidden" name="category" value={categorySlug} />
-            )}
-
-            <label htmlFor="product-sort" className="sr-only">
-              Sort products
+            {categorySlug && <input type="hidden" name="category" value={categorySlug} />}
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              Minimum price (₹)
+              <input name="minPrice" inputMode="numeric" type="number" min="0" max="100000000" defaultValue={validMinPrice ?? ""} placeholder="No minimum" className="min-h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-[#c9a96e]" />
             </label>
-
-            <select
-              id="product-sort"
-              name="sort"
-              defaultValue={sort}
-              className="min-h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="newest">Newest first</option>
-              <option value="price-asc">Price: low to high</option>
-              <option value="price-desc">Price: high to low</option>
-              <option value="name">Name: A to Z</option>
-            </select>
-
-            <button
-              type="submit"
-              className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
-              Apply
-            </button>
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              Maximum price (₹)
+              <input name="maxPrice" inputMode="numeric" type="number" min="0" max="100000000" defaultValue={validMaxPrice ?? ""} placeholder="No maximum" className="min-h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-[#c9a96e]" />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+              Sort by
+              <select name="sort" defaultValue={sort} className="min-h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-[#c9a96e]">
+                <option value="newest">Newest first</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+                <option value="discount">Biggest discount</option>
+                <option value="availability">In-stock first</option>
+                <option value="name">Name: A to Z</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 self-end text-sm text-foreground">
+              <input type="checkbox" name="inStock" value="1" defaultChecked={inStockOnly} className="size-4 accent-[#c9a96e]" />
+              In-stock only
+            </label>
+            <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-2">
+              <button type="submit" className="min-h-10 flex-1 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground hover:opacity-90">Apply filters</button>
+              <Link href="/products" className="inline-flex min-h-10 items-center justify-center rounded-lg border border-border px-4 text-sm hover:border-[#c9a96e]">Clear</Link>
+            </div>
           </form>
         </div>
 
