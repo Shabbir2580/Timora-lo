@@ -83,8 +83,8 @@ export default function AdminDashboardPage() {
         allOrders, pendingOrders, allProducts, activeProducts,
         reviewRows, recentOrders, productRows,
       ] = await Promise.all([
-        supabase.from("orders").select("id", { count: "exact", head: true }),
-        supabase.from("orders").select("id", { count: "exact", head: true }).eq("order_status", "pending_payment"),
+        supabase.from("orders").select("id", { count: "exact", head: true }).neq("order_status", "cancelled"),
+        supabase.from("orders").select("id", { count: "exact", head: true }).eq("order_status", "pending_payment").eq("payment_status", "pending"),
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase.from("products").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("product_reviews").select("id", { count: "exact", head: true }),
