@@ -52,8 +52,8 @@ export function SearchBar({ className }: { className?: string }) {
           // Search both product names and category labels in the live catalogue.
           const escapedTerm = term.replace(/[%_\\]/g, "\\$&")
           const [nameResult, categoryResult] = await Promise.all([
-            baseQuery().ilike("name", \`%\${escapedTerm}%\`),
-            baseQuery().ilike("category", \`%\${escapedTerm}%\`),
+            baseQuery().ilike("name", `%${escapedTerm}%`),
+            baseQuery().ilike("category", `%${escapedTerm}%`),
           ])
           if (nameResult.error) throw nameResult.error
           if (categoryResult.error) throw categoryResult.error
