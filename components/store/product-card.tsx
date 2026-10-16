@@ -31,8 +31,8 @@ export function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <article className="group relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-md">
-      <div className="relative aspect-square overflow-hidden bg-secondary">
+    <article className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d4af37]/45 hover:shadow-lg hover:shadow-black/10">
+      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-secondary via-secondary to-background">
         <Link href={`/product/${product.slug}`} className="relative block size-full" aria-label={`View ${product.name}`}>
           <SmartImage
             src={product.image || "/placeholder.svg"}
@@ -40,7 +40,7 @@ export function ProductCard({ product }: { product: Product }) {
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className={cn(
-              "object-contain p-4 transition-transform duration-300 group-hover:scale-105",
+              "object-contain p-3 transition-transform duration-500 group-hover:scale-[1.06] sm:p-5",
               outOfStock && "opacity-60",
             )}
           />
@@ -50,7 +50,7 @@ export function ProductCard({ product }: { product: Product }) {
           {product.badges.slice(0, 1).map((badge) => (
             <ProductBadgePill key={badge} badge={badge} />
           ))}
-          {discountPercent > 0 && !hasSaleBadge && (
+          {discountPercent > 0 && (
             <span className="w-fit rounded bg-[#d4af37] px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-[#17130c] shadow-sm">
               {discountPercent}% off
             </span>
@@ -78,13 +78,13 @@ export function ProductCard({ product }: { product: Product }) {
           disabled={isPreview}
           aria-label={isPreview ? `${product.name} is a preview item` : wished ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
           aria-pressed={wished}
-          className="absolute right-2 top-2 grid size-9 place-items-center rounded-full border border-border bg-card/90 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute right-2 top-2 grid size-9 place-items-center rounded-full border border-border/80 bg-background/90 text-foreground shadow-sm backdrop-blur transition-all hover:border-[#d4af37]/50 hover:text-[#d4af37] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Heart className={cn("size-4", wished && "fill-sale text-sale")} aria-hidden />
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col gap-1.5 p-3">
+      <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-3.5">
         <Link href={`/product/${product.slug}`} className="flex flex-1 flex-col gap-1.5 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {product.brand}
