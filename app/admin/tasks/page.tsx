@@ -161,13 +161,12 @@ export default function AdminTasksPage() {
     setNotice("")
     try {
       const supabase = createClient()
-      const { error: insertError } = await supabase.from("employee_tasks").insert({
-        title: title.trim(),
-        description: description.trim() || null,
-        assigned_to: assignee,
-        assigned_by: userId,
-        priority,
-        due_date: dueDate || null,
+      const { error: insertError } = await supabase.rpc("assign_employee_task", {
+        p_title: title.trim(),
+        p_description: description.trim() || null,
+        p_assigned_to: assignee,
+        p_priority: priority,
+        p_due_date: dueDate || null,
       })
       if (insertError) throw insertError
       setTitle("")
