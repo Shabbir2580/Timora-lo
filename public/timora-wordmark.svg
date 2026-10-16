@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 160" role="img" aria-labelledby="title desc">
+  <title id="title">Timora</title>
+  <desc id="desc">Timora luxury shopping wordmark with a refined gold monogram and clear lettering.</desc>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7e6ad"/>
+      <stop offset=".48" stop-color="#c9a96e"/>
+      <stop offset="1" stop-color="#9c7537"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="160" rx="20" fill="#0b0b0a"/>
+  <g transform="translate(20 16)">
+    <rect x="0" y="0" width="128" height="128" rx="18" fill="#151512" stroke="#c9a96e" stroke-opacity=".7" stroke-width="2"/>
+    <path d="M27 28H101M64 28V101" fill="none" stroke="url(#gold)" stroke-width="8" stroke-linecap="square"/>
+    <path d="M38 101L64 74L90 101" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="64" cy="64" r="46" fill="none" stroke="#c9a96e" stroke-opacity=".22" stroke-width="1.5"/>
+  </g>
+  <text x="174" y="91" fill="url(#gold)" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-weight="600" letter-spacing="8">TIMORA</text>
+  <path d="M178 113H602" stroke="#c9a96e" stroke-opacity=".6" stroke-width="1"/>
+  <text x="180" y="137" fill="#e9dfc8" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="5">TIMELESS STYLE</text>
+</svg>
