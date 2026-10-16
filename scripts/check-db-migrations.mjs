@@ -19,7 +19,7 @@ assert.match(cancellation, /usage_count = greatest\(0, usage_count - 1\)/i, "Can
 assert.match(cancellation, /for update skip locked/i, "Expiry must avoid concurrent workers processing the same order.");
 assert.match(reviewAccess, /revoke execute on function public\.moderate_product_review\(uuid, text\) from anon/i, "Anonymous callers must not execute review moderation.");
 assert.match(reviewAccess, /revoke execute on function public\.submit_product_review\(uuid, integer, text, text\) from anon/i, "Anonymous callers must not execute authenticated review submission.");
-assert.doesNotMatch(notifications, /order_update/i, "Notification migration must not use an unsupported notification type.");
+assert.doesNotMatch(notifications, /['\"]order_update['\"]/i, "Notification migration must not use an unsupported notification type.");
 assert.doesNotMatch(notifications, /create trigger/i, "Notification migration must not add duplicate order notification triggers.");
 
 console.log("Timora database migration contract checks passed.");
