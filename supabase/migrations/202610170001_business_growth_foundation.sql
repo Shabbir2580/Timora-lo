@@ -319,6 +319,108 @@ revoke all on public.ad_campaigns from anon;
 grant insert, update, delete on public.advertisers, public.ad_campaigns, public.marketing_content, public.business_expenses to authenticated;
 grant usage, select on sequence public.ad_events_id_seq, public.staff_audit_log_id_seq to authenticated;
 
+
+-- Admin-only permission management writes an audit record atomically.
+create or replace function public.manage_staff_permissions(p_user_id uuid, p_permissions jsonb default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_before public.staff_permissions%rowtype;
+  v_after public.staff_permissions%rowtype;
+  v_granted boolean;
+begin
+  if auth.uid() is null or not exists (
+    select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'
+  ) then
+    raise exception 'admin permission required';
+  end if;
+
+  if not exists (
+    select 1 from public.staff_roles sr where sr.user_id = p_user_id and sr.role = 'employee'
+  ) then
+    raise exception 'target must be an existing employee';
+  end if;
+
+  select * into v_before from public.staff_permissions where user_id = p_user_id;
+
+  if p_permissions is null then
+    delete from public.staff_permissions where user_id = p_user_id;
+    insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
+    values (auth.uid(), 'staff_permissions_revoked', 'staff_permissions', p_user_id::text,
+      jsonb_build_object('previous_permissions', to_jsonb(v_before)));
+    return jsonb_build_object('success', true, 'revoked', true);
+  end if;
+
+  if jsonb_typeof(p_permissions) <> 'object' then
+    raise exception 'permissions must be a JSON object';
+  end if;
+
+  if exists (
+    select 1 from jsonb_each(p_permissions) e
+    where e.key not in (
+      'manage_advertisements','publish_advertisements','manage_advertisers',
+      'view_advertisement_analytics','manage_marketing_content',
+      'publish_marketing_content','view_sales_analytics','view_profit_analytics'
+    ) or jsonb_typeof(e.value) <> 'boolean'
+  ) then
+    raise exception 'unknown permission or non-boolean value';
+  end if;
+
+  insert into public.staff_permissions (
+    user_id, manage_advertisements, publish_advertisements, manage_advertisers,
+    view_advertisement_analytics, manage_marketing_content, publish_marketing_content,
+    view_sales_analytics, view_profit_analytics, granted_by, updated_at
+  ) values (
+    p_user_id,
+    coalesce((p_permissions->>'manage_advertisements')::boolean, false),
+    coalesce((p_permissions->>'publish_advertisements')::boolean, false),
+    coalesce((p_permissions->>'manage_advertisers')::boolean, false),
+    coalesce((p_permissions->>'view_advertisement_analytics')::boolean, false),
+    coalesce((p_permissions->>'manage_marketing_content')::boolean, false),
+    coalesce((p_permissions->>'publish_marketing_content')::boolean, false),
+    coalesce((p_permissions->>'view_sales_analytics')::boolean, false),
+    coalesce((p_permissions->>'view_profit_analytics')::boolean, false),
+    auth.uid(), now()
+  )
+  on conflict (user_id) do update set
+    manage_advertisements = excluded.manage_advertisements,
+    publish_advertisements = excluded.publish_advertisements,
+    manage_advertisers = excluded.manage_advertisers,
+    view_advertisement_analytics = excluded.view_advertisement_analytics,
+    manage_marketing_content = excluded.manage_marketing_content,
+    publish_marketing_content = excluded.publish_marketing_content,
+    view_sales_analytics = excluded.view_sales_analytics,
+    view_profit_analytics = excluded.view_profit_analytics,
+    granted_by = auth.uid(),
+    updated_at = now()
+  returning * into v_after;
+
+  insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
+  values (
+    auth.uid(),
+    case when v_before.user_id is null then 'staff_promoted_to_important' else 'staff_permissions_updated' end,
+    'staff_permissions',
+    p_user_id::text,
+    jsonb_build_object('permissions', jsonb_build_object(
+      'manage_advertisements', v_after.manage_advertisements,
+      'publish_advertisements', v_after.publish_advertisements,
+      'manage_advertisers', v_after.manage_advertisers,
+      'view_advertisement_analytics', v_after.view_advertisement_analytics,
+      'manage_marketing_content', v_after.manage_marketing_content,
+      'publish_marketing_content', v_after.publish_marketing_content,
+      'view_sales_analytics', v_after.view_sales_analytics,
+      'view_profit_analytics', v_after.view_profit_analytics
+    ))
+  );
+  return jsonb_build_object('success', true, 'revoked', false);
+end
+$function$;
+revoke all on function public.manage_staff_permissions(uuid, jsonb) from public;
+grant execute on function public.manage_staff_permissions(uuid, jsonb) to authenticated;
+
 -- No client insert grant on raw analytics events and no client write grants on audit records.
 -- Validated event ingestion, conversion attribution, and audit-write RPCs are follow-up work.
 
