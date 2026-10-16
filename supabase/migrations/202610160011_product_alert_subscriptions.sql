@@ -29,7 +29,7 @@ on public.customer_product_alerts(product_id, alert_type) where active;
 alter table public.customer_product_alerts enable row level security;
 revoke all on public.customer_product_alerts from anon, authenticated;
 grant select, insert, delete on public.customer_product_alerts to authenticated;
-grant update (active, updated_at) on public.customer_product_alerts to authenticated;
+grant update (customer_id, product_id, alert_type, active, updated_at) on public.customer_product_alerts to authenticated;
 
 drop policy if exists "Customers view own product alerts" on public.customer_product_alerts;
 create policy "Customers view own product alerts"
