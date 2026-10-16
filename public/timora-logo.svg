@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-labelledby="title desc">
+<title id="title">Timora luxury logo</title><desc id="desc">Gold serif T with a watch dial on the left and a perfume bottle silhouette on the right, on a black background.</desc>
+<defs>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0b0"/><stop offset=".22" stop-color="#d9a441"/><stop offset=".48" stop-color="#fff1b5"/><stop offset=".72" stop-color="#c58b2d"/><stop offset="1" stop-color="#ffe7a0"/></linearGradient>
+ <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="1000" height="1000" fill="#080807"/>
+<g fill="none" stroke="url(#gold)" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+ <path stroke-width="7" d="M212 235 Q212 184 274 184 H725 Q788 184 788 235 V279 Q780 213 716 213 H284 Q220 213 212 279 Z" fill="url(#gold)"/>
+ <path stroke-width="7" d="M500 190 V814 M390 814 H610 M500 814 V837" />
+ <path stroke-width="6" d="M467 350 A235 235 0 1 0 442 740 Q455 741 455 728 M467 350 A235 235 0 0 0 467 350" />
+ <path stroke-width="4" d="M467 350 A235 235 0 0 0 467 350"/>
+ <path stroke-width="5" d="M584 455 H730 Q785 455 785 500 L756 685 Q747 744 684 744 H600"/>
+ <rect x="650" y="365" width="95" height="62" rx="7" fill="url(#gold)" stroke-width="5"/>
+ <rect x="675" y="337" width="45" height="28" rx="3" fill="url(#gold)" stroke-width="4"/>
+ <rect x="687" y="307" width="21" height="30" rx="3" fill="url(#gold)" stroke-width="4"/>
+ <circle cx="697" cy="319" r="5" fill="#080807" stroke-width="2"/>
+</g>
+<g fill="none" stroke="url(#gold)" stroke-width="5" stroke-linecap="round">
+ <path d="M278 437 l22 13 M320 365 l15 23 M392 342 v25 M281 522 h26 M320 600 l20 -12 M352 664 l14 -23 M392 714 v-24"/>
+ <path d="M366 458 L440 522 L485 424 L450 534 Z" fill="url(#gold)" stroke-width="3"/>
+ <circle cx="447" cy="535" r="14" fill="url(#gold)" stroke-width="4"/><circle cx="447" cy="535" r="5" fill="#080807" stroke="none"/>
+</g>
+</svg>
