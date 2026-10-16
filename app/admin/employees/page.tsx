@@ -114,8 +114,28 @@ export default function AdminEmployeesPage() {
         if (permissionError) {
           throw new Error(`Could not load extra staff permissions. Confirm migration 202610170001_business_growth_foundation.sql is applied: ${permissionError.message}`)
         }
+        // Select only the permission flags used by the UI/RPC. The table rows
+        // also contain metadata (granted_by, updated_at, etc.); sending those
+        // fields back to manage_staff_permissions causes its strict JSON
+        // validation to reject every checkbox update as an unknown permission.
+        const permissionKeys = [
+          "manage_advertisements",
+          "publish_advertisements",
+          "manage_advertisers",
+          "view_advertisement_analytics",
+          "manage_marketing_content",
+          "publish_marketing_content",
+          "view_sales_analytics",
+          "view_profit_analytics",
+        ] as const
         setPermissions(Object.fromEntries(
-          ((permissionRows ?? []) as StaffPermissions[]).map((permission) => [permission.user_id, permission])
+          ((permissionRows ?? []) as StaffPermissions[]).map((permission) => [
+            permission.user_id,
+            {
+              user_id: permission.user_id,
+              ...Object.fromEntries(permissionKeys.map((key) => [key, permission[key] === true])),
+            } as StaffPermissions,
+          ])
         ))
       }
     } catch (err) {
@@ -227,8 +247,17 @@ export default function AdminEmployeesPage() {
 
   async function updatePermission(member: StaffMember, key: keyof Omit<StaffPermissions, "user_id">, checked: boolean) {
     const current = permissions[member.user_id] ?? emptyPermissions(member.user_id)
-    const next: Omit<StaffPermissions, "user_id"> = { ...current }
-    delete (next as Partial<StaffPermissions>).user_id
+    // Never spread database metadata into the permission RPC payload.
+    const next: Omit<StaffPermissions, "user_id"> = {
+      manage_advertisements: current.manage_advertisements === true,
+      publish_advertisements: current.publish_advertisements === true,
+      manage_advertisers: current.manage_advertisers === true,
+      view_advertisement_analytics: current.view_advertisement_analytics === true,
+      manage_marketing_content: current.manage_marketing_content === true,
+      publish_marketing_content: current.publish_marketing_content === true,
+      view_sales_analytics: current.view_sales_analytics === true,
+      view_profit_analytics: current.view_profit_analytics === true,
+    }
     next[key] = checked
     if (key === "manage_advertisements" && !checked) {
       next.publish_advertisements = false
