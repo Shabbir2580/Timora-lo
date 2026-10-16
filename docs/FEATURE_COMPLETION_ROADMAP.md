@@ -100,7 +100,7 @@ This roadmap tracks source changes separately from live verification. No item is
 - [x] Added an admin-only permission-management RPC that records promotion, permission changes and revocations in the audit log.
 - [x] Added database guards for direct campaign/marketing publishing, protected approval history and restricted campaign budget/cost edits to admins.
 - [x] Added a public campaign view exposing only safe creative fields; internal advertiser contacts, staff IDs, budgets and costs are not exposed to anonymous visitors.
-- [x] Added a public campaign renderer and connected homepage secondary/featured placements. The storefront fails gracefully if the migration is not yet applied.
+- [x] Added a public campaign renderer and connected homepage secondary/featured placements plus category and deals placements. The storefront fails gracefully if the migration is not yet applied.
 - [x] Added a campaign management workspace with creative uploads, advertiser records, campaign draft/approval/publish/pause workflow and date-filtered analytics reporting.
 - [x] Added an Instagram content planner for drafts, media, hashtags, approval and planned schedules. It explicitly does not claim to publish to Instagram without a Meta integration.
 - [x] Added best-effort impression and click events plus purchase attribution for eligible verified orders linked to a recent same-session ad click.
