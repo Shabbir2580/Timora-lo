@@ -19,7 +19,7 @@ export function CategoryCard({ category }: { category: Category }) {
       </div>
       <div>
         <p className="text-sm font-semibold text-foreground">{category.name}</p>
-        <p className="text-xs text-muted-foreground">{category.productCount} products</p>
+        <p className="text-xs text-muted-foreground">Explore collection</p>
       </div>
     </Link>
   )
