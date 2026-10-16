@@ -1,6 +1,13 @@
 # Timora website audit and repair backlog
 
-Audit basis: source review of the `main` branch and the current `fix/timora-repairs` branch on 15 October 2026. This is a code-level audit, not a live browser, Supabase, payment, or mobile-device test. Items marked "verify" require a real environment test.
+Audit basis: source review of `main` on 16 October 2026. This is a code-level audit, not a live browser, Supabase, payment, or mobile-device test. Items marked "verify" require a real environment test. Vercel status checks for the latest `main` commit are currently failing with `build-rate-limit`, so no current production build is verified.
+
+## Confirmed repository repairs on 16 October 2026
+
+- [x] Fixed duplicate Supabase migration version prefixes for product videos and product tags. The final filenames are `202610150009_product_videos.sql` and `202610150010_product_tags.sql`.
+- [x] Removed `typescript.ignoreBuildErrors` from `next.config.mjs`; production builds must now report TypeScript errors instead of silently skipping them.
+- [x] Order deletion and employee-task approval code has been added to `main`, but its production behavior still requires successful deployment and live database verification.
+- [ ] Re-run the production build after the Vercel build-rate limit is resolved. Removing the TypeScript bypass may expose previously hidden errors; repair those before treating the release as healthy.
 
 ## Priority 0 — release blockers
 
