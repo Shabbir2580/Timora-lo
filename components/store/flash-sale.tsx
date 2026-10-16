@@ -1,7 +1,4 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { Zap } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import type { Product } from "@/lib/data"
 import { ProductCard } from "./product-card"
 
@@ -12,14 +9,14 @@ export function FlashSale({ products }: { products: Product[] }) {
       <div className="rounded-2xl border border-border bg-card p-4 sm:p-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="grid size-9 place-items-center rounded-lg bg-sale/10 text-sale">
-              <Zap className="size-5 fill-current" aria-hidden />
+            <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+              <Sparkles className="size-5" aria-hidden />
             </span>
             <div>
               <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                Flash Sale
+                Featured collection
               </h2>
-              <p className="text-sm text-muted-foreground">Explore selected products from the Timora collection</p>
+              <p className="text-sm text-muted-foreground">Discover selected products from the Timora collection</p>
             </div>
           </div>
 
