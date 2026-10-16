@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -96,6 +96,8 @@ export default function CheckoutPage() {
 
   const [submitted, setSubmitted] = useState(false)
   const [submittingOrder, setSubmittingOrder] = useState(false)
+  // Synchronous guard prevents two submit events from creating duplicate orders before React rerenders.
+  const submittingOrderRef = useRef(false)
   const [submitError, setSubmitError] = useState("")
   const [orderId, setOrderId] = useState<string | null>(null)
   const [serverTotals, setServerTotals] = useState<{ subtotalPaise: number; shippingPaise: number; discountPaise: number; totalPaise: number } | null>(null)
@@ -437,6 +439,8 @@ export default function CheckoutPage() {
       return
     }
 
+    if (submittingOrderRef.current) return
+    submittingOrderRef.current = true
     setSubmittingOrder(true)
 
     try {
@@ -500,6 +504,7 @@ export default function CheckoutPage() {
       )
       setSubmitted(false)
     } finally {
+      submittingOrderRef.current = false
       setSubmittingOrder(false)
     }
   }
