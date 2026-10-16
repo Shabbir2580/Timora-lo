@@ -36,7 +36,7 @@ async function recordCampaignEvent(campaign: PublicCampaign, eventType: "impress
     if (error) return
     if (eventType === "click") {
       try {
-        sessionStorage.setItem("timora_last_ad_click", JSON.stringify({ campaignId: campaign.id, clickId: eventKey, at: Date.now() }))
+        sessionStorage.setItem("timora_last_ad_click", JSON.stringify({ campaignId: campaign.id, clickId: eventKey, placement: campaign.placement, productId: campaign.product_id, at: Date.now() }))
       } catch {
         // Attribution remains best-effort when session storage is unavailable.
       }
