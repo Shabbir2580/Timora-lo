@@ -31,7 +31,7 @@ begin
       if v_item.product_id is not null then
         update public.products
         set stock = stock + v_item.quantity, updated_at = now()
-        where id = v_item.product_id;
+        where id::text = v_item.product_id::text;
       end if;
     end loop;
 
