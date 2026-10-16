@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   LogOut,
   Search,
+  ExternalLink,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
@@ -571,14 +572,25 @@ export default function AdminProductsPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={startNewProduct}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-5 text-sm font-semibold text-[#17130c] transition hover:bg-[#e6c85c]"
-          >
-            <Plus className="size-4" />
-            Add product
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin/image-url-converter"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d4af37]/35 px-4 text-sm font-medium text-[#e4c878] transition hover:bg-[#d4af37]/10"
+            >
+              <ExternalLink className="size-4" />
+              Image URL Converter
+            </Link>
+            <button
+              type="button"
+              onClick={startNewProduct}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#d4af37] px-5 text-sm font-semibold text-[#17130c] transition hover:bg-[#e6c85c]"
+            >
+              <Plus className="size-4" />
+              Add product
+            </button>
+          </div>
         </div>
 
         <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-3">
