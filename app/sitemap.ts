@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://timora-by-sk.vercel.app").replace(/\/$/, "")
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://v0-timora.vercel.app").replace(/\/$/, "")
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
