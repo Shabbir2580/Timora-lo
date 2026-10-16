@@ -175,6 +175,132 @@ after insert or update of order_status, payment_status, total_paise
 on public.orders
 for each row execute function public.award_timora_loyalty_points();
 
+create or replace function public.apply_my_referral_code(p_referral_code text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_user_id uuid := auth.uid();
+  v_code text := upper(trim(coalesce(p_referral_code, '')));
+  v_referrer uuid;
+  v_existing_referrer uuid;
+begin
+  if v_user_id is null then
+    raise exception 'authentication required';
+  end if;
+  if v_code !~ '^[A-F0-9]{10}returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_user_id uuid := auth.uid();
+  v_code text;
+  v_balance bigint;
+  v_referral_count bigint;
+  v_entries jsonb;
+begin
+  if v_user_id is null then
+    raise exception 'authentication required';
+  end if;
+
+  select cr.referral_code into v_code
+    from public.customer_referrals cr
+   where cr.customer_id = v_user_id;
+
+  select coalesce(sum(l.points), 0) into v_balance
+    from public.loyalty_points_ledger l
+   where l.customer_id = v_user_id;
+
+  select count(*) into v_referral_count
+    from public.customer_referrals cr
+   where cr.referred_by = v_user_id;
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id', recent.id,
+    'order_id', recent.order_id,
+    'points', recent.points,
+    'entry_type', recent.entry_type,
+    'created_at', recent.created_at
+  ) order by recent.created_at desc), '[]'::jsonb)
+  into v_entries
+  from (
+    select l.id, l.order_id, l.points, l.entry_type, l.created_at
+      from public.loyalty_points_ledger l
+     where l.customer_id = v_user_id
+     order by l.created_at desc
+     limit 20
+  ) recent;
+
+  return jsonb_build_object(
+    'referral_code', v_code,
+    'points_balance', v_balance,
+    'referral_count', v_referral_count,
+    'entries', v_entries,
+    'earning_rule', '1 point per ₹100 on paid, delivered orders',
+    'referral_rule', '100 bonus points for each person after their first paid, delivered order, for both people'
+  );
+end
+$function$;
+
+revoke all on function public.create_customer_referral_profile() from public, anon, authenticated;
+revoke all on function public.award_timora_loyalty_points() from public, anon, authenticated;
+revoke all on function public.get_my_rewards_summary() from public, anon;
+revoke all on function public.apply_my_referral_code(text) from public, anon;
+grant execute on function public.apply_my_referral_code(text) to authenticated;
+grant execute on function public.get_my_rewards_summary() to authenticated;
+
+commit;
+ then
+    raise exception 'Enter a valid 10-character referral code.';
+  end if;
+
+  select cr.customer_id into v_referrer
+    from public.customer_referrals cr
+   where cr.referral_code = v_code
+   limit 1;
+
+  if v_referrer is null or v_referrer = v_user_id then
+    raise exception 'That referral code is invalid.';
+  end if;
+
+  select cr.referred_by into v_existing_referrer
+    from public.customer_referrals cr
+   where cr.customer_id = v_user_id
+   for update;
+
+  if not found then
+    raise exception 'Your referral profile is not ready yet.';
+  end if;
+
+  if v_existing_referrer is not null then
+    if v_existing_referrer = v_referrer then
+      return jsonb_build_object('success', true, 'already_applied', true);
+    end if;
+    raise exception 'A referral code has already been applied to this account.';
+  end if;
+
+  if exists (
+    select 1 from public.orders o where o.customer_id = v_user_id
+  ) then
+    raise exception 'Referral codes must be applied before placing an order.';
+  end if;
+
+  update public.customer_referrals
+     set referred_by = v_referrer
+   where customer_id = v_user_id
+     and referred_by is null;
+
+  if not found then
+    raise exception 'A referral code could not be applied to this account.';
+  end if;
+
+  return jsonb_build_object('success', true, 'already_applied', false);
+end
+$function$;
+
 create or replace function public.get_my_rewards_summary()
 returns jsonb
 language plpgsql
