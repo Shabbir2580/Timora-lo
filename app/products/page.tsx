@@ -99,6 +99,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const inStockOnly = params.inStock === "1"
   const validMinPrice = minPrice !== null && Number.isFinite(minPrice) && minPrice >= 0 ? minPrice : null
   const validMaxPrice = maxPrice !== null && Number.isFinite(maxPrice) && maxPrice >= 0 ? maxPrice : null
+  const priceRangeInvalid = validMinPrice !== null && validMaxPrice !== null && validMinPrice > validMaxPrice
   const filterValues = {
     q: params.q?.trim() || undefined,
     deals: dealsOnly ? "1" : undefined,
@@ -139,7 +140,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       product.category,
       product.categorySlug,
       product.description,
-      ...product.tags,
+      ...(product.tags ?? []),
       ...(product.highlights ?? []),
     ].join(" ").toLowerCase()
     const matchesQuery = !query || searchableText.includes(query)
@@ -153,7 +154,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     const matchesMinPrice = validMinPrice === null || product.price >= validMinPrice
     const matchesMaxPrice = validMaxPrice === null || product.price <= validMaxPrice
     const matchesStock = !inStockOnly || product.stock !== "out_of_stock"
-    return matchesQuery && matchesDeals && matchesCategory && matchesMinPrice && matchesMaxPrice && matchesStock
+    return !priceRangeInvalid && matchesQuery && matchesDeals && matchesCategory && matchesMinPrice && matchesMaxPrice && matchesStock
   })
 
   const sortedProducts = [...filteredProducts]
@@ -162,7 +163,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   else if (sort === "name") sortedProducts.sort((a, b) => a.name.localeCompare(b.name))
   else if (sort === "discount") {
     sortedProducts.sort((a, b) => {
-      const discount = (product: Product) => product.mrp > product.price && product.mrp > 0 ? (product.mrp - product.price) / product.mrp : 0
+      const discount = (product: Product) => product.badges.includes("SALE") && product.mrp > product.price && product.mrp > 0 ? (product.mrp - product.price) / product.mrp : 0
       return discount(b) - discount(a)
     })
   } else if (sort === "availability") {
