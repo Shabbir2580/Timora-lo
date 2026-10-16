@@ -89,7 +89,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
       const supabase = createClient()
       const emailRedirectTo =
-        `${TIMORA_SITE_URL}/auth/callback?next=${encodeURIComponent(nextPath)}`
+        `${TIMORA_SITE_URL}/auth/callback?next=${encodeURIComponent(nextPath)}${!isLogin && referralCode ? `&ref=${encodeURIComponent(referralCode)}` : ""}`
 
       if (isLogin) {
         const { error: authError } =
@@ -154,13 +154,16 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
     try {
       const supabase = createClient()
+      const rawReferralCode = !isLogin
+        ? (document.getElementById("referralCode") as HTMLInputElement | null)?.value ?? ""
+        : ""
+      const referralCode = rawReferralCode.trim().toUpperCase().replace(/[^A-F0-9]/g, "").slice(0, 10)
+      const redirectTo =
+        `${TIMORA_SITE_URL}/auth/callback?next=${encodeURIComponent(nextPath)}${referralCode ? `&ref=${encodeURIComponent(referralCode)}` : ""}`
       const { error: authError } =
         await supabase.auth.signInWithOAuth({
           provider: "google",
-          options: {
-            redirectTo:
-              `${TIMORA_SITE_URL}/auth/callback?next=${encodeURIComponent(nextPath)}`,
-          },
+          options: { redirectTo },
         })
 
       if (authError) {
