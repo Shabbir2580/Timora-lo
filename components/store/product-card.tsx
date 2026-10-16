@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import { SmartImage } from "@/components/store/smart-image"
 import { Check, Heart, ShoppingCart, Truck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Product } from "@/lib/data"
@@ -33,7 +33,7 @@ export function ProductCard({ product }: { product: Product }) {
     <article className="group relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card transition-shadow hover:shadow-md">
       <div className="relative aspect-square overflow-hidden bg-secondary">
         <Link href={`/product/${product.slug}`} className="relative block size-full" aria-label={`View ${product.name}`}>
-          <Image
+          <SmartImage
             src={product.image || "/placeholder.svg"}
             alt={product.name}
             fill
