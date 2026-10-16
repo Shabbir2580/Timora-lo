@@ -2,6 +2,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState } from "react"
 import {
   Heart,
@@ -40,12 +41,8 @@ export function Navbar() {
           aria-label="Timora home"
           className="group flex shrink-0 flex-col"
         >
-          <span className="text-2xl font-semibold tracking-[0.19em]">
-            TIMORA<span className="text-[#c9a96e]">.</span>
-          </span>
-          <span className="mt-0.5 text-[8px] uppercase tracking-[0.23em] text-white/40">
-            Curated for your lifestyle
-          </span>
+          <Image src="/timora-logo.svg" alt="Timora" width={64} height={64} priority className="size-14 rounded-lg object-contain" />
+          <span className="sr-only">Timora — Curated for your lifestyle</span>
         </Link>
 
         <nav
@@ -135,12 +132,8 @@ export function Navbar() {
             aria-label="Timora home"
             className="flex min-w-0 flex-col items-center"
           >
-            <span className="text-xl font-semibold tracking-[0.16em] sm:text-2xl">
-              TIMORA<span className="text-[#c9a96e]">.</span>
-            </span>
-            <span className="text-[7px] uppercase tracking-[0.2em] text-white/40">
-              Curated for your lifestyle
-            </span>
+            <Image src="/timora-logo.svg" alt="Timora" width={58} height={58} priority className="size-12 rounded-lg object-contain sm:size-14" />
+            <span className="sr-only">Timora — Curated for your lifestyle</span>
           </Link>
 
           <div className="flex shrink-0 items-center gap-1">
