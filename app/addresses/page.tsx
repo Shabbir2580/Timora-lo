@@ -83,11 +83,12 @@ export default function AddressesPage() {
     if (!/^\d{6}$/.test(form.pincode.trim())) { setError("Enter a valid 6-digit PIN code."); return }
     setSaving(true)
     try {
+      const keepExistingDefault = Boolean(editingId && !makeDefault && addresses.some(address => address.id === editingId && address.is_default))
       const payload = {
         user_id: userId, full_name: form.full_name.trim(), phone, address: form.address.trim(),
         landmark: form.landmark.trim() || null, city: form.city.trim(), state: form.state.trim(),
         pincode: form.pincode.trim(), delivery_note: form.delivery_note.trim() || null,
-        address_label: form.address_label, is_default: false,
+        address_label: form.address_label, is_default: keepExistingDefault,
       }
       let savedAddressId = editingId
       if (editingId) {
