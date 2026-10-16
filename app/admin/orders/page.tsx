@@ -83,29 +83,50 @@ export default function AdminOrdersPage() {
       if (expiryError) {
         console.warn("Pending-order expiry did not run; continuing to load orders:", expiryError.message)
       }
-      const { data, error: ordersError } = await supabase
-        .from("orders")
-        .select("id,customer_id,customer_name,customer_email,customer_phone,address,landmark,city,state,pincode,delivery_note,subtotal_paise,shipping_paise,discount_paise,coupon_code,total_paise,order_status,payment_status,payment_provider,payment_reference,cod_approved_by,cod_approved_at,cod_rejection_reason,cod_collected_at,tracking_number,courier_name,shipped_at,delivered_at,payment_verified_at,created_at")
-        .order("created_at", { ascending: false })
-      if (ordersError) throw ordersError
+      // Supabase/PostgREST may cap a response at its configured row limit.
+      // Fetch every page explicitly so summary cards and CSV export don't silently
+      // operate on only the first page of order history.
+      const pageSize = 500
+      const rows: CodOrder[] = []
+      for (let offset = 0; ; offset += pageSize) {
+        const { data, error: ordersError } = await supabase
+          .from("orders")
+          .select("id,customer_id,customer_name,customer_email,customer_phone,address,landmark,city,state,pincode,delivery_note,subtotal_paise,shipping_paise,discount_paise,coupon_code,total_paise,order_status,payment_status,payment_provider,payment_reference,cod_approved_by,cod_approved_at,cod_rejection_reason,cod_collected_at,tracking_number,courier_name,shipped_at,delivered_at,payment_verified_at,created_at")
+          .order("created_at", { ascending: false })
+          .range(offset, offset + pageSize - 1)
+        if (ordersError) throw ordersError
+        const page = (data ?? []) as CodOrder[]
+        rows.push(...page)
+        if (page.length < pageSize) break
+      }
 
-      const rows = (data ?? []) as CodOrder[]
       if (!rows.length) {
         setOrders([])
         return
       }
 
-      const ids = rows.map((order) => order.id)
-      const { data: itemRows, error: itemsError } = await supabase
-        .from("order_items")
-        .select("id,order_id,product_name,product_slug,quantity,unit_price_paise,line_total_paise,variant")
-        .in("order_id", ids)
-      if (itemsError) throw itemsError
+      // Chunk the item lookup too, avoiding excessively long IN filters on large stores.
+      const items: OrderItem[] = []
+      const itemChunkSize = 200
+      for (let offset = 0; offset < rows.length; offset += itemChunkSize) {
+        const ids = rows.slice(offset, offset + itemChunkSize).map((order) => order.id)
+        const { data: itemRows, error: itemsError } = await supabase
+          .from("order_items")
+          .select("id,order_id,product_name,product_slug,quantity,unit_price_paise,line_total_paise,variant")
+          .in("order_id", ids)
+        if (itemsError) throw itemsError
+        items.push(...((itemRows ?? []) as OrderItem[]))
+      }
 
-      const items = (itemRows ?? []) as OrderItem[]
+      const itemsByOrder = new Map<string, OrderItem[]>()
+      for (const item of items) {
+        const group = itemsByOrder.get(item.order_id) ?? []
+        group.push(item)
+        itemsByOrder.set(item.order_id, group)
+      }
       setOrders(rows.map((order) => ({
         ...order,
-        order_items: items.filter((item) => item.order_id === order.id),
+        order_items: itemsByOrder.get(order.id) ?? [],
       })))
     } catch (err) {
       setError(err instanceof Error ? `Could not load orders: ${err.message}` : "Could not load orders.")
