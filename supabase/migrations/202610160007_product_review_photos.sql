@@ -37,7 +37,7 @@ begin
   if v_user_id is null then raise exception 'authentication required'; end if;
   if p_image_urls is null or cardinality(p_image_urls) > 4 then raise exception 'A review can include up to four photos.'; end if;
   foreach v_path in array coalesce(p_image_urls, array[]::text[]) loop
-    if length(v_path) > 500 or v_path !~ ('^' || v_user_id::text || '/[^/]+\.(jpg|jpeg|png|webp)$') then
+    if length(v_path) > 500 or v_path !~ ('^' || v_user_id::text || '/[^/]+[.](jpg|jpeg|png|webp)$') then
       raise exception 'Invalid review photo path.';
     end if;
   end loop;
