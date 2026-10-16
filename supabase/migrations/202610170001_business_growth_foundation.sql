@@ -484,7 +484,8 @@ begin
   if p_session_key is not null and p_session_key !~ '^[A-Za-z0-9_-]{8,100} then raise exception 'invalid session key'; end if;
 
   select * into v_campaign from public.ad_campaigns where id = p_campaign_id;
-  if not found or v_campaign.placement <> p_placement or not public.timora_campaign_is_public(p_campaign_id) then
+  if not found or v_campaign.placement <> p_placement
+    or (p_event_type <> 'purchase' and not public.timora_campaign_is_public(p_campaign_id)) then
     raise exception 'campaign is not available for this placement';
   end if;
 
