@@ -197,44 +197,87 @@ security definer
 set search_path = ''
 as $function$
 begin
-  if auth.uid() is null then raise exception 'authentication required'; end if;
+  if auth.uid() is null then
+    raise exception 'authentication required';
+  end if;
+
   if tg_op = 'INSERT' then
-    if new.created_by <> auth.uid() then raise exception 'created_by must match the signed-in user'; end if;
-    if new.status not in ('draft','pending_approval') and not public.timora_has_staff_permission('publish_advertisements') then
+    if new.created_by <> auth.uid() then
+      raise exception 'created_by must match the signed-in user';
+    end if;
+
+    if new.status not in ('draft', 'pending_approval')
+       and not public.timora_has_staff_permission('publish_advertisements') then
       raise exception 'publishing permission required';
     end if;
+
     if (new.approved_by is not null or new.published_by is not null)
-      and not public.timora_has_staff_permission('publish_advertisements') then
+       and not public.timora_has_staff_permission('publish_advertisements') then
       raise exception 'publishing permission required to set approval history';
     end if;
+
+    if (new.cost_paise is not null or new.budget_paise is not null)
+       and not exists (
+         select 1 from public.staff_roles sr
+         where sr.user_id = auth.uid() and sr.role = 'admin'
+       ) then
+      raise exception 'only admins can set campaign cost and budget';
+    end if;
+
+    insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
+    values (
+      auth.uid(), 'campaign_created', 'ad_campaign', new.id::text,
+      jsonb_build_object(
+        'status', new.status,
+        'placement', new.placement,
+        'campaign_type', new.campaign_type
+      )
+    );
   else
-    if new.created_by is distinct from old.created_by then raise exception 'campaign creator cannot be changed'; end if;
-    if (new.approved_by is distinct from old.approved_by or new.published_by is distinct from old.published_by)
-      and not public.timora_has_staff_permission('publish_advertisements') then
+    if new.created_by is distinct from old.created_by then
+      raise exception 'campaign creator cannot be changed';
+    end if;
+
+    if (
+      new.approved_by is distinct from old.approved_by
+      or new.published_by is distinct from old.published_by
+    ) and not public.timora_has_staff_permission('publish_advertisements') then
       raise exception 'publishing permission required to change approval history';
     end if;
-    if (new.cost_paise is distinct from old.cost_paise or new.budget_paise is distinct from old.budget_paise)
-      and not exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin') then
+
+    if (
+      new.cost_paise is distinct from old.cost_paise
+      or new.budget_paise is distinct from old.budget_paise
+    ) and not exists (
+      select 1 from public.staff_roles sr
+      where sr.user_id = auth.uid() and sr.role = 'admin'
+    ) then
       raise exception 'only admins can change campaign cost and budget';
     end if;
-    if new.status is distinct from old.status and new.status in ('approved','scheduled','live')
-      and not public.timora_has_staff_permission('publish_advertisements') then
-      raise exception 'publishing permission required';
+
+    if new.status is distinct from old.status
+       and (
+         old.status in ('approved', 'scheduled', 'live')
+         or new.status in ('approved', 'scheduled', 'live')
+       )
+       and not public.timora_has_staff_permission('publish_advertisements') then
+      raise exception 'publishing permission required for this campaign status transition';
+    end if;
+
+    if new.status is distinct from old.status
+       or new.advertiser_id is distinct from old.advertiser_id then
+      insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
+      values (
+        auth.uid(), 'campaign_updated', 'ad_campaign', new.id::text,
+        jsonb_build_object(
+          'old_status', old.status,
+          'new_status', new.status,
+          'placement', new.placement
+        )
+      );
     end if;
   end if;
-  if tg_op = 'INSERT' and (new.cost_paise is not null or new.budget_paise is not null)
-    and not exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin') then
-    raise exception 'only admins can set campaign cost and budget';
-  end if;
-  if tg_op = 'INSERT' then
-    insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
-    values (auth.uid(), 'campaign_created', 'ad_campaign', new.id::text,
-      jsonb_build_object('status', new.status, 'placement', new.placement, 'campaign_type', new.campaign_type));
-  elsif new.status is distinct from old.status or new.advertiser_id is distinct from old.advertiser_id then
-    insert into public.staff_audit_log(actor_id, action, entity_type, entity_id, details)
-    values (auth.uid(), 'campaign_updated', 'ad_campaign', new.id::text,
-      jsonb_build_object('old_status', old.status, 'new_status', new.status, 'placement', new.placement));
-  end if;
+
   new.updated_at := now();
   return new;
 end
