@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Bell, CheckCheck, Circle, CreditCard, PackageCheck, Truck } from "lucide-react"
+import { ArrowLeft, Bell, CheckCheck, Circle, CreditCard, PackageCheck, Tag, Truck } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 type CustomerNotification = {
@@ -26,7 +26,8 @@ function formatDate(value: string) {
 function NotificationIcon({ type }: { type: string }) {
   if (type === "payment_confirmed") return <CreditCard className="size-5"/>
   if (type === "order_shipped" || type === "tracking_updated") return <Truck className="size-5"/>
-  if (type === "order_delivered") return <PackageCheck className="size-5"/>
+  if (type === "order_delivered" || type === "back_in_stock") return <PackageCheck className="size-5"/>
+  if (type === "price_drop") return <Tag className="size-5"/>
   return <Bell className="size-5"/>
 }
 
@@ -114,7 +115,7 @@ export default function NotificationsPage() {
       <div className="mx-auto max-w-4xl">
         <Link href="/account" className="inline-flex min-h-10 items-center gap-2 text-sm text-white/60 transition hover:text-[#e3ca96]"><ArrowLeft className="size-4"/> My account</Link>
         <header className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div><p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#c9a96e]">Stay in the loop</p><h1 className="mt-2 flex items-center gap-3 text-3xl font-semibold sm:text-4xl"><Bell className="size-7 text-[#c9a96e]"/> Notifications</h1><p className="mt-2 text-sm text-white/50">Order confirmations, payment updates and dispatch milestones.</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#c9a96e]">Stay in the loop</p><h1 className="mt-2 flex items-center gap-3 text-3xl font-semibold sm:text-4xl"><Bell className="size-7 text-[#c9a96e]"/> Notifications</h1><p className="mt-2 text-sm text-white/50">Order, payment, price-drop and restock updates in one place.</p></div>
           <button type="button" disabled={!unreadCount || saving} onClick={() => void markAllRead()} className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-full border border-[#c9a96e]/30 px-4 text-sm text-[#e3ca96] transition hover:bg-[#c9a96e]/10 disabled:cursor-not-allowed disabled:opacity-40"><CheckCheck className="size-4"/>{saving ? "Updating…" : "Mark all as read"}</button>
         </header>
 
