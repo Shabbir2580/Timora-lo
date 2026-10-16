@@ -271,8 +271,17 @@ using (public.timora_has_staff_permission('manage_advertisers'))
 with check (public.timora_has_staff_permission('manage_advertisers'));
 
 drop policy if exists "Public can read active ad campaigns" on public.ad_campaigns;
-create policy "Public can read active ad campaigns" on public.ad_campaigns for select to anon, authenticated
-using (public.timora_campaign_is_public(id));
+-- Public users must not read the underlying table because it contains internal budget,
+-- cost, approval and staff fields. Expose only safe creative fields through a view.
+create or replace view public.ad_public_campaigns
+with (security_barrier = true)
+as
+select id, campaign_type, placement, headline, description, image_url, destination_url,
+       product_id, starts_at, ends_at
+from public.ad_campaigns
+where public.timora_campaign_is_public(id);
+revoke all on public.ad_public_campaigns from public;
+grant select on public.ad_public_campaigns to anon, authenticated;
 drop policy if exists "Authorized staff read campaigns" on public.ad_campaigns;
 create policy "Authorized staff read campaigns" on public.ad_campaigns for select to authenticated
 using (public.timora_has_staff_permission('manage_advertisements') or public.timora_has_staff_permission('view_advertisement_analytics'));
@@ -306,7 +315,7 @@ create policy "Admin read staff audit log" on public.staff_audit_log for select 
 using (exists (select 1 from public.staff_roles sr where sr.user_id = auth.uid() and sr.role = 'admin'));
 
 grant select on public.advertisers, public.ad_campaigns, public.ad_events, public.marketing_content, public.business_expenses, public.staff_audit_log to authenticated;
-grant select on public.ad_campaigns to anon;
+revoke all on public.ad_campaigns from anon;
 grant insert, update, delete on public.advertisers, public.ad_campaigns, public.marketing_content, public.business_expenses to authenticated;
 grant usage, select on sequence public.ad_events_id_seq, public.staff_audit_log_id_seq to authenticated;
 
