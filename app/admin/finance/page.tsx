@@ -25,8 +25,14 @@ type Expense = {
   created_at: string
 }
 const money = (paise: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(paise / 100)
-const today = () => new Date().toISOString().slice(0, 10)
-const startOfMonth = () => { const d = new Date(); d.setDate(1); return d.toISOString().slice(0, 10) }
+const localDate = (date: Date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+const today = () => localDate(new Date())
+const startOfMonth = () => { const d = new Date(); d.setDate(1); return localDate(d) }
 const friendlyError = (error: unknown) => error && typeof error === "object" && "message" in error ? String((error as { message: unknown }).message) : "Something went wrong."
 
 export default function FinanceReportsPage() {
@@ -60,16 +66,39 @@ export default function FinanceReportsPage() {
     setError("")
     try {
       const supabase = createClient()
-      const { data: orderRows, error: orderError } = await supabase
-        .from("orders")
-        .select("total_paise,order_status,payment_status,payment_provider,payment_verified_at,cod_collected_at")
-        .eq("payment_status", "paid")
-      if (orderError) throw orderError
-      setOrders((orderRows ?? []) as OrderFinanceRow[])
+      // Page through all matching rows instead of silently truncating reports at
+      // the PostgREST response cap.
+      const pageSize = 500
+      const orderRows: OrderFinanceRow[] = []
+      for (let offset = 0; ; offset += pageSize) {
+        const { data, error: orderError } = await supabase
+          .from("orders")
+          .select("total_paise,order_status,payment_status,payment_provider,payment_verified_at,cod_collected_at,created_at,id")
+          .eq("payment_status", "paid")
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(offset, offset + pageSize - 1)
+        if (orderError) throw orderError
+        const page = (data ?? []) as OrderFinanceRow[]
+        orderRows.push(...page)
+        if (page.length < pageSize) break
+      }
+      setOrders(orderRows)
       if (canReadExpenses) {
-        const { data: expenseRows, error: expenseError } = await supabase.from("business_expenses").select("*").order("incurred_on", { ascending: false }).limit(1000)
-        if (expenseError) throw expenseError
-        setExpenses((expenseRows ?? []) as Expense[])
+        const expenseRows: Expense[] = []
+        for (let offset = 0; ; offset += pageSize) {
+          const { data, error: expenseError } = await supabase
+            .from("business_expenses")
+            .select("*")
+            .order("incurred_on", { ascending: false })
+            .order("id", { ascending: true })
+            .range(offset, offset + pageSize - 1)
+          if (expenseError) throw expenseError
+          const page = (data ?? []) as Expense[]
+          expenseRows.push(...page)
+          if (page.length < pageSize) break
+        }
+        setExpenses(expenseRows)
       } else setExpenses([])
     } catch (err) {
       setError(`Could not load finance reports. Confirm the business growth migration and financial permissions. ${friendlyError(err)}`)
@@ -129,7 +158,7 @@ export default function FinanceReportsPage() {
     if (order.order_status === "cancelled") return false
     const collectedAt = order.payment_provider === "cod" ? order.cod_collected_at : order.payment_verified_at
     if (!collectedAt) return false
-    const date = new Date(collectedAt).toISOString().slice(0, 10)
+    const date = localDate(new Date(collectedAt))
     return date >= fromDate && date <= toDate
   }), [orders, fromDate, toDate])
   const collectedPaise = eligibleOrders.reduce((sum, order) => sum + Number(order.total_paise || 0), 0)
