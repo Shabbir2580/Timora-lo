@@ -64,7 +64,7 @@ This roadmap tracks source changes separately from live verification. No item is
 ## Additional source fixes — 16 October 2026
 - [x] Fixed media URL validation to validate the original URL before transforming Google Drive image links into the site's internal image proxy path.
 - [x] Preserved safe same-site image paths when editing existing products, so previously normalized image URLs do not fail validation.
-- [x] Changed automatic SALE badges/discount labels to require an explicit `sale` product tag as well as a valid compare-at price above the selling price. The Deals page now uses this explicit designation.
+- [x] Changed SALE badges, percentage-off labels, crossed-out MRP, and the Deals page to require an explicit `sale` product tag as well as a valid compare-at price above the selling price.
 - [x] Added customer-order-page review links for delivered, paid order items and an explanation that reviews unlock after delivery and payment confirmation.
 - [x] Added a wider Timora wordmark for desktop and mobile navigation so the brand is more legible at small sizes.
 - [ ] Verify media URL handling with regular HTTPS image URLs, Google Drive links, YouTube links, and existing products with normalized paths.
