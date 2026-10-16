@@ -42,6 +42,12 @@ export function PriceStockAlertButton({ item }: { item: WatchItem }) {
           if (cancelled) return
           if (queryError) {
             setServerAlertsReady(false)
+            try {
+              const parsed = JSON.parse(window.localStorage.getItem(KEY) || "{}") as Record<string, WatchItem>
+              setLocalWatching(Boolean(parsed[id]))
+            } catch {
+              setLocalWatching(false)
+            }
             setError("Server alerts need the latest Timora database migration. Browser tracking remains available below.")
           } else {
             const rows = (data ?? []) as AlertRow[]
@@ -128,8 +134,10 @@ export function PriceStockAlertButton({ item }: { item: WatchItem }) {
       <BellRing className="mt-0.5 size-4 shrink-0 text-[#d4af37]"/>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-white/85">Price-drop & back-in-stock alerts</p>
-        <p className="mt-1 text-xs leading-5 text-white/45">{userId && serverAlertsReady
-          ? "Get an in-app notification when the price drops or stock returns. These are not email or push alerts."
+        <p className="mt-1 text-xs leading-5 text-white/45">{userId
+          ? serverAlertsReady
+            ? "Get an in-app notification when the price drops or stock returns. These are not email or push alerts."
+            : "Server-side alerts are unavailable until the database migration is applied. Browser tracking remains available."
           : "Browser tracking works when you revisit this product. Sign in to enable server-side in-app alerts."}</p>
       </div>
       {authReady && userId && serverAlertsReady ? (
