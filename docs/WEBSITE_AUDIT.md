@@ -85,3 +85,11 @@ Audit basis: source review of `main` on 16 October 2026. This is a code-level au
 - [x] Updated the Employee work page to use the new function instead of a direct browser insert.
 - [ ] Apply this migration to the Supabase project used by the live website, then test assignment and verify the task appears for both admin and assigned employee. GitHub changes alone do not update the database.
 - [ ] Vercel build-rate-limit is still blocking successful build verification. Official Vercel documentation says Hobby accounts allow 32 builds per rolling 3600-second window; the exact remaining wait for this account is not visible from GitHub.
+
+
+## Source consistency checks — 16 October 2026
+
+- [x] Corrected the product-management back button so it returns to `/admin`, not the public storefront.
+- [x] Found two migration files sharing the same Supabase version prefix `202610160001`. Renamed the order/review decision validation migration to `202610160003_validate_order_and_review_decisions.sql` so CLI migration ordering is unique. The SQL is idempotent, but confirm your Supabase migration history before running pending migrations.
+- [x] Changed the package metadata name from the generic `my-project` to `timora` for consistent project identity.
+- [ ] Verify all admin/employee navigation and the Back button in a deployed browser after Vercel allows a successful build. Source inspection is not live-browser verification.
