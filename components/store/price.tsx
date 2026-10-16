@@ -6,6 +6,7 @@ interface PriceProps {
   mrp?: number
   size?: "sm" | "md" | "lg"
   className?: string
+  sale?: boolean
 }
 
 const sizes = {
@@ -14,9 +15,9 @@ const sizes = {
   lg: { now: "text-3xl", was: "text-base", off: "text-sm" },
 }
 
-export function Price({ price, mrp, size = "sm", className }: PriceProps) {
+export function Price({ price, mrp, size = "sm", className, sale = false }: PriceProps) {
   const s = sizes[size]
-  const off = mrp ? discountPercent(price, mrp) : 0
+  const off = sale && mrp ? discountPercent(price, mrp) : 0
   return (
     <div className={cn("flex flex-wrap items-baseline gap-x-2 gap-y-0.5", className)}>
       <span className={cn("font-bold tracking-tight text-foreground tabular-nums", s.now)}>
