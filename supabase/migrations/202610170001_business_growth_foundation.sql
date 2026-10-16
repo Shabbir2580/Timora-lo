@@ -537,7 +537,7 @@ begin
   if p_event_key is null or p_campaign_id is null then raise exception 'event and campaign IDs are required'; end if;
   if p_event_type is null or p_event_type not in ('impression','click','add_to_cart','purchase') then raise exception 'invalid ad event type'; end if;
   if p_placement is null or p_placement not in ('homepage_hero','featured_product','category_banner','deals_banner','homepage_secondary') then raise exception 'invalid ad placement'; end if;
-  if p_session_key is not null and p_session_key !~ '^[A-Za-z0-9_-]{8,100}
+  if p_session_key is not null and p_session_key !~ '^[A-Za-z0-9_-]{8,100}$' then raise exception 'invalid session key'; end if;
   select * into v_campaign from public.ad_campaigns where id = p_campaign_id;
   if not found or v_campaign.placement <> p_placement
     or (p_event_type <> 'purchase' and not public.timora_campaign_is_public(p_campaign_id)) then
