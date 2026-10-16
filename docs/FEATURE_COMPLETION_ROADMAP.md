@@ -86,3 +86,6 @@ This roadmap tracks source changes separately from live verification. No item is
 - [x] Removed fabricated category product counts from category cards; they now use a neutral “Explore collection” label until counts are sourced dynamically.
 - [x] Fixed the wishlist product mapper, which still generated SALE badges from compare-at price alone even after the catalogue fixes.
 - [ ] Audit all remaining product mappers for duplicate sale logic and run a successful type-check/build before release.
+
+- [x] Renamed the generic product grid previously titled “Flash Sale” to “Featured collection,” because no sale schedule or actual sale-only filter was connected to that section.
+- [ ] Continue auditing duplicate product mappers, review purchase eligibility, checkout edge cases, and role permissions; live database migration state and production behavior remain unverified.
