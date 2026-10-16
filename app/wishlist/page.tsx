@@ -31,7 +31,8 @@ function toProduct(row: DatabaseProduct): Product {
   const image = row.image_url || row.images?.[0] || "/timora/watch.png"
   const stock: StockState =
     stockCount <= 0 ? "out_of_stock" : stockCount <= 5 ? "low_stock" : "in_stock"
-  const badges: ProductBadge[] = mrp > price ? ["SALE"] : []
+  const explicitlyOnSale = Array.isArray(row.tags) && row.tags.some((tag) => tag.trim().toLowerCase() === "sale")
+  const badges: ProductBadge[] = explicitlyOnSale && Number.isFinite(mrp) && mrp > price ? ["SALE"] : []
 
   return {
     id: row.id,
