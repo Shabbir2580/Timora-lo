@@ -71,6 +71,14 @@ export default function AdminDashboardPage() {
     setError("")
     try {
       const supabase = createClient()
+      // Keep dashboard order counts and inventory accurate by releasing stock
+      // held by expired unpaid orders whenever authorized staff opens the dashboard.
+      // Expiry is best-effort: an unavailable housekeeping RPC must not hide the dashboard.
+      const { error: expiryError } = await supabase.rpc("expire_stale_pending_orders")
+      if (expiryError) {
+        console.warn("Pending-order expiry did not run; continuing to load dashboard:", expiryError.message)
+      }
+
       const [
         allOrders, pendingOrders, allProducts, activeProducts,
         reviewRows, recentOrders, productRows,
