@@ -46,7 +46,7 @@ declare
   v_shipping bigint := 0;
   v_discount bigint := 0;
   v_total bigint;
-  v_coupon text := upper(nullif(btrim(p_coupon_code), ''));
+  v_coupon_code text := upper(nullif(btrim(p_coupon_code), ''));
   v_item_count integer;
   v_product_active boolean;
   v_coupon public.coupons%rowtype;
@@ -135,8 +135,8 @@ begin
 
   -- Validate the admin-managed coupon under a row lock so simultaneous checkouts
   -- cannot exceed its usage limit or overwrite each other's usage count.
-  if v_coupon is not null then
-    select * into v_coupon from public.coupons c where c.code = v_coupon for update;
+  if v_coupon_code is not null then
+    select * into v_coupon from public.coupons c where c.code = v_coupon_code for update;
     if not found then raise exception 'Coupon code is invalid.'; end if;
     v_coupon_found := true;
     if not v_coupon.is_active then raise exception 'This coupon is inactive.'; end if;
@@ -168,7 +168,7 @@ begin
     v_user_id, btrim(p_customer_name), lower(btrim(p_customer_email)), btrim(p_customer_phone),
     btrim(p_address), nullif(btrim(p_landmark), ''), btrim(p_city), btrim(p_state),
     btrim(p_pincode), nullif(btrim(p_delivery_note), ''),
-    v_subtotal, v_shipping, v_discount, v_coupon, v_total,
+    v_subtotal, v_shipping, v_discount, v_coupon_code, v_total,
     'pending_payment', 'pending', p_payment_provider, null
   ) returning id into v_order_id;
 
