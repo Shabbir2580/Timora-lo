@@ -20,6 +20,7 @@ type DatabaseProduct = {
   image_url: string | null
   images: string[] | null
   videos: string[] | null
+  tags: string[] | null
   stock: number
   is_active: boolean
 }
@@ -42,7 +43,8 @@ function toProduct(row: DatabaseProduct): Product {
         ? "low_stock"
         : "in_stock"
 
-  const badges: ProductBadge[] = mrp > price ? ["SALE"] : []
+  const explicitlyOnSale = Array.isArray(row.tags) && row.tags.some((tag) => tag.trim().toLowerCase() === "sale")
+  const badges: ProductBadge[] = explicitlyOnSale && mrp > price ? ["SALE"] : []
 
   return {
     id: row.id,
@@ -87,7 +89,7 @@ export default async function ProductDetailPage({
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id,name,slug,description,price,compare_at_price,category,image_url,images,videos,stock,is_active"
+      "id,name,slug,description,price,compare_at_price,category,image_url,images,videos,tags,stock,is_active"
     )
     .eq("slug", slug)
     .eq("is_active", true)
