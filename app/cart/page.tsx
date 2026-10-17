@@ -284,30 +284,6 @@ export default function CartPage() {
                 </span>
               </div>
 
-              <div className="space-y-2 rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/[0.05] p-3">
-                <div className="flex items-start justify-between gap-3 text-xs leading-5">
-                  <span className="text-muted-foreground">
-                    {estimatedShipping === 0
-                      ? "You unlocked free shipping!"
-                      : `Add ${formatINR(amountToFreeShipping)} for free shipping`}
-                  </span>
-                  <span className="shrink-0 font-semibold text-[#d4af37]">₹999+</span>
-                </div>
-                <div
-                  role="progressbar"
-                  aria-label="Progress toward free shipping"
-                  aria-valuemin={0}
-                  aria-valuemax={999}
-                  aria-valuenow={Math.min(subtotal, 999)}
-                  className="h-1.5 overflow-hidden rounded-full bg-secondary"
-                >
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#d4af37] to-[#f5d76e] transition-[width] duration-300"
-                    style={{ width: `${shippingProgress}%` }}
-                  />
-                </div>
-              </div>
-
               <div className="border-t border-border pt-4">
                 <div className="flex justify-between gap-4 text-base font-bold">
                   <span>Subtotal</span>
