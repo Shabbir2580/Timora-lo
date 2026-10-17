@@ -802,6 +802,32 @@ export default function CheckoutPage() {
           </p>
         </div>
 
+        <ol aria-label="Checkout steps" className="mb-7 grid grid-cols-3 overflow-hidden rounded-xl border border-[#d4af37]/20 bg-card/60">
+          {[
+            { number: "01", title: "Delivery", detail: "Your address" },
+            { number: "02", title: "Payment", detail: "Choose a method" },
+            { number: "03", title: "Confirmation", detail: "Order status" },
+          ].map((step, index) => (
+            <li key={step.number} className={`relative min-w-0 p-3 sm:p-4 ${index === 0 ? "bg-[#d4af37]/[0.09]" : ""} ${index < 2 ? "border-r border-[#d4af37]/15" : ""}`}>
+              <p className={`text-[10px] font-bold tracking-[0.16em] ${index === 0 ? "text-[#f5d76e]" : "text-muted-foreground"}`}>{step.number}</p>
+              <p className={`mt-1 text-xs font-semibold sm:text-sm ${index === 0 ? "text-foreground" : "text-muted-foreground"}`}>{step.title}</p>
+              <p className="mt-1 hidden text-[11px] text-muted-foreground sm:block">{step.detail}</p>
+            </li>
+          ))}
+        </ol>
+
+        <div className="mb-6 grid gap-2 sm:grid-cols-3">
+          <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-card/40 px-3 py-2.5 text-xs text-muted-foreground">
+            <ShieldCheck className="size-4 shrink-0 text-[#d4af37]" aria-hidden="true" /> Secure checkout flow
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-card/40 px-3 py-2.5 text-xs text-muted-foreground">
+            <Truck className="size-4 shrink-0 text-[#d4af37]" aria-hidden="true" /> Delivery details before payment
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-card/40 px-3 py-2.5 text-xs text-muted-foreground">
+            <MessageCircle className="size-4 shrink-0 text-[#d4af37]" aria-hidden="true" /> Customer support available
+          </div>
+        </div>
+
         {loadingProfile && (
           <p className="mb-5 text-sm text-muted-foreground">
             Checking your account and saved addresses…
