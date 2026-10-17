@@ -189,7 +189,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           <div aria-hidden="true" className="pointer-events-none absolute bottom-0 right-[22%] h-px w-2/5 bg-gradient-to-r from-transparent via-[#d4af37]/60 to-transparent" />
           <div className="relative flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div className="max-w-3xl">
-              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#d4af37]/25 bg-[#d4af37]/[0.07] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#e5cb91] sm:text-xs">
+              <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#d4af37]/25 bg-[#d4af37]/[0.07] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#f5d76e] sm:text-xs">
                 <Sparkles className="size-3.5" aria-hidden="true" /> Timora collection
               </p>
               <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl">{heading}</h1>
@@ -204,7 +204,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               </p>
             </div>
             <div className="flex items-center gap-3 self-start rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 md:self-auto">
-              <div className="grid size-10 place-items-center rounded-lg bg-[#d4af37]/10 text-[#e5cb91]"><ShoppingBag className="size-5" aria-hidden="true" /></div>
+              <div className="grid size-10 place-items-center rounded-lg bg-[#d4af37]/10 text-[#f5d76e]"><ShoppingBag className="size-5" aria-hidden="true" /></div>
               <div>
                 <p className="text-xl font-semibold tabular-nums text-white">{filteredProducts.length}</p>
                 <p className="text-xs text-white/50">{filteredProducts.length === 1 ? "product found" : "products found"}</p>
