@@ -74,13 +74,15 @@ export async function POST(request: Request) {
     }
     if (order.payment_status === "paid" && order.order_status === "confirmed") return NextResponse.json({ received: true, alreadyProcessed: true })
 
-    const { error: finalizeError } = await admin.rpc("verify_razorpay_order_payment", {
+    const { data: finalized, error: finalizeError } = await admin.rpc("verify_razorpay_order_payment", {
       p_order_id: order.id,
       p_razorpay_order_id: gatewayOrderId,
       p_payment_id: paymentId,
     })
-    if (finalizeError) {
-      console.error("Razorpay webhook could not finalize order:", finalizeError.message)
+    if (finalizeError || !finalized?.success) {
+      console.error("Razorpay webhook could not finalize order:", finalizeError?.message || "Finalization RPC returned success=false")
+      // Return a non-2xx response so Razorpay retries delivery instead of treating
+      // an unfinalized paid order as successfully handled.
       return NextResponse.json({ error: "Order finalization failed." }, { status: 500 })
     }
     return NextResponse.json({ received: true, success: true })
