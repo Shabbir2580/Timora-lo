@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useCallback, useEffect, useState } from "react"
-import { ArrowLeft, Heart, ShoppingBag, LoaderCircle, RefreshCw, AlertCircle, Trash2 } from "lucide-react"
+import { ArrowLeft, Heart, ShoppingBag, LoaderCircle, RefreshCw, AlertCircle, Trash2, ShoppingCart } from "lucide-react"
 import type { Product, ProductBadge, StockState } from "@/lib/data"
 import { useCart } from "@/lib/cart-context"
 import { ProductCard } from "@/components/store/product-card"
@@ -66,7 +66,8 @@ function toProduct(row: DatabaseProduct): Product {
 }
 
 export default function WishlistPage() {
-  const { wishlist, toggleWishlist } = useCart()
+  const { wishlist, toggleWishlist, addToCart } = useCart()
+  const [bulkAddMessage, setBulkAddMessage] = useState("")
   const [databaseProducts, setDatabaseProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
@@ -129,6 +130,22 @@ export default function WishlistPage() {
               <button
                 type="button"
                 onClick={() => {
+                  const available = savedProducts.filter((product) => product.stock !== "out_of_stock")
+                  if (!available.length) {
+                    setBulkAddMessage("No saved products are currently in stock.")
+                    return
+                  }
+                  available.forEach((product) => addToCart(product))
+                  setBulkAddMessage(`${available.length} available ${available.length === 1 ? "product was" : "products were"} added to your bag. Review quantities and totals in your cart.`)
+                }}
+                className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[#d4af37] px-3 text-xs font-semibold text-[#17130c] transition hover:bg-[#f5d76e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <ShoppingCart className="size-3.5" />
+                Add available to bag
+              </button>
+              <button
+                type="button"
+                onClick={() => {
                   if (window.confirm("Remove all saved products from your wishlist?")) {
                     savedProducts.forEach((product) => toggleWishlist(product.id))
                   }
@@ -144,6 +161,8 @@ export default function WishlistPage() {
             </div>
           )}
         </div>
+
+        {bulkAddMessage && <p role="status" className="mb-4 rounded-lg border border-[#d4af37]/25 bg-[#d4af37]/[0.06] px-3 py-2 text-sm text-[#dfc797]">{bulkAddMessage}</p>}
 
         {loading ? (
           <div role="status" className="flex min-h-56 items-center justify-center gap-2 text-sm text-muted-foreground">
