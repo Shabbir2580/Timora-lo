@@ -288,6 +288,44 @@
   .timora-product-card::after { transition: none; }
 }
 
+/* Pointer-following gold light and a restrained sheen for primary product actions. */
+.timora-product-card::before {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(230px circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%), rgba(245, 215, 110, 0.12), rgba(212, 175, 55, 0.035) 42%, transparent 72%);
+  transition: opacity 220ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .timora-product-card:hover::before { opacity: 1; }
+}
+.timora-gold-cta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.timora-gold-cta::after {
+  content: "";
+  position: absolute;
+  inset: -40% auto -40% -55%;
+  width: 38%;
+  transform: skewX(-22deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  pointer-events: none;
+  transition: left 620ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .timora-gold-cta:not(:disabled):hover::after { left: 125%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .timora-product-card::before,
+  .timora-gold-cta::after { transition: none; }
+}
+
 /* Timora design-system polish shared by every route. Keep effects subtle and touch-friendly. */
 :root {
   --timora-gold: #d4af37;
