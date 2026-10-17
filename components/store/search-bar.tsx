@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -29,6 +29,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
   const [searchError, setSearchError] = useState(false)
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
+  const suggestionsId = useId()
 
   useEffect(() => {
     setQuery(initialQuery)
@@ -68,7 +69,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
           .select("id,name,slug,category,image_url,images")
           .eq("is_active", true)
           .order("created_at", { ascending: false })
-          .limit(4)
+          .limit(5)
 
         let found: SearchProduct[]
         if (term) {
@@ -84,7 +85,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
           for (const product of [...(nameResult.data ?? []), ...(categoryResult.data ?? [])]) {
             unique.set(product.id, product as SearchProduct)
           }
-          found = [...unique.values()].slice(0, 4)
+          found = [...unique.values()].slice(0, 5)
         } else {
           const { data, error } = await baseQuery()
           if (error) throw error
@@ -134,7 +135,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
             placeholder="Search products and categories..."
             aria-label="Search products"
             aria-expanded={open}
-            aria-controls="timora-search-suggestions"
+            aria-controls={suggestionsId}
             className={cn("w-full bg-transparent text-sm outline-none", luxury ? "text-[#f5f1e8] placeholder:text-white/40" : "placeholder:text-muted-foreground")}
           />
           {query && (
@@ -151,7 +152,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
       </form>
 
       {open && (
-        <div id="timora-search-suggestions" className={cn("absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain rounded-lg border shadow-lg", luxury ? "border-[#d4af37]/25 bg-[#11110f] text-[#f5f1e8] shadow-black/40" : "border-border bg-popover")}>
+        <div id={suggestionsId} className={cn("absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain rounded-lg border shadow-lg", luxury ? "border-[#d4af37]/25 bg-[#11110f] text-[#f5f1e8] shadow-black/40" : "border-border bg-popover")}>
           {!query && (
             <div className="grid gap-4 p-4 sm:grid-cols-2">
               <div>
@@ -206,7 +207,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
               </div>
             ) : matches.length === 0 ? (
               <div className="px-2 py-3">
-                <p className="text-sm text-muted-foreground">{query.trim() ? `No product names match “${query.trim()}”.` : "No active products are available yet."}</p>
+                <p className="text-sm text-muted-foreground">{query.trim() ? `No products match “${query.trim()}”.` : "No active products are available yet."}</p>
                 {query.trim() && <button type="button" onMouseDown={() => submit(query)} className="mt-2 text-sm font-medium text-primary hover:underline">Search the full catalogue</button>}
               </div>
             ) : (
