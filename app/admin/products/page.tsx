@@ -1127,9 +1127,11 @@ export default function AdminProductsPage() {
                               type="button"
                               onClick={() => void deleteProduct(product)}
                               aria-label={`Delete ${product.name}`}
-                              className="grid size-9 place-items-center rounded-lg text-red-300/70 hover:bg-red-400/10 hover:text-red-300"
+                              title="Permanently delete product"
+                              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-red-400/25 px-2.5 text-xs font-medium text-red-200 transition hover:bg-red-400/10 hover:text-red-100"
                             >
-                              <Trash2 className="size-4" />
+                              <Trash2 className="size-3.5" />
+                              <span>Delete</span>
                             </button>}
 
                           </div>
