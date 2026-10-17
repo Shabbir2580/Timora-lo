@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { SmartImage } from "@/components/store/smart-image"
-import { Check, Heart, ShoppingCart, Truck } from "lucide-react"
+import { ArrowRight, Check, Eye, Heart, ShoppingCart, Truck, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Product } from "@/lib/data"
 import { useCart } from "@/lib/cart-context"
@@ -14,6 +14,7 @@ import { ProductBadgePill } from "./badges"
 export function ProductCard({ product }: { product: Product }) {
   const { wishlist, toggleWishlist, addToCart } = useCart()
   const [added, setAdded] = useState(false)
+  const [quickViewOpen, setQuickViewOpen] = useState(false)
   const wished = wishlist.includes(product.id)
   const isLiveProduct = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(product.id)
   const isPreview = !isLiveProduct
@@ -93,6 +94,15 @@ export function ProductCard({ product }: { product: Product }) {
         >
           <Heart className={cn("size-4", wished && "fill-sale text-sale")} aria-hidden />
         </button>
+
+        <button
+          type="button"
+          onClick={() => setQuickViewOpen(true)}
+          aria-label={`Quick view: ${product.name}`}
+          className="absolute bottom-2 left-2 right-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#d4af37]/50 bg-[#0b0b0a]/90 px-3 text-xs font-semibold text-[#f5d76e] opacity-100 shadow-lg backdrop-blur transition hover:bg-[#d4af37] hover:text-[#17130c] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+        >
+          <Eye className="size-3.5" aria-hidden /> Quick view
+        </button>
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-3 sm:p-3.5">
@@ -164,5 +174,67 @@ export function ProductCard({ product }: { product: Product }) {
         )}
       </div>
     </article>
+
+    {quickViewOpen && (
+      <div
+        className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-6"
+        role="presentation"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setQuickViewOpen(false)
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") setQuickViewOpen(false)
+        }}
+      >
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={`quick-view-title-${product.id}`}
+          className="relative grid max-h-[90dvh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-[#d4af37]/35 bg-[#11110f] shadow-2xl shadow-black/50 sm:grid-cols-2"
+        >
+          <button
+            type="button"
+            onClick={() => setQuickViewOpen(false)}
+            aria-label="Close quick view"
+            className="absolute right-3 top-3 z-10 grid size-10 place-items-center rounded-full border border-white/15 bg-black/70 text-white transition hover:border-[#d4af37] hover:text-[#f5d76e]"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
+          <div className="relative min-h-64 bg-gradient-to-br from-[#26231b] to-[#0b0b0a] sm:min-h-[360px]">
+            <SmartImage
+              src={product.image || "/placeholder.svg"}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 100vw, 420px"
+              className="object-contain p-8"
+            />
+          </div>
+          <div className="flex flex-col justify-center p-5 sm:p-8">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d4af37]">{product.category || product.brand}</p>
+            <h2 id={`quick-view-title-${product.id}`} className="mt-2 pr-8 text-xl font-semibold leading-snug text-[#f5f1e8] sm:text-2xl">{product.name}</h2>
+            <div className="mt-3"><Rating value={product.rating} count={product.reviewCount} /></div>
+            <div className="mt-3"><Price price={product.price} mrp={product.mrp} sale={explicitlyOnSale} /></div>
+            <p className="mt-4 line-clamp-4 text-sm leading-6 text-white/65">{product.description || "Explore the details of this curated Timora product."}</p>
+            <p className="mt-4 text-xs text-white/55">{isPreview ? "Preview listing · ordering is disabled" : outOfStock ? "Currently unavailable" : product.stock === "low_stock" ? `Limited availability · ${product.stockCount} listed remaining` : "Availability confirmed on the product page"}</p>
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleAddToCart()
+                  if (!outOfStock && !isPreview) setQuickViewOpen(false)
+                }}
+                disabled={outOfStock || isPreview}
+                className="timora-gold-cta inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#d4af37] px-4 py-3 text-sm font-semibold text-[#17130c] transition hover:bg-[#f5d76e] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ShoppingCart className="size-4" aria-hidden /> Add to bag
+              </button>
+              <Link href={`/product/${product.slug}`} onClick={() => setQuickViewOpen(false)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#d4af37]/35 px-4 py-3 text-sm font-semibold text-[#f5d76e] transition hover:bg-[#d4af37]/10">
+                Full product details <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    )}
   )
 }
