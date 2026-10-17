@@ -546,7 +546,7 @@ export default function CheckoutPage() {
     if (!userId) {
       if (paymentMethod === "whatsapp") {
         setOrderId(null)
-    setServerTotals(null)
+        setServerTotals(null)
         setSubmitted(true)
         return
       }
@@ -632,7 +632,7 @@ export default function CheckoutPage() {
             description: "Secure payment for your order",
             order_id: gateway.orderId,
             prefill: { name: form.fullName.trim(), email: email.trim(), contact: form.phone.trim() },
-            theme: { color: "#c9a96e" },
+            theme: { color: "#d4af37" },
             handler: async (payment) => {
               if (finished) return
               finished = true
