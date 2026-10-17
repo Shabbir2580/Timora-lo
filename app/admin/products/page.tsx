@@ -393,6 +393,21 @@ export default function AdminProductsPage() {
     const additionalImages = rawAdditionalImages.map(normalizeImageUrl)
     const videos = rawVideos.map(normalizeVideoUrl)
     const preservedImages = Array.from(new Set([mainImage, ...additionalImages].filter(Boolean)))
+    if (form.is_active && preservedImages.length === 0) {
+      setError("Add at least one product image before publishing an active product.")
+      setSaving(false)
+      return
+    }
+    if (form.is_active && form.description.trim().length < 20) {
+      setError("Add a product description of at least 20 characters before publishing.")
+      setSaving(false)
+      return
+    }
+    if (form.is_active && !form.category.trim()) {
+      setError("Choose a product category before publishing.")
+      setSaving(false)
+      return
+    }
     if (preservedImages.length > 6) {
       setError("Add up to 6 product image URLs in total, including the main image.")
       setSaving(false)
