@@ -13,6 +13,7 @@ const cancellation = read("supabase/migrations/202610170011_restore_coupon_usage
 const reviewAccess = read("supabase/migrations/202610170012_restrict_anonymous_review_rpcs.sql");
 const notifications = read("supabase/migrations/202610170007_order_status_notifications.sql");
 const returnGuards = read("supabase/migrations/202610170006_return_lifecycle_guards.sql");
+assert.match(returnGuards, /security definer\\s+set search_path\\s*=\\s*\x27\x27/i, "Return lifecycle SECURITY DEFINER trigger must use an empty search_path.");
 const checkoutPage = read("app/checkout/page.tsx");
 const orderApi = read("app/api/orders/route.ts");
 const proxy = read("proxy.ts");
