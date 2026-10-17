@@ -457,7 +457,7 @@ export default function HomePage() {
 
         <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4 lg:gap-x-6">
           {filteredProducts.map((product) => (
-            <article key={product.id} className="group min-w-0">
+            <article key={product.id} className="timora-product-card group min-w-0 overflow-hidden rounded-xl border border-transparent transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d4af37]/45 hover:shadow-lg hover:shadow-[#d4af37]/[0.08]">
               <div className={`relative aspect-[4/4.8] overflow-hidden rounded-xl ${product.tone}`}>
                 <Link href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer" className="block h-full w-full">
                   <SmartImage
@@ -575,7 +575,7 @@ export default function HomePage() {
               </div>
               <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
                 {collectionProducts.map((product) => (
-                  <article key={product.id} className="group min-w-0">
+                  <article key={product.id} className="timora-product-card group min-w-0 overflow-hidden rounded-xl border border-transparent transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d4af37]/45 hover:shadow-lg hover:shadow-[#d4af37]/[0.08]">
                     <div className="relative aspect-[4/4.8] overflow-hidden rounded-xl bg-[#e8e1d6]">
                       <Link href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer" className="block size-full">
                         <SmartImage src={product.image} alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover transition duration-700 group-hover:scale-105" />
