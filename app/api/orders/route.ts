@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     if (!customerName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail) || !/^\d{10}$/.test(customerPhone) || !address || !city || !state || !/^\d{6}$/.test(pincode)) {
       return errorResponse("Please check your name, email, 10-digit phone number, address and 6-digit PIN code.")
     }
-    if (!(["upi_qr", "whatsapp", "cod"] as string[]).includes(paymentProvider)) {
+    if (!(["upi_qr", "whatsapp", "cod", "razorpay"] as string[]).includes(paymentProvider)) {
       return errorResponse("Please select a valid payment method.")
     }
 
