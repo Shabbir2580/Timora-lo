@@ -8,7 +8,7 @@ create or replace function public.timora_guard_return_request_lifecycle()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_order_total bigint;
