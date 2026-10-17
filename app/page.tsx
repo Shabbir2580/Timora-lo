@@ -144,8 +144,6 @@ export default function HomePage() {
   }, [])
 
   const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase()
-
     return featuredProducts.filter((product) => {
       const categoryName = product.category.trim().toLowerCase()
       const matchesCategory =
@@ -541,7 +539,6 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => {
-                setSearch("")
                 setActiveCategory("All")
               }}
               className="mt-4 text-xs text-[#dfc797] underline underline-offset-4"
