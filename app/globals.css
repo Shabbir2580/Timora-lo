@@ -70,7 +70,7 @@
   --popover: #151512;
   --popover-foreground: #f5f1e8;
 
-  --primary: #c9a96e;
+  --primary: #d4af37;
   --primary-foreground: #17130c;
 
   --secondary: #1c1b17;
@@ -80,13 +80,13 @@
   --muted-foreground: #b0aaa0;
 
   --accent: #29251d;
-  --accent-foreground: #dfc797;
+  --accent-foreground: #f5d76e;
 
   --destructive: #dc6262;
 
   --border: #302c24;
   --input: #302c24;
-  --ring: #c9a96e;
+  --ring: #d4af37;
 
   --success: #78b895;
   --success-foreground: #0b1710;
@@ -102,7 +102,7 @@
 
   --sale: #dc6262;
 
-  --chart-1: #c9a96e;
+  --chart-1: #d4af37;
   --chart-2: #a98a51;
   --chart-3: #e4d3ad;
   --chart-4: #706044;
@@ -112,12 +112,12 @@
 
   --sidebar: #11110f;
   --sidebar-foreground: #f5f1e8;
-  --sidebar-primary: #c9a96e;
+  --sidebar-primary: #d4af37;
   --sidebar-primary-foreground: #17130c;
   --sidebar-accent: #29251d;
-  --sidebar-accent-foreground: #dfc797;
+  --sidebar-accent-foreground: #f5d76e;
   --sidebar-border: #302c24;
-  --sidebar-ring: #c9a96e;
+  --sidebar-ring: #d4af37;
 }
 
 .dark {
@@ -132,7 +132,7 @@
   --popover: #151512;
   --popover-foreground: #f5f1e8;
 
-  --primary: #c9a96e;
+  --primary: #d4af37;
   --primary-foreground: #17130c;
 
   --secondary: #1c1b17;
@@ -142,13 +142,13 @@
   --muted-foreground: #b0aaa0;
 
   --accent: #29251d;
-  --accent-foreground: #dfc797;
+  --accent-foreground: #f5d76e;
 
   --destructive: #dc6262;
 
   --border: #302c24;
   --input: #302c24;
-  --ring: #c9a96e;
+  --ring: #d4af37;
 
   --success: #78b895;
   --success-foreground: #0b1710;
@@ -164,7 +164,7 @@
 
   --sale: #dc6262;
 
-  --chart-1: #c9a96e;
+  --chart-1: #d4af37;
   --chart-2: #a98a51;
   --chart-3: #e4d3ad;
   --chart-4: #706044;
@@ -172,12 +172,12 @@
 
   --sidebar: #11110f;
   --sidebar-foreground: #f5f1e8;
-  --sidebar-primary: #c9a96e;
+  --sidebar-primary: #d4af37;
   --sidebar-primary-foreground: #17130c;
   --sidebar-accent: #29251d;
-  --sidebar-accent-foreground: #dfc797;
+  --sidebar-accent-foreground: #f5d76e;
   --sidebar-border: #302c24;
-  --sidebar-ring: #c9a96e;
+  --sidebar-ring: #d4af37;
 }
 
 @layer base {
@@ -196,7 +196,7 @@
   }
 
   ::selection {
-    background: #c9a96e;
+    background: #d4af37;
     color: #17130c;
   }
 
@@ -210,7 +210,7 @@
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
-    outline: 2px solid #c9a96e;
+    outline: 2px solid #d4af37;
     outline-offset: 3px;
   }
 
@@ -229,28 +229,28 @@
   position: absolute;
   inset: 0;
   z-index: 2;
-  border: 1px solid rgba(201, 169, 110, 0);
+  border: 1px solid rgba(212, 175, 55, 0);
   border-radius: inherit;
   pointer-events: none;
   transition: border-color 280ms ease, box-shadow 280ms ease;
 }
 .product-card-media:hover::after,
 .product-card-media:focus-within::after {
-  border-color: rgba(223, 199, 151, 0.9);
-  box-shadow: inset 0 0 0 1px rgba(201, 169, 110, 0.35), inset 0 0 28px rgba(201, 169, 110, 0.12);
+  border-color: rgba(245, 215, 110, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.35), inset 0 0 28px rgba(212, 175, 55, 0.12);
 }
 .timora-cursor-ring {
   position: fixed;
   z-index: 100;
   width: 22px;
   height: 22px;
-  border: 1px solid rgba(223, 199, 151, 0.85);
+  border: 1px solid rgba(245, 215, 110, 0.85);
   border-radius: 9999px;
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.7);
   transition: left 400ms cubic-bezier(0.22, 1, 0.36, 1), top 400ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease, transform 180ms ease;
-  box-shadow: 0 0 14px rgba(201, 169, 110, 0.22);
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.22);
 }
 .timora-cursor-ring.is-visible {
   opacity: 1;
@@ -264,9 +264,9 @@
 
 /* Timora design-system polish shared by every route. Keep effects subtle and touch-friendly. */
 :root {
-  --timora-gold: #c9a96e;
+  --timora-gold: #d4af37;
   --timora-gold-bright: #e5cb91;
-  --timora-gold-soft: rgba(201, 169, 110, 0.12);
+  --timora-gold-soft: rgba(212, 175, 55, 0.12);
   --timora-surface: rgba(21, 21, 18, 0.82);
 }
 
@@ -278,15 +278,15 @@ html {
 
 body {
   background-image:
-    radial-gradient(ellipse at 8% 0%, rgba(201, 169, 110, 0.055), transparent 30rem),
-    radial-gradient(ellipse at 96% 42%, rgba(201, 169, 110, 0.035), transparent 34rem);
+    radial-gradient(ellipse at 8% 0%, rgba(212, 175, 55, 0.055), transparent 30rem),
+    radial-gradient(ellipse at 96% 42%, rgba(212, 175, 55, 0.035), transparent 34rem);
   background-attachment: fixed;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: rgba(201, 169, 110, 0.82);
+  background: rgba(212, 175, 55, 0.82);
   color: #17130c;
 }
 
@@ -318,7 +318,7 @@ textarea {
 
 :where(input, select, textarea):focus-visible {
   border-color: var(--timora-gold-bright) !important;
-  box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.13);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.13);
 }
 
 :where(button, a, [role="button"]):focus-visible {
@@ -371,7 +371,7 @@ img {
   right: -12rem;
   top: 2%;
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(201, 169, 110, 0.12), rgba(201, 169, 110, 0) 68%);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.12), rgba(212, 175, 55, 0) 68%);
   pointer-events: none;
   animation: timora-glow-drift 12s ease-in-out infinite alternate;
 }
