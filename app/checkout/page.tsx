@@ -7,6 +7,7 @@ import Image from "next/image"
 import {
   ArrowLeft,
   CheckCircle2,
+  CreditCard,
   ExternalLink,
   LockKeyhole,
   MapPin,
@@ -24,7 +25,7 @@ import {
 import { useCart, type CartLine } from "@/lib/cart-context"
 import { createClient } from "@/lib/supabase/client"
 
-type PaymentMethod = "upi" | "whatsapp" | "cod"
+type PaymentMethod = "upi" | "whatsapp" | "cod" | "razorpay"
 
 type Address = {
   id: string
@@ -51,6 +52,47 @@ type AddressForm = {
   pincode: string
   deliveryNote: string
   addressLabel: string
+}
+
+type RazorpaySuccessResponse = { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }
+type RazorpayOptions = {
+  key: string
+  amount: number
+  currency: "INR"
+  name: string
+  description: string
+  order_id: string
+  prefill: { name: string; email: string; contact: string }
+  theme: { color: string }
+  handler: (response: RazorpaySuccessResponse) => void | Promise<void>
+  modal: { ondismiss: () => void }
+}
+type RazorpayInstance = { open: () => void }
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  if (typeof window === "undefined") return Promise.resolve(false)
+  if (window.Razorpay) return Promise.resolve(true)
+  return new Promise((resolve) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[src="https://checkout.razorpay.com/v1/checkout.js"]')
+    if (existing) {
+      existing.addEventListener("load", () => resolve(Boolean(window.Razorpay)), { once: true })
+      existing.addEventListener("error", () => resolve(false), { once: true })
+      if (window.Razorpay) resolve(true)
+      return
+    }
+    const script = document.createElement("script")
+    script.src = "https://checkout.razorpay.com/v1/checkout.js"
+    script.async = true
+    script.onload = () => resolve(Boolean(window.Razorpay))
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
 }
 
 const emptyAddress: AddressForm = {
@@ -102,6 +144,10 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState<string | null>(null)
   const [serverTotals, setServerTotals] = useState<{ subtotalPaise: number; shippingPaise: number; discountPaise: number; totalPaise: number } | null>(null)
   const [couponCode, setCouponCode] = useState("")
+  const [couponPreview, setCouponPreview] = useState<{ subtotalPaise: number; shippingPaise: number; discountPaise: number; totalPaise: number; couponCode?: string } | null>(null)
+  const [couponChecking, setCouponChecking] = useState(false)
+  const [couponMessage, setCouponMessage] = useState("")
+  const [couponError, setCouponError] = useState("")
   const [submittedOrderLines, setSubmittedOrderLines] = useState<CartLine[] | null>(null)
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("upi")
@@ -122,6 +168,7 @@ export default function CheckoutPage() {
   const displayLines = submittedOrderLines ?? lines
   const displayCount = displayLines.reduce((sum, line) => sum + line.quantity, 0)
   const displaySubtotal = displayLines.reduce((sum, line) => sum + line.product.price * line.quantity, 0)
+  const totalsToDisplay = serverTotals ?? couponPreview
 
   const updateField = (
     field: keyof AddressForm,
@@ -137,6 +184,62 @@ export default function CheckoutPage() {
     setOrderId(null)
     setServerTotals(null)
     setAddressMessage("")
+  }
+
+  async function verifyCoupon() {
+    setCouponError("")
+    setCouponMessage("")
+    setCouponPreview(null)
+    const code = couponCode.trim().toUpperCase()
+    if (!code) {
+      setCouponError("Enter a coupon code first.")
+      return
+    }
+    if (!userId) {
+      setCouponError("Please sign in before verifying a coupon.")
+      return
+    }
+    if (lines.length === 0) {
+      setCouponError("Add a product to your cart before verifying a coupon.")
+      return
+    }
+    setCouponChecking(true)
+    try {
+      const response = await fetch("/api/checkout/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          couponCode: code,
+          items: lines.map((line) => ({ productId: line.product.id, variant: line.variant, quantity: line.quantity })),
+        }),
+      })
+      const result = await response.json().catch(() => ({})) as {
+        valid?: boolean
+        couponCode?: string
+        subtotalPaise?: number
+        shippingPaise?: number
+        discountPaise?: number
+        totalPaise?: number
+        message?: string
+        error?: string
+      }
+      if (!response.ok || !result.valid || !Number.isFinite(result.totalPaise)) {
+        throw new Error(result.error || "This coupon could not be verified.")
+      }
+      setCouponPreview({
+        subtotalPaise: Number(result.subtotalPaise),
+        shippingPaise: Number(result.shippingPaise),
+        discountPaise: Number(result.discountPaise),
+        totalPaise: Number(result.totalPaise),
+        couponCode: result.couponCode,
+      })
+      setCouponMessage(result.message || "Coupon verified and discount applied.")
+      setCouponCode(result.couponCode || code)
+    } catch (error) {
+      setCouponError(error instanceof Error ? error.message : "Could not verify this coupon.")
+    } finally {
+      setCouponChecking(false)
+    }
   }
 
   const loadAddresses = useCallback(async (currentUserId: string) => {
@@ -484,7 +587,7 @@ export default function CheckoutPage() {
           state: form.state.trim(),
           pincode: form.pincode.trim(),
           deliveryNote: form.deliveryNote.trim() || undefined,
-          paymentProvider: paymentMethod === "upi" ? "upi_qr" : paymentMethod === "cod" ? "cod" : "whatsapp",
+          paymentProvider: paymentMethod === "upi" ? "upi_qr" : paymentMethod === "cod" ? "cod" : paymentMethod === "razorpay" ? "razorpay" : "whatsapp",
           couponCode: couponCode.trim().toUpperCase() || undefined,
         }),
       })
@@ -497,12 +600,75 @@ export default function CheckoutPage() {
         shippingPaise?: number
         discountPaise?: number
         totalPaise?: number
+        razorpay?: { keyId: string; orderId: string; amount: number; currency: "INR" }
       }
 
       if (!response.ok || !result.orderId) {
         throw new Error(
           result.error || "We couldn't create your order. Please try again.",
         )
+      }
+
+      if (paymentMethod === "razorpay") {
+        const gateway = result.razorpay
+        if (!gateway?.keyId || !gateway.orderId || !Number.isFinite(gateway.amount)) {
+          throw new Error("Razorpay did not return a valid payment order. Please try again.")
+        }
+        const scriptLoaded = await loadRazorpayScript()
+        if (!scriptLoaded || !window.Razorpay) {
+          await fetch("/api/razorpay/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: result.orderId }) }).catch(() => undefined)
+          throw new Error("Secure checkout could not load. Check your connection and try again; your pending order was cancelled.")
+        }
+        const RazorpayCheckout = window.Razorpay
+        await new Promise<void>((resolve, reject) => {
+          let finished = false
+          const checkout = new RazorpayCheckout({
+            key: gateway.keyId,
+            amount: gateway.amount,
+            currency: "INR",
+            name: "Timora",
+            description: "Secure payment for your order",
+            order_id: gateway.orderId,
+            prefill: { name: form.fullName.trim(), email: email.trim(), contact: form.phone.trim() },
+            theme: { color: "#c9a96e" },
+            handler: async (payment) => {
+              if (finished) return
+              finished = true
+              try {
+                const verificationResponse = await fetch("/api/razorpay/verify", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    orderId: result.orderId,
+                    razorpay_order_id: payment.razorpay_order_id,
+                    razorpay_payment_id: payment.razorpay_payment_id,
+                    razorpay_signature: payment.razorpay_signature,
+                  }),
+                })
+                const verification = await verificationResponse.json().catch(() => ({})) as { success?: boolean; error?: string }
+                if (!verificationResponse.ok || !verification.success) {
+                  throw new Error(verification.error || "Payment was returned but could not be verified. Contact Timora support before retrying.")
+                }
+                resolve()
+              } catch (verificationError) {
+                reject(verificationError)
+              }
+            },
+            modal: {
+              ondismiss: () => {
+                if (finished) return
+                finished = true
+                void fetch("/api/razorpay/cancel", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ orderId: result.orderId }),
+                }).catch(() => undefined)
+                reject(new Error("Payment was cancelled. Your cart is still saved; you can try again."))
+              },
+            },
+          })
+          checkout.open()
+        })
       }
 
       setOrderId(result.orderId)
@@ -1074,6 +1240,39 @@ export default function CheckoutPage() {
 
                 <label
                   className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                    paymentMethod === "razorpay"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-accent/40"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="razorpay"
+                    checked={paymentMethod === "razorpay"}
+                    onChange={() => {
+                      if (orderId) return
+                      setPaymentMethod("razorpay")
+                      setSubmitted(false)
+                      setSubmitError("")
+                      setOrderId(null)
+                      setServerTotals(null)
+                    }}
+                    className="mt-1 accent-current"
+                  />
+                  <span>
+                    <span className="flex items-center gap-2 font-semibold">
+                      <CreditCard className="size-4" aria-hidden="true" />
+                      Pay online with Razorpay
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                      Secure checkout for UPI, cards and other enabled payment methods.
+                    </span>
+                  </span>
+                </label>
+
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
                     paymentMethod === "whatsapp"
                       ? "border-primary bg-primary/5"
                       : "border-border hover:bg-accent/40"
@@ -1143,6 +1342,11 @@ export default function CheckoutPage() {
                   COD orders are not confirmed immediately. Admin or authorized employee approval is required before the order can proceed to dispatch.
                 </p>
               )}
+              {paymentMethod === "razorpay" && (
+                <p className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm leading-6">
+                  Your payment is verified securely with Razorpay. The order is confirmed only after the server verifies the payment signature and captured amount.
+                </p>
+              )}
             </section>
 
             <div className="flex items-start gap-3 rounded-xl border border-border p-4">
@@ -1209,8 +1413,15 @@ export default function CheckoutPage() {
 
               <div className="mt-5 rounded-xl border border-border bg-background/60 p-3">
                 <label htmlFor="coupon-code" className="text-sm font-medium">Coupon code</label>
-                <div className="mt-2 flex gap-2"><input id="coupon-code" value={couponCode} onChange={(event) => setCouponCode(event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 40))} disabled={Boolean(orderId)} maxLength={40} placeholder="Enter code" className="min-h-10 min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-sm uppercase outline-none focus:border-ring disabled:opacity-60"/><span className="inline-flex items-center rounded-lg border border-border px-3 text-xs text-muted-foreground">{serverTotals ? serverTotals.discountPaise > 0 ? "Applied" : couponCode ? "Checked" : "—" : "Validated at checkout"}</span></div>
-                <p className="mt-2 text-xs leading-5 text-muted-foreground">Coupon validity, minimum spend and usage limits are checked securely by the server when you place the order.</p>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <input id="coupon-code" value={couponCode} onChange={(event) => { setCouponCode(event.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 40)); setCouponPreview(null); setCouponMessage(""); setCouponError(""); setServerTotals(null) }} disabled={Boolean(orderId) || couponChecking} maxLength={40} placeholder="Enter code" className="min-h-11 min-w-0 flex-1 rounded-lg border border-input bg-card px-3 text-sm uppercase outline-none focus:border-ring disabled:opacity-60"/>
+                  <button type="button" onClick={verifyCoupon} disabled={Boolean(orderId) || couponChecking || !couponCode.trim()} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50">
+                    {couponChecking ? "Verifying…" : "Verify coupon"}
+                  </button>
+                </div>
+                {couponError && <p role="alert" className="mt-2 text-xs leading-5 text-red-600 dark:text-red-400">{couponError}</p>}
+                {couponMessage && <p role="status" className="mt-2 text-xs leading-5 text-emerald-700 dark:text-emerald-300">{couponMessage}</p>}
+                {couponPreview && !serverTotals && <p className="mt-2 text-xs leading-5 text-muted-foreground">Estimated bill after coupon: <strong>{formatPrice(couponPreview.totalPaise / 100)}</strong>. The server rechecks the coupon when you place the order.</p>}
               </div>
 
               <div className="mt-5 space-y-3 border-t border-border pt-5 text-sm">
@@ -1220,15 +1431,15 @@ export default function CheckoutPage() {
                   </span>
                   <span>{formatPrice(serverTotals ? serverTotals.subtotalPaise / 100 : displaySubtotal)}</span>
                 </div>
-                {serverTotals && serverTotals.discountPaise > 0 && <div className="flex justify-between gap-4 text-emerald-700 dark:text-emerald-300"><span>Coupon {couponCode ? `(${couponCode})` : "discount"}</span><span>−{formatPrice(serverTotals.discountPaise / 100)}</span></div>}
+                {totalsToDisplay && totalsToDisplay.discountPaise > 0 && <div className="flex justify-between gap-4 text-emerald-700 dark:text-emerald-300"><span>Coupon {couponCode ? `(${couponCode})` : "discount"}</span><span>−{formatPrice(totalsToDisplay.discountPaise / 100)}</span></div>}
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span>{serverTotals ? formatPrice(serverTotals.shippingPaise / 100) : "Calculated at order creation"}</span>
+                  <span>{totalsToDisplay ? formatPrice(totalsToDisplay.shippingPaise / 100) : "Calculated at order creation"}</span>
                 </div>
                 <div className="flex justify-between gap-4 border-t border-border pt-4">
-                  <span className="font-semibold">{serverTotals ? "Server-verified order total" : "Estimated subtotal"}</span>
+                  <span className="font-semibold">{serverTotals ? "Server-verified order total" : couponPreview ? "Estimated total after coupon" : "Estimated subtotal"}</span>
                   <span className="text-lg font-bold">
-                    {formatPrice(serverTotals ? serverTotals.totalPaise / 100 : displaySubtotal)}
+                    {formatPrice(totalsToDisplay ? totalsToDisplay.totalPaise / 100 : displaySubtotal)}
                   </span>
                 </div>
               </div>
