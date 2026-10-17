@@ -21,7 +21,7 @@ type SearchProduct = {
 const recent = ["wireless headphones", "smartwatch", "mechanical keyboard"]
 const popular = ["noise cancelling", "earbuds under 5000", "gaming laptop", "bluetooth speaker"]
 
-export function SearchBar({ className, initialQuery = "" }: { className?: string; initialQuery?: string }) {
+export function SearchBar({ className, initialQuery = "", luxury = false }: { className?: string; initialQuery?: string; luxury?: boolean }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState(initialQuery)
   const [matches, setMatches] = useState<SearchProduct[]>([])
@@ -104,8 +104,8 @@ export function SearchBar({ className, initialQuery = "" }: { className?: string
         }}
         role="search"
       >
-        <div className="flex items-center gap-2 rounded-lg border border-input bg-card px-3 py-2 transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
-          <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        <div className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors focus-within:ring-2", luxury ? "border-white/15 bg-[#11110f] text-[#f5f1e8] focus-within:border-[#d4af37] focus-within:ring-[#d4af37]/20" : "border-input bg-card focus-within:border-ring focus-within:ring-ring/30")}>
+          <Search className={cn("size-4 shrink-0", luxury ? "text-white/45" : "text-muted-foreground")} aria-hidden />
           <input
             type="search"
             value={query}
@@ -116,7 +116,7 @@ export function SearchBar({ className, initialQuery = "" }: { className?: string
             aria-label="Search products"
             aria-expanded={open}
             aria-controls="timora-search-suggestions"
-            className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+            className={cn("w-full bg-transparent text-sm outline-none", luxury ? "text-[#f5f1e8] placeholder:text-white/40" : "placeholder:text-muted-foreground")}
           />
           {query && (
             <button
@@ -132,7 +132,7 @@ export function SearchBar({ className, initialQuery = "" }: { className?: string
       </form>
 
       {open && (
-        <div id="timora-search-suggestions" className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-lg border border-border bg-popover shadow-lg">
+        <div id="timora-search-suggestions" className={cn("absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain rounded-lg border shadow-lg", luxury ? "border-[#d4af37]/25 bg-[#11110f] text-[#f5f1e8] shadow-black/40" : "border-border bg-popover")}>
           {!query && (
             <div className="grid gap-4 p-4 sm:grid-cols-2">
               <div>
@@ -145,7 +145,7 @@ export function SearchBar({ className, initialQuery = "" }: { className?: string
                       <button
                         type="button"
                         onMouseDown={() => submit(term)}
-                        className="w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent"
+                        className={cn("w-full rounded px-2 py-1.5 text-left text-sm", luxury ? "hover:bg-white/10" : "hover:bg-accent")}
                       >
                         {term}
                       </button>
@@ -174,7 +174,7 @@ export function SearchBar({ className, initialQuery = "" }: { className?: string
             </div>
           )}
 
-          <div className="border-t border-border p-2">
+          <div className={cn("border-t p-2", luxury ? "border-white/10" : "border-border")}>
             <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               {query ? "Live catalogue matches" : "Recently added products"}
             </p>
@@ -183,7 +183,7 @@ export function SearchBar({ className, initialQuery = "" }: { className?: string
             ) : searchError ? (
               <div className="px-2 py-3">
                 <p role="status" className="text-sm text-muted-foreground">Quick suggestions are temporarily unavailable.</p>
-                {query.trim() && <button type="button" onMouseDown={() => submit(query)} className="mt-2 text-sm font-medium text-primary hover:underline">Search all products for “{query.trim()}”</button>}
+                {query.trim() && <button type="button" onMouseDown={() => submit(query)} className={cn("mt-2 text-sm font-medium hover:underline", luxury ? "text-[#f5d76e]" : "text-primary")}>Search all products for “{query.trim()}”</button>}
               </div>
             ) : matches.length === 0 ? (
               <div className="px-2 py-3">
@@ -199,7 +199,7 @@ export function SearchBar({ className, initialQuery = "" }: { className?: string
                       <Link
                         href={`/product/${product.slug}`}
                         onMouseDown={() => setOpen(false)}
-                        className="flex items-center gap-3 rounded px-2 py-2 hover:bg-accent"
+                        className={cn("flex items-center gap-3 rounded px-2 py-2", luxury ? "hover:bg-white/10" : "hover:bg-accent")}
                       >
                         <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded bg-secondary">
                           <Image src={image} alt="" width={40} height={40} unoptimized className="size-10 object-contain" />
@@ -215,7 +215,7 @@ export function SearchBar({ className, initialQuery = "" }: { className?: string
               </ul>
             )}
             {query.trim() && !searchError && (
-              <button type="button" onMouseDown={() => submit(query)} className="mt-1 w-full rounded px-2 py-2 text-left text-xs font-medium text-primary hover:bg-accent">
+              <button type="button" onMouseDown={() => submit(query)} className={cn("mt-1 w-full rounded px-2 py-2 text-left text-xs font-medium", luxury ? "text-[#f5d76e] hover:bg-white/10" : "text-primary hover:bg-accent")}>
                 View all results for “{query.trim()}” →
               </button>
             )}
@@ -228,7 +228,7 @@ export function SearchBar({ className, initialQuery = "" }: { className?: string
                   key={category.slug}
                   href={`/products?category=${encodeURIComponent(category.slug)}`}
                   onMouseDown={() => setOpen(false)}
-                  className="rounded-full border border-border px-3 py-1 text-xs font-medium hover:bg-accent"
+                  className={cn("rounded-full border px-3 py-1 text-xs font-medium", luxury ? "border-white/15 hover:bg-white/10" : "border-border hover:bg-accent")}
                 >
                   {category.name}
                 </Link>
