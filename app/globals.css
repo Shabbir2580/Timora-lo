@@ -288,6 +288,24 @@
   .timora-product-card::after { transition: none; }
 }
 
+/* Route-loading skeletons: low-contrast shimmer with reduced-motion support. */
+.timora-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(110deg, #1c1b17 8%, #29251d 18%, #1c1b17 33%);
+  background-size: 220% 100%;
+  animation: timora-skeleton-shimmer 1.6s linear infinite;
+}
+@keyframes timora-skeleton-shimmer {
+  to { background-position-x: -220%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .timora-skeleton {
+    animation: none;
+    background: #1c1b17;
+  }
+}
+
 /* Pointer-following gold light and a restrained sheen for primary product actions. */
 .timora-product-card::before {
   content: "";
