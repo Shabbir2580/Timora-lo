@@ -541,14 +541,34 @@ export default function AdminProductsPage() {
         return
       }
 
-      const { error: deleteError } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", product.id)
+      // Preserve order history: products referenced by past orders are archived
+      // instead of hard-deleted, so invoices and order items remain intact.
+      const { data: linkedItems, error: linkedItemsError } = await supabase
+        .from("order_items")
+        .select("id")
+        .eq("product_id", product.id)
+        .limit(1)
 
-      if (deleteError) throw deleteError
+      if (linkedItemsError) throw linkedItemsError
 
-      setNotice("Product deleted.")
+      if (linkedItems?.length) {
+        const { error: archiveError } = await supabase
+          .from("products")
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq("id", product.id)
+
+        if (archiveError) throw archiveError
+        setNotice("This product is part of order history, so it was hidden from the storefront instead of being permanently deleted.")
+      } else {
+        const { error: deleteError } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", product.id)
+
+        if (deleteError) throw deleteError
+        setNotice("Product permanently deleted.")
+      }
+
       await loadProducts()
     } catch (err) {
       setError(
