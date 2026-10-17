@@ -63,7 +63,6 @@ const formatPrice = (price: number) =>
 
 export default function HomePage() {
   const router = useRouter()
-  const [search, setSearch] = useState("")
   const [activeCategory, setActiveCategory] = useState("All")
   const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([])
   const [catalogueFallback, setCatalogueFallback] = useState(false)
@@ -155,14 +154,9 @@ export default function HomePage() {
         (activeCategory === "Headphones" && ["headphones", "earbuds", "speakers", "audio", "audio accessories"].includes(categoryName)) ||
         (activeCategory === "Accessories" && ["accessories", "keyboards", "lifestyle accessories"].includes(categoryName)) ||
         (activeCategory === "Attar" && ["attar", "ittar", "attar & ittar", "fragrance", "perfume oils"].includes(categoryName))
-      const matchesSearch =
-        !query ||
-        product.name.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query)
-
-      return matchesCategory && matchesSearch
+      return matchesCategory
     })
-  }, [activeCategory, search, featuredProducts])
+  }, [activeCategory, featuredProducts])
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#0b0b0a] text-[#f5f1e8]">
