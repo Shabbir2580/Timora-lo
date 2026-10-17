@@ -132,7 +132,7 @@ export function ProductCompareTray({ products }: { products: Product[] }) {
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#d4af37]">Timora comparison</p>
             <h2 id="timora-compare-title" className="mt-1 pr-12 text-2xl font-semibold text-[#f5f1e8]">Choose with confidence</h2>
             <p className="mt-1 text-sm text-white/55">This selection is shared with product detail pages and your comparison list.</p>
-            <div className="mt-5 grid gap-3" style={{ gridTemplateColumns: \`repeat(\${selected.length}, minmax(0, 1fr))\` }}>
+            <div className="mt-5 grid gap-3" style={{ gridTemplateColumns: `repeat(${selected.length}, minmax(0, 1fr))` }}>
               {selected.map((product) => (
                 <article key={product.id} className="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.025]">
                   <div className="flex h-32 items-center justify-center bg-gradient-to-br from-[#29251d] to-[#0b0b0a] p-3 sm:h-48">
