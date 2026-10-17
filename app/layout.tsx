@@ -11,7 +11,7 @@ const inter = Inter({
   display: "swap",
 })
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://v0-timora.vercel.app").replace(/\/$/, "")
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://timora-by-sk.vercel.app").replace(/\/$/, "")
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
