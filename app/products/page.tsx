@@ -7,6 +7,7 @@ import {
   type StockState,
 } from "@/lib/data"
 import { ProductCard } from "@/components/store/product-card"
+import { SearchBar } from "@/components/store/search-bar"
 import { AdPlacement } from "@/components/store/ad-placement"
 import { createClient } from "@/lib/supabase/server"
 
@@ -225,6 +226,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             No active products are available in the live catalogue yet. Add products through the admin catalogue before accepting live orders.
           </p>
         )}
+
+        <section aria-label="Search all products" className="mb-6 rounded-2xl border border-border bg-card p-3 shadow-sm sm:mb-8 sm:p-5">
+          <div className="mb-2 flex items-center justify-between gap-3 px-1">
+            <div>
+              <h2 className="text-sm font-semibold sm:text-base">Find your next favourite</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Search products by name, category, or keyword</p>
+            </div>
+            <Search className="size-5 shrink-0 text-primary" aria-hidden="true" />
+          </div>
+          <SearchBar initialQuery={params.q?.trim() ?? ""} className="w-full" />
+        </section>
 
         <section aria-label="Product categories" className="mb-6 sm:mb-8">
           <div className="mb-3 flex items-center justify-between gap-3">
