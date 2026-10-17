@@ -79,22 +79,18 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
           const matchesByWord = await Promise.all(escapedTerms.map(async (word) => {
             const pattern = `%${word}%`
             const [nameResult, categoryResult] = await Promise.all([
-              baseQuery().ilike("name", pattern),
-              baseQuery().ilike("category", pattern),
+              supabase.from("products").select("id,name,slug,category,image_url,images").eq("is_active", true).ilike("name", pattern).order("created_at", { ascending: false }).limit(100),
+              supabase.from("products").select("id,name,slug,category,image_url,images").eq("is_active", true).ilike("category", pattern).order("created_at", { ascending: false }).limit(100),
             ])
             if (nameResult.error) throw nameResult.error
             if (categoryResult.error) throw categoryResult.error
-            return new Set([...(nameResult.data ?? []), ...(categoryResult.data ?? [])].map((product) => (product as SearchProduct).id))
+            return new Map([...((nameResult.data ?? []) as SearchProduct[]), ...((categoryResult.data ?? []) as SearchProduct[])].map((product) => [product.id, product]))
           }))
-          const { data: candidateRows, error: candidateError } = await supabase
-            .from("products")
-            .select("id,name,slug,category,image_url,images")
-            .eq("is_active", true)
-            .order("created_at", { ascending: false })
-            .limit(100)
-          if (candidateError) throw candidateError
-          const candidateProducts = (candidateRows ?? []) as SearchProduct[]
-          found = candidateProducts.filter((product) => matchesByWord.every((ids) => ids.has(product.id))).slice(0, 5)
+          const firstWordMatches = matchesByWord[0] ?? new Map<string, SearchProduct>()
+          found = [...firstWordMatches.values()]
+            .filter((product) => matchesByWord.every((products) => products.has(product.id)))
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .slice(0, 5)
         } else {
           const { data, error } = await baseQuery()
           if (error) throw error
