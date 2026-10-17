@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import {
   Activity, ArrowRight, BadgePercent, Boxes, CheckCircle2, ChevronRight, ClipboardList, Clock3,
   LayoutDashboard, LogOut, Package, RefreshCw, ShieldCheck,
-  ShoppingBag, Star, Users, Wallet, AlertTriangle, Trash2, ExternalLink, Sparkles,
+  ShoppingBag, Star, Users, Wallet, AlertTriangle, ExternalLink, Sparkles,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -54,7 +54,6 @@ export default function AdminDashboardPage() {
   const [canViewSalesAnalytics, setCanViewSalesAnalytics] = useState(false)
   const [checking, setChecking] = useState(true)
   const [loading, setLoading] = useState(false)
-  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [products, setProducts] = useState<ProductRow[]>([])
@@ -252,62 +251,6 @@ export default function AdminDashboardPage() {
     return () => { active = false }
   }, [router, loadDashboard])
 
-  async function deleteRecentOrder(order: OrderRow) {
-    if (role !== "admin") {
-      setError("Only an administrator can permanently delete orders.")
-      return
-    }
-
-    const confirmed = window.confirm(
-      `Permanently delete order #${shortId(order.id)} for ${order.customer_name} (${money(order.total_paise)})? This removes the order and its items from every order view, including payment processing and approved/confirmed orders. This cannot be undone. Paid order records should normally be retained for accounting.`
-    )
-    if (!confirmed) return
-
-    setDeletingOrderId(order.id)
-    setError("")
-    try {
-      const supabase = createClient()
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) {
-        router.replace("/login?next=%2Fadmin")
-        return
-      }
-
-      const { data: staff, error: roleError } = await supabase
-        .from("staff_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle()
-
-      if (roleError || staff?.role !== "admin") {
-        throw new Error("Only an administrator can permanently delete orders.")
-      }
-
-      const { data, error: deleteError } = await supabase.rpc("admin_delete_order", {
-        p_order_id: order.id,
-      })
-      if (deleteError) {
-        if (deleteError.message.includes("admin_delete_order") &&
-            (deleteError.message.includes("schema cache") || deleteError.message.includes("Could not find the function"))) {
-          throw new Error("Order deletion is not enabled in Supabase. Apply migration 202610150006_admin_delete_orders.sql first.")
-        }
-        throw deleteError
-      }
-
-      const result = data as { success?: boolean; order_id?: string } | null
-      if (!result?.success || result.order_id !== order.id) {
-        throw new Error("Supabase did not confirm deletion. The order has not been removed from the dashboard.")
-      }
-
-      setOrders((current) => current.filter((item) => item.id !== order.id))
-      await loadDashboard("admin")
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Could not delete this order.")
-    } finally {
-      setDeletingOrderId(null)
-    }
-  }
-
   const lowStock = products
   const signOut = async () => {
     const supabase = createClient()
@@ -399,7 +342,7 @@ export default function AdminDashboardPage() {
           <section className="mt-8 grid gap-6 2xl:grid-cols-[1.45fr_0.85fr]">
             <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#101112]">
               <div className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-5 py-5 sm:px-6"><div><h2 className="font-semibold">Recent orders</h2><p className="mt-1 text-xs text-white/35">Latest activity across your store</p></div><Link href="/admin/orders" className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 text-xs text-[#e4cc8d] hover:bg-white/[0.04]">All orders <ArrowRight className="size-3.5" /></Link></div>
-              {orders.length ? <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left"><thead><tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-[0.13em] text-white/30"><th className="px-5 py-3 font-medium sm:px-6">Order</th><th className="px-3 py-3 font-medium">Customer</th><th className="px-3 py-3 font-medium">Amount</th><th className="px-5 py-3 font-medium sm:px-6">Status</th>{role === "admin" && <th className="px-3 py-3 font-medium text-right">Action</th>}</tr></thead><tbody>{orders.map((order) => <tr key={order.id} className="border-b border-white/[0.045] last:border-0 hover:bg-white/[0.02]"><td className="px-5 py-4 sm:px-6"><p className="text-xs font-semibold">#{shortId(order.id)}</p><p className="mt-1 text-[10px] text-white/30">{dateLabel(order.created_at)}</p></td><td className="max-w-[150px] truncate px-3 py-4 text-xs text-white/65">{order.customer_name}</td><td className="whitespace-nowrap px-3 py-4 text-xs font-medium">{money(order.total_paise)}</td><td className="px-5 py-4 sm:px-6"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] ${statusTone[order.order_status] ?? "border-white/10 bg-white/5 text-white/60"}`}>{order.order_status.replace(/_/g, " ")}</span></td>{role === "admin" && <td className="px-3 py-4 text-right">{order.payment_status !== "paid" && (order.order_status === "cancelled" || (order.order_status === "pending_payment" && order.payment_status === "pending")) && <button type="button" onClick={() => void deleteRecentOrder(order)} disabled={deletingOrderId === order.id} aria-label={`Permanently delete order ${shortId(order.id)}`} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-full border border-red-400/25 px-3 text-[11px] text-red-200 hover:bg-red-400/10 disabled:opacity-50"><Trash2 className="size-3.5" />{deletingOrderId === order.id ? "Deleting..." : "Delete"}</button>}</td>}</tr>)}</tbody></table></div> : <div className="px-6 py-12 text-center"><ShoppingBag className="mx-auto size-7 text-white/20" /><p className="mt-3 text-sm text-white/55">No orders to show yet</p><p className="mt-1 text-xs text-white/30">New orders will appear here when customers check out.</p></div>}
+              {orders.length ? <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left"><thead><tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-[0.13em] text-white/30"><th className="px-5 py-3 font-medium sm:px-6">Order</th><th className="px-3 py-3 font-medium">Customer</th><th className="px-3 py-3 font-medium">Amount</th><th className="px-5 py-3 font-medium sm:px-6">Status</th></tr></thead><tbody>{orders.map((order) => <tr key={order.id} className="border-b border-white/[0.045] last:border-0 hover:bg-white/[0.02]"><td className="px-5 py-4 sm:px-6"><p className="text-xs font-semibold">#{shortId(order.id)}</p><p className="mt-1 text-[10px] text-white/30">{dateLabel(order.created_at)}</p></td><td className="max-w-[150px] truncate px-3 py-4 text-xs text-white/65">{order.customer_name}</td><td className="whitespace-nowrap px-3 py-4 text-xs font-medium">{money(order.total_paise)}</td><td className="px-5 py-4 sm:px-6"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] ${statusTone[order.order_status] ?? "border-white/10 bg-white/5 text-white/60"}`}>{order.order_status.replace(/_/g, " ")}</span></td></tr>)}</tbody></table></div> : <div className="px-6 py-12 text-center"><ShoppingBag className="mx-auto size-7 text-white/20" /><p className="mt-3 text-sm text-white/55">No orders to show yet</p><p className="mt-1 text-xs text-white/30">New orders will appear here when customers check out.</p></div>}
             </div>
 
             <div className="space-y-6">
