@@ -55,7 +55,7 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           )}
           {(product.tags ?? []).filter((tag) => tag.trim().toLowerCase() !== "sale").slice(0, 2).map((tag) => (
-            <span key={tag} className="max-w-28 truncate rounded border border-[#c9a96e]/35 bg-[#0b0b0a]/90 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[#e5cb91] shadow-sm" title={tag}>
+            <span key={tag} className="max-w-28 truncate rounded border border-[#d4af37]/35 bg-[#0b0b0a]/90 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[#f5d76e] shadow-sm" title={tag}>
               {tag}
             </span>
           ))}
