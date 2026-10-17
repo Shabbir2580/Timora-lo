@@ -30,7 +30,7 @@ export function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <article className="group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d4af37]/45 hover:shadow-lg hover:shadow-black/10">
+    <article className="timora-product-card group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d4af37]/45 hover:shadow-lg hover:shadow-[#d4af37]/[0.08] focus-within:border-[#f5d76e]/70">
       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-secondary via-secondary to-background">
         <Link href={`/product/${product.slug}`} className="relative block size-full" aria-label={`View ${product.name}`}>
           <SmartImage
