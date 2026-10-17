@@ -82,7 +82,7 @@ begin
     if coalesce(v_item->>'variant', 'Default') <> 'Default' then
       raise exception 'product options are not configured';
     end if;
-    if coalesce(v_item->>'quantity', '') !~ '^[0-9]+$' then
+    if coalesce(v_item->>'quantity', '') !~ '^[0-9]+$' then raise exception 'invalid item quantity'; end if;
       raise exception 'invalid item quantity';
     end if;
     v_quantity := (v_item->>'quantity')::integer;
@@ -242,7 +242,7 @@ begin
 
   for v_item in select value from jsonb_array_elements(p_items) loop
     if coalesce(v_item->>'variant', 'Default') <> 'Default' then raise exception 'product options are not configured'; end if;
-    if coalesce(v_item->>'quantity', '') !~ '^\\d+ then raise exception 'invalid item quantity'; end if;
+    if coalesce(v_item->>'quantity', '') !~ '^[0-9]+$' then raise exception 'invalid item quantity'; end if;
     v_quantity := (v_item->>'quantity')::integer;
     if v_quantity < 1 or v_quantity > 99 then raise exception 'invalid item quantity'; end if;
     v_product_id := (v_item->>'productId')::uuid;
