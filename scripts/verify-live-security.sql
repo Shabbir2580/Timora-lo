@@ -75,3 +75,21 @@ where schemaname = 'public'
     or coalesce(with_check, '') ~ 'auth\.uid\(\)'
   )
 order by tablename, policyname;
+
+-- 5) Confirm the deployed checkout RPC matches the repository's current pricing
+-- contract. False values here mean the checkout migration has not been applied.
+with checkout_function as (
+  select p.proconfig, pg_get_functiondef(p.oid) as definition
+  from pg_proc p
+  where p.oid = to_regprocedure(
+    'public.create_order_atomic(text,text,text,text,text,text,text,text,text,text,jsonb,text)'
+  )
+)
+select
+  coalesce(proconfig @> array['search_path=""'], false) as empty_search_path,
+  definition ~* 'v_shipping\\s*:=\\s*case\\s+when\\s+v_subtotal\\s*>=\\s*99900\\s+then\\s+0\\s+else\\s+8000' as correct_shipping_threshold,
+  definition ~* 'from\\s+public\\.coupons\\s+c\\s+where\\s+c\\.code\\s*=\\s*v_coupon_code\\s+for\\s+update' as coupon_row_locked,
+  definition ~* 'usage_count\\s*=\\s*usage_count\\s*\\+\\s*1' as coupon_usage_counted,
+  definition ~* 'v_coupon\\.usage_count\\s*>=\\s*v_coupon\\.usage_limit' as coupon_limit_enforced,
+  definition ~* 'v_product_active' as inactive_product_checked
+from checkout_function;
