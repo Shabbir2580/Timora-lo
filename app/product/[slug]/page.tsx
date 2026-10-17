@@ -339,7 +339,7 @@ export default async function ProductDetailPage({
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 pb-28 sm:px-6 sm:pb-12 lg:px-8">
         <RelatedProducts products={relatedProducts} currentProductId={product.id} />
         <RecentlyViewedProducts product={{
           slug: product.slug,
