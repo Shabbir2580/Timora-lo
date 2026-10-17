@@ -21,14 +21,18 @@ type SearchProduct = {
 const recent = ["wireless headphones", "smartwatch", "mechanical keyboard"]
 const popular = ["noise cancelling", "earbuds under 5000", "gaming laptop", "bluetooth speaker"]
 
-export function SearchBar({ className }: { className?: string }) {
+export function SearchBar({ className, initialQuery = "" }: { className?: string; initialQuery?: string }) {
   const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState(initialQuery)
   const [matches, setMatches] = useState<SearchProduct[]>([])
   const [loading, setLoading] = useState(false)
   const [searchError, setSearchError] = useState(false)
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setQuery(initialQuery)
+  }, [initialQuery])
 
   useEffect(() => {
     if (!open) return
