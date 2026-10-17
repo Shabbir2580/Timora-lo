@@ -82,7 +82,7 @@ begin
     if coalesce(v_item->>'variant', 'Default') <> 'Default' then
       raise exception 'product options are not configured';
     end if;
-    if coalesce(v_item->>'quantity', '') !~ '^[0-9]+$' then raise exception 'invalid item quantity'; end if;
+    if coalesce(v_item->>'quantity', '') !~ '^[0-9]+$' then
       raise exception 'invalid item quantity';
     end if;
     v_quantity := (v_item->>'quantity')::integer;
