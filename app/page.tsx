@@ -523,7 +523,7 @@ export default function HomePage() {
           {filteredProducts.map((product) => (
             <article key={product.id} className="group min-w-0">
               <div className={`relative aspect-[4/4.8] overflow-hidden rounded-xl ${product.tone}`}>
-                <Link href={`/product/${product.slug}`} className="block h-full w-full">
+                <Link href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer" className="block h-full w-full">
                   <SmartImage
                     src={product.image}
                     alt={product.name}
@@ -561,6 +561,8 @@ export default function HomePage() {
 
                 <Link
                   href={`/product/${product.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="absolute bottom-3 left-3 right-3 flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#f6f1e8]/95 px-2 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#18150f] opacity-100 transition hover:bg-white sm:bottom-4 sm:left-4 sm:right-4 sm:text-[10px] lg:translate-y-3 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100"
                 >
                   Discover item <ArrowUpRight size={13} />
@@ -571,7 +573,7 @@ export default function HomePage() {
                 <p className="text-[9px] uppercase tracking-[0.16em] text-white/40 sm:text-[10px]">
                   {product.category}
                 </p>
-                <Link href={`/product/${product.slug}`}>
+                <Link href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer">
                   <h3 className="mt-1.5 text-xs font-medium leading-5 transition hover:text-[#dfc797] sm:text-sm">
                     {product.name}
                   </h3>
@@ -640,7 +642,7 @@ export default function HomePage() {
                 {collectionProducts.map((product) => (
                   <article key={product.id} className="group min-w-0">
                     <div className="relative aspect-[4/4.8] overflow-hidden rounded-xl bg-[#e8e1d6]">
-                      <Link href={`/product/${product.slug}`} className="block size-full">
+                      <Link href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer" className="block size-full">
                         <SmartImage src={product.image} alt={product.name} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover transition duration-700 group-hover:scale-105" />
                       </Link>
                       <span className="absolute left-2 top-2 rounded-full border border-[#c9a96e]/45 bg-[#0b0b0a]/90 px-2 py-1 text-[8px] font-semibold uppercase tracking-wide text-[#e5cb91] sm:left-3 sm:top-3 sm:text-[9px]">
@@ -652,7 +654,7 @@ export default function HomePage() {
                     </div>
                     <div className="mt-3">
                       <p className="text-[9px] uppercase tracking-[0.16em] text-white/40 sm:text-[10px]">{product.category}</p>
-                      <Link href={`/product/${product.slug}`}><h3 className="mt-1.5 line-clamp-2 text-xs font-medium leading-5 transition hover:text-[#dfc797] sm:text-sm">{product.name}</h3></Link>
+                      <Link href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer"><h3 className="mt-1.5 line-clamp-2 text-xs font-medium leading-5 transition hover:text-[#dfc797] sm:text-sm">{product.name}</h3></Link>
                       <div className="mt-2 flex flex-wrap items-center gap-2"><span className="text-xs font-semibold sm:text-sm">{formatPrice(product.price)}</span>{product.oldPrice && <span className="text-[10px] text-white/35 line-through sm:text-xs">{formatPrice(product.oldPrice)}</span>}</div>
                       <p className={`mt-2 text-[10px] sm:text-xs ${product.stock <= 0 ? "text-red-300/80" : product.stock <= 5 ? "text-amber-200/80" : "text-white/35"}`}>{product.stock <= 0 ? "Currently unavailable" : product.stock <= 5 ? `Only ${product.stock} left in stock` : "In stock"}</p>
                     </div>
