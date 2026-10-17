@@ -40,6 +40,9 @@ export async function POST(request: Request) {
       .eq("customer_id", user.id)
       .maybeSingle()
     if (orderError || !order) return NextResponse.json({ error: "We couldn't find your order." }, { status: 404 })
+    if (order.payment_provider === "razorpay" && order.payment_status === "paid" && order.order_status === "confirmed" && order.payment_reference === paymentId) {
+      return NextResponse.json({ success: true, orderId, paymentStatus: "paid", message: "Payment was already verified successfully." })
+    }
     if (order.payment_provider !== "razorpay" || order.payment_status !== "pending" || order.order_status !== "pending_payment" || order.payment_reference !== razorpayOrderId) {
       return NextResponse.json({ error: "This payment does not match an awaiting Razorpay order." }, { status: 409 })
     }
