@@ -11,6 +11,7 @@ const adminDeleteAccess = read("supabase/migrations/202610170009_revoke_anon_adm
 const checkout = read("supabase/migrations/202610170010_fix_checkout_coupon_validation.sql");
 const cancellation = read("supabase/migrations/202610170011_restore_coupon_usage_on_cancel.sql");
 const reviewAccess = read("supabase/migrations/202610170012_restrict_anonymous_review_rpcs.sql");
+const triggerAccess = read("supabase/migrations/202610170013_restrict_trigger_function_execution.sql");
 const notifications = read("supabase/migrations/202610170007_order_status_notifications.sql");
 const returnGuards = read("supabase/migrations/202610170006_return_lifecycle_guards.sql");
 assert.match(returnGuards, /security definer\s+set search_path\s*=\s*''/i, "Return lifecycle SECURITY DEFINER trigger must use an empty search_path.");
@@ -31,6 +32,8 @@ assert.match(cancellation, /usage_count = greatest\(0, usage_count - 1\)/i, "Can
 assert.match(cancellation, /for update skip locked/i, "Expiry must avoid concurrent workers processing the same order.");
 assert.match(reviewAccess, /revoke execute on function public\.moderate_product_review\(uuid, text\) from public, anon/i, "Anonymous callers must not execute review moderation.");
 assert.match(reviewAccess, /revoke execute on function public\.submit_product_review\(uuid, integer, text, text\) from public, anon/i, "Anonymous callers must not execute authenticated review submission.");
+assert.match(triggerAccess, /revoke execute on function public\.timora_guard_campaign_publishing\(\) from public, anon, authenticated/i, "Campaign trigger handler must not be directly callable through the API.");
+assert.match(triggerAccess, /revoke execute on function public\.timora_guard_marketing_publishing\(\) from public, anon, authenticated/i, "Marketing trigger handler must not be directly callable through the API.");
 assert.doesNotMatch(notifications, /['\"]order_update['\"]/i, "Notification migration must not use an unsupported notification type.");
 assert.doesNotMatch(notifications, /create trigger/i, "Notification migration must not add duplicate order notification triggers.");
 
