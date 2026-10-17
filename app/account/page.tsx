@@ -41,7 +41,7 @@ export default function AccountPage() {
     setPhone(typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : "")
     const [addressResult, orderResult] = await Promise.all([
       supabase.from("addresses").select("id,full_name,phone,address,landmark,city,state,pincode,address_label,is_default").eq("user_id", user.id).order("is_default", { ascending: false }).order("created_at", { ascending: false }),
-      supabase.from("orders").select("id,order_status,payment_status,total_paise,created_at").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(5),
+      supabase.from("orders").select("id,order_status,payment_status,total_paise,created_at").eq("customer_id", user.id).order("created_at", { ascending: false }).limit(6),
     ])
     if (addressResult.error) setError("Your profile loaded, but saved addresses could not be loaded.")
     else setAddresses((addressResult.data ?? []) as Address[])
@@ -108,7 +108,7 @@ export default function AccountPage() {
         </section>
 
         <section className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5"><div className="flex items-center gap-2 text-xs text-white/45"><Package className="size-4 text-[#c9a96e]"/> Total orders</div><p className="mt-3 text-3xl font-semibold">{orders.length === 5 ? "5+" : orders.length}</p><Link href="/orders" className="mt-2 inline-flex items-center text-xs text-[#d8bc88]">View orders <ChevronRight className="size-3"/></Link></div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5"><div className="flex items-center gap-2 text-xs text-white/45"><Package className="size-4 text-[#c9a96e]"/> Total orders</div><p className="mt-3 text-3xl font-semibold">{orders.length > 5 ? "5+" : orders.length}</p><Link href="/orders" className="mt-2 inline-flex items-center text-xs text-[#d8bc88]">View orders <ChevronRight className="size-3"/></Link></div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5"><div className="flex items-center gap-2 text-xs text-white/45"><Truck className="size-4 text-[#c9a96e]"/> In progress</div><p className="mt-3 text-3xl font-semibold">{orders.filter(o=>["confirmed","processing","shipped"].includes(o.order_status)).length}</p><p className="mt-2 text-xs text-white/35">Orders being prepared or delivered</p></div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5"><div className="flex items-center gap-2 text-xs text-white/45"><MapPin className="size-4 text-[#c9a96e]"/> Saved addresses</div><p className="mt-3 text-3xl font-semibold">{addresses.length}</p><p className="mt-2 text-xs text-white/35">Ready for faster checkout</p></div>
         </section>
