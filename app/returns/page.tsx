@@ -50,8 +50,8 @@ export default function ReturnsPage() {
       setRequests(requestRows)
       const params = new URLSearchParams(window.location.search)
       const requestedId = params.get("orderId") || ""
-      const available = rows.find(order => order.id === requestedId && !requestRows.some(r => r.order_id === requestedId))
-      const firstAvailable = rows.find(order => !requestRows.some(r => r.order_id === order.id))
+      const available = rows.find(order => order.id === requestedId && !requestRows.some(r => r.order_id === requestedId && !["rejected", "closed"].includes(r.status)))
+      const firstAvailable = rows.find(order => !requestRows.some(r => r.order_id === order.id && !["rejected", "closed"].includes(r.status)))
       setSelectedOrder(available?.id || firstAvailable?.id || "")
     } catch (e) { setError(e instanceof Error ? e.message : "Could not load your return requests.") }
     finally { setLoading(false) }
@@ -81,7 +81,7 @@ export default function ReturnsPage() {
     finally { setSaving(false) }
   }
 
-  const availableOrders = orders.filter(order => !requests.some(request => request.order_id === order.id))
+  const availableOrders = orders.filter(order => !requests.some(request => request.order_id === order.id && !["rejected", "closed"].includes(request.status)))
   const selected = orders.find(order => order.id === selectedOrder)
 
   return <main className="min-h-screen bg-[#0b0b0a] px-4 py-8 text-[#f5f1e8] sm:px-6 sm:py-10"><div className="mx-auto max-w-4xl">
