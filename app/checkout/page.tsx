@@ -81,16 +81,27 @@ function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
     const existing = document.querySelector<HTMLScriptElement>('script[src="https://checkout.razorpay.com/v1/checkout.js"]')
     if (existing) {
+      if (window.Razorpay) {
+        resolve(true)
+        return
+      }
+      // A failed script element can remain in the DOM. Remove it so a retry
+      // starts a fresh request instead of waiting forever for an old event.
       existing.addEventListener("load", () => resolve(Boolean(window.Razorpay)), { once: true })
-      existing.addEventListener("error", () => resolve(false), { once: true })
-      if (window.Razorpay) resolve(true)
+      existing.addEventListener("error", () => {
+        existing.remove()
+        resolve(false)
+      }, { once: true })
       return
     }
     const script = document.createElement("script")
     script.src = "https://checkout.razorpay.com/v1/checkout.js"
     script.async = true
     script.onload = () => resolve(Boolean(window.Razorpay))
-    script.onerror = () => resolve(false)
+    script.onerror = () => {
+      script.remove()
+      resolve(false)
+    }
     document.body.appendChild(script)
   })
 }
