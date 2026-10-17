@@ -41,8 +41,9 @@ Copy `.env.example` to `.env.local` and fill in your Supabase project URL and pu
 
 1. Create or sign in to your Razorpay account and open **Test Mode**.
 2. Generate a Test Mode Key ID and Key Secret in the Razorpay Dashboard.
-3. Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` to your local `.env.local` and to the Vercel project's Environment Variables for Preview and Production. Keep the secret server-only; never use a `NEXT_PUBLIC_` prefix for it.
-4. Deploy after the Vercel build limit resets, then place a test order using Razorpay's test checkout. Confirm that a successful payment is marked paid only after server-side signature verification and Razorpay reports the payment as captured.
-5. Only after end-to-end test payments succeed, switch to Live Mode credentials and complete Razorpay's account/go-live requirements.
+3. Add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `SUPABASE_SERVICE_ROLE_KEY` (or a supported server-only `SUPABASE_SECRET_KEY`) to local `.env.local` and Vercel Environment Variables. These secrets must never use a `NEXT_PUBLIC_` prefix.
+4. In Razorpay Test Mode, configure a webhook to `https://timora-by-sk.vercel.app/api/razorpay/webhook` for `payment.captured` and `order.paid`. Copy the generated webhook secret into `RAZORPAY_WEBHOOK_SECRET` in local/Vercel server environment variables.
+5. Deploy after the Vercel build limit resets, then place a test order using Razorpay's test checkout. Confirm that payment is marked paid only after signature verification and Razorpay reports the payment as captured.
+6. Only after end-to-end test payments and webhook delivery succeed, switch to Live Mode credentials, configure the Live Mode webhook, and complete Razorpay's account/go-live requirements.
 
 If the Razorpay environment variables are missing, the API deliberately refuses to start a Razorpay order. Existing UPI QR, WhatsApp, and COD options remain available. Coupon verification uses live product prices and coupon rules; the final order revalidates the coupon again.
