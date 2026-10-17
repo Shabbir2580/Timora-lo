@@ -149,9 +149,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     const matchesQuery = searchTerms.length === 0 || searchTerms.every((term) => searchableText.includes(term))
     const matchesDeals = !dealsOnly || product.badges.includes("SALE")
     const productCategorySlug = product.categorySlug.toLowerCase()
+    const categoryAliases: Record<string, string[]> = {
+      attar: ["attar", "ittar", "attar-ittar", "fragrance", "perfume-oils"],
+      headphones: ["headphones", "earbuds", "speakers", "audio", "audio-accessories"],
+      accessories: ["accessories", "keyboards", "lifestyle-accessories"],
+    }
     const matchesCategory = !categorySlug || (
-      categorySlug === "attar"
-        ? ["attar", "ittar", "attar-ittar", "fragrance", "perfume-oils"].includes(productCategorySlug)
+      categoryAliases[categorySlug]
+        ? categoryAliases[categorySlug].includes(productCategorySlug)
         : productCategorySlug === categorySlug
     )
     const matchesMinPrice = validMinPrice === null || product.price >= validMinPrice
