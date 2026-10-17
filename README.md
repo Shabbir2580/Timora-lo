@@ -31,3 +31,18 @@ To learn more, take a look at the following resources:
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 - [v0 Documentation](https://v0.app/docs) - learn about v0 and how to use it.
+
+
+## Environment setup
+
+Copy `.env.example` to `.env.local` and fill in your Supabase project URL and publishable key. Never commit `.env.local` or real credentials.
+
+## Razorpay checkout setup
+
+1. Create or sign in to your Razorpay account and open **Test Mode**.
+2. Generate a Test Mode Key ID and Key Secret in the Razorpay Dashboard.
+3. Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` to your local `.env.local` and to the Vercel project's Environment Variables for Preview and Production. Keep the secret server-only; never use a `NEXT_PUBLIC_` prefix for it.
+4. Deploy after the Vercel build limit resets, then place a test order using Razorpay's test checkout. Confirm that a successful payment is marked paid only after server-side signature verification and Razorpay reports the payment as captured.
+5. Only after end-to-end test payments succeed, switch to Live Mode credentials and complete Razorpay's account/go-live requirements.
+
+If the Razorpay environment variables are missing, the API deliberately refuses to start a Razorpay order. Existing UPI QR, WhatsApp, and COD options remain available. Coupon verification uses live product prices and coupon rules; the final order revalidates the coupon again.
