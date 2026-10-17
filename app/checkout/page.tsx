@@ -14,6 +14,7 @@ import {
   MessageCircle,
   QrCode,
   ShoppingBag,
+  ShieldCheck,
   Package,
   Truck,
   Plus,
