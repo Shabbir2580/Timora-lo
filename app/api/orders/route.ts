@@ -4,7 +4,7 @@ import { products as sampleProducts } from "@/lib/data"
 
 export const runtime = "nodejs"
 
-type PaymentProvider = "upi_qr" | "whatsapp" | "cod"
+type PaymentProvider = "upi_qr" | "whatsapp" | "cod" | "razorpay"
 type RequestItem = { productId: string; variant?: string; quantity: number }
 type DbProduct = {
   id: string
@@ -63,6 +63,12 @@ export async function POST(request: Request) {
     }
     if (!(["upi_qr", "whatsapp", "cod"] as string[]).includes(paymentProvider)) {
       return errorResponse("Please select a valid payment method.")
+    }
+
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID
+    const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET
+    if (paymentProvider === "razorpay" && (!razorpayKeyId || !razorpayKeySecret)) {
+      return errorResponse("Razorpay is not configured yet. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to the server environment.", 503)
     }
 
     const grouped = new Map<string, RequestItem>()
@@ -170,18 +176,65 @@ export async function POST(request: Request) {
       return errorResponse("The order service returned an incomplete response. Please contact support before retrying.", 500)
     }
 
+
+    let razorpay: { keyId: string; orderId: string; amount: number; currency: "INR" } | undefined
+    if (paymentProvider === "razorpay") {
+      const amount = Number(result.total_paise)
+      let gatewayOrder: { id?: string; amount?: number; currency?: string }
+      try {
+        const gatewayResponse = await fetch("https://api.razorpay.com/v1/orders", {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${Buffer.from(`${razorpayKeyId}:${razorpayKeySecret}`).toString("base64")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount,
+            currency: "INR",
+            receipt: String(result.order_id),
+            notes: { timora_order_id: String(result.order_id) },
+          }),
+          cache: "no-store",
+        })
+        gatewayOrder = await gatewayResponse.json().catch(() => ({}))
+        if (!gatewayResponse.ok || !gatewayOrder.id || gatewayOrder.amount !== amount || gatewayOrder.currency !== "INR") {
+          console.error("Razorpay order creation failed:", gatewayOrder)
+          await supabase.rpc("cancel_my_pending_order", { p_order_id: result.order_id })
+          return errorResponse("Razorpay could not start this payment. Your pending order was cancelled; please try again.", 502)
+        }
+      } catch (gatewayError) {
+        console.error("Razorpay order request failed:", gatewayError)
+        await supabase.rpc("cancel_my_pending_order", { p_order_id: result.order_id })
+        return errorResponse("Razorpay is temporarily unavailable. Your pending order was cancelled; please try again.", 502)
+      }
+
+      const { error: referenceError } = await supabase.rpc("set_razorpay_order_reference", {
+        p_order_id: result.order_id,
+        p_razorpay_order_id: gatewayOrder.id,
+      })
+      if (referenceError) {
+        console.error("Could not bind Razorpay order:", referenceError.message)
+        await supabase.rpc("cancel_my_pending_order", { p_order_id: result.order_id })
+        return errorResponse("We couldn't securely link the payment to your order. Please try again.", 500)
+      }
+      razorpay = { keyId: razorpayKeyId!, orderId: gatewayOrder.id, amount, currency: "INR" }
+    }
+
     return NextResponse.json({
       success: true,
       orderId: result.order_id,
       message: paymentProvider === "cod"
         ? "COD order created and awaiting staff approval. Payment has not been collected."
-        : "Order created with payment pending. Payment has not been verified and the order must not be dispatched yet.",
+        : paymentProvider === "razorpay"
+          ? "Order created. Complete payment securely with Razorpay."
+          : "Order created with payment pending. Payment has not been verified and the order must not be dispatched yet.",
       orderStatus: "pending_payment",
       paymentStatus: "pending",
       subtotalPaise: Number(result.subtotal_paise),
       shippingPaise: Number(result.shipping_paise),
       discountPaise: Number(result.discount_paise ?? 0),
       totalPaise: Number(result.total_paise),
+      ...(razorpay ? { razorpay } : {}),
     }, { status: 201 })
   } catch (error) {
     console.error("Unexpected order API error:", error)
