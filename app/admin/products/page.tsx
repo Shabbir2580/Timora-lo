@@ -511,7 +511,7 @@ export default function AdminProductsPage() {
     }
 
     const confirmed = window.confirm(
-      `Permanently delete "${product.name}"? This cannot be undone.`
+      `Remove "${product.name}" from inventory? If it has past orders, it will be hidden instead of permanently deleted to preserve order history.`
     )
 
     if (!confirmed) return
