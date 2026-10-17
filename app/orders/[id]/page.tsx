@@ -51,7 +51,7 @@ export default function OrderDetailPage() {
       setOrder(data as Order)
       const [itemsResult, returnResult] = await Promise.all([
         supabase.from("order_items").select("id,product_name,product_slug,quantity,unit_price_paise,line_total_paise,variant").eq("order_id", orderId),
-        supabase.from("return_requests").select("id,status,reason,created_at").eq("order_id", orderId).maybeSingle(),
+        supabase.from("return_requests").select("id,status,reason,created_at").eq("order_id", orderId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       ])
       if (itemsResult.error) throw itemsResult.error
       setItems((itemsResult.data ?? []) as Item[])
