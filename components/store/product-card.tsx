@@ -45,7 +45,7 @@ export function ProductCard({ product }: { product: Product }) {
         event.currentTarget.style.removeProperty("--spotlight-y")
       }}
     >
-      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-secondary via-secondary to-background">
+      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-secondary via-secondary to-background sm:aspect-[4/4.4]">
         <Link href={`/product/${product.slug}`} className="relative block size-full" aria-label={`View ${product.name}`}>
           <SmartImage
             src={product.image || "/placeholder.svg"}
@@ -53,7 +53,7 @@ export function ProductCard({ product }: { product: Product }) {
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className={cn(
-              "object-contain p-3 transition-transform duration-500 group-hover:scale-[1.06] sm:p-5",
+              "object-contain p-2.5 transition-transform duration-500 group-hover:scale-[1.04] sm:p-5",
               outOfStock && "opacity-60",
             )}
           />
@@ -69,7 +69,7 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           )}
           {(product.tags ?? []).filter((tag) => tag.trim().toLowerCase() !== "sale").slice(0, 2).map((tag) => (
-            <span key={tag} className="max-w-28 truncate rounded border border-[#d4af37]/35 bg-[#0b0b0a]/90 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-[#f5d76e] shadow-sm" title={tag}>
+            <span key={tag} className="max-w-24 truncate rounded border border-[#d4af37]/35 bg-[#0b0b0a]/95 px-1.5 py-1 text-[8px] font-semibold uppercase tracking-wide text-[#f5d76e] shadow-sm sm:max-w-28 sm:px-2 sm:text-[9px]" title={tag}>
               {tag}
             </span>
           ))}
@@ -109,7 +109,7 @@ export function ProductCard({ product }: { product: Product }) {
           type="button"
           onClick={() => setQuickViewOpen(true)}
           aria-label={`Quick view: ${product.name}`}
-          className="absolute bottom-2 left-2 right-2 inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#d4af37]/50 bg-[#0b0b0a]/90 px-3 text-xs font-semibold text-[#f5d76e] opacity-100 shadow-lg backdrop-blur transition hover:bg-[#d4af37] hover:text-[#17130c] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+          className="absolute bottom-2 left-2 right-2 inline-flex min-h-9 items-center justify-center gap-1 rounded-lg border border-[#d4af37]/50 bg-[#0b0b0a]/90 px-2 text-[10px] font-semibold text-[#f5d76e] shadow-lg backdrop-blur transition hover:bg-[#d4af37] hover:text-[#17130c] sm:min-h-10 sm:gap-2 sm:px-3 sm:text-xs sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
         >
           <Eye className="size-3.5" aria-hidden /> Quick view
         </button>
