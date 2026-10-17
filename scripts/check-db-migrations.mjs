@@ -13,6 +13,7 @@ const cancellation = read("supabase/migrations/202610170011_restore_coupon_usage
 const reviewAccess = read("supabase/migrations/202610170012_restrict_anonymous_review_rpcs.sql");
 const triggerAccess = read("supabase/migrations/202610170013_restrict_trigger_function_execution.sql");
 const foreignKeyIndexes = read("supabase/migrations/202610170014_add_missing_foreign_key_indexes.sql");
+const rlsPerformance = read("supabase/migrations/202610170015_optimize_staff_rls_auth_checks.sql");
 const notifications = read("supabase/migrations/202610170007_order_status_notifications.sql");
 const returnGuards = read("supabase/migrations/202610170006_return_lifecycle_guards.sql");
 assert.match(returnGuards, /security definer\s+set search_path\s*=\s*''/i, "Return lifecycle SECURITY DEFINER trigger must use an empty search_path.");
@@ -37,6 +38,8 @@ assert.match(triggerAccess, /revoke execute on function public\.timora_guard_cam
 assert.match(triggerAccess, /revoke execute on function public\.timora_guard_marketing_publishing\(\) from public, anon, authenticated/i, "Marketing trigger handler must not be directly callable through the API.");
 assert.doesNotMatch(notifications, /['\"]order_update['\"]/i, "Notification migration must not use an unsupported notification type.");
 assert.doesNotMatch(notifications, /create trigger/i, "Notification migration must not add duplicate order notification triggers.");
+assert.match(rlsPerformance, /replace\([\s\S]*?auth\.uid\(\)[\s\S]*?\(select auth\.uid\(\)\)/i, "Staff RLS policy optimization must cache auth.uid() per statement.");
+assert.match(rlsPerformance, /return_request_staff_notes[\s\S]*?employee_tasks[\s\S]*?staff_permissions[\s\S]*?ad_campaigns[\s\S]*?business_expenses[\s\S]*?staff_audit_log/i, "RLS optimization must cover all tables identified by the advisor.");
 
 assert.match(checkoutPage, /if \(!userId\)[\s\S]*?paymentMethod === "whatsapp"/i, "Guest checkout must preserve the WhatsApp request flow.");
 assert.match(orderApi, /supabase\.auth\.getUser\(\)/i, "Order creation must require a verified signed-in user.");
