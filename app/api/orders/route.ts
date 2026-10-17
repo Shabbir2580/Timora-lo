@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js"
 import { products as sampleProducts } from "@/lib/data"
 
 export const runtime = "nodejs"
@@ -67,8 +68,10 @@ export async function POST(request: Request) {
 
     const razorpayKeyId = process.env.RAZORPAY_KEY_ID
     const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET
-    if (paymentProvider === "razorpay" && (!razorpayKeyId || !razorpayKeySecret)) {
-      return errorResponse("Razorpay is not configured yet. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET to the server environment.", 503)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
+    if (paymentProvider === "razorpay" && (!razorpayKeyId || !razorpayKeySecret || !supabaseUrl || !supabaseServiceKey)) {
+      return errorResponse("Razorpay is not fully configured yet. Add the Razorpay keys and server-only Supabase service key to the server environment.", 503)
     }
 
     const grouped = new Map<string, RequestItem>()
@@ -199,12 +202,12 @@ export async function POST(request: Request) {
         gatewayOrder = await gatewayResponse.json().catch(() => ({}))
         if (!gatewayResponse.ok || !gatewayOrder.id || gatewayOrder.amount !== amount || gatewayOrder.currency !== "INR") {
           console.error("Razorpay order creation failed:", gatewayOrder)
-          await supabase.rpc("cancel_my_pending_order", { p_order_id: result.order_id })
+          await createSupabaseAdminClient(supabaseUrl!, supabaseServiceKey!, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }).rpc("cancel_unpaid_razorpay_order", { p_order_id: result.order_id, p_razorpay_order_id: null })
           return errorResponse("Razorpay could not start this payment. Your pending order was cancelled; please try again.", 502)
         }
       } catch (gatewayError) {
         console.error("Razorpay order request failed:", gatewayError)
-        await supabase.rpc("cancel_my_pending_order", { p_order_id: result.order_id })
+        await createSupabaseAdminClient(supabaseUrl!, supabaseServiceKey!, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }).rpc("cancel_unpaid_razorpay_order", { p_order_id: result.order_id, p_razorpay_order_id: null })
         return errorResponse("Razorpay is temporarily unavailable. Your pending order was cancelled; please try again.", 502)
       }
 
@@ -214,7 +217,7 @@ export async function POST(request: Request) {
       })
       if (referenceError) {
         console.error("Could not bind Razorpay order:", referenceError.message)
-        await supabase.rpc("cancel_my_pending_order", { p_order_id: result.order_id })
+        await createSupabaseAdminClient(supabaseUrl!, supabaseServiceKey!, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }).rpc("cancel_unpaid_razorpay_order", { p_order_id: result.order_id, p_razorpay_order_id: null })
         return errorResponse("We couldn't securely link the payment to your order. Please try again.", 500)
       }
       razorpay = { keyId: razorpayKeyId!, orderId: gatewayOrder.id, amount, currency: "INR" }
