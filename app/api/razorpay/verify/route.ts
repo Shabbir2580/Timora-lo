@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js"
 
 export const runtime = "nodejs"
 
@@ -63,7 +64,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Razorpay has not confirmed a captured payment yet. Your order remains pending until capture is confirmed." }, { status: 409 })
     }
 
-    const { data: verified, error: verifyError } = await supabase.rpc("verify_razorpay_order_payment", {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
+    if (!supabaseUrl || !serviceKey) {
+      console.error("Razorpay verification requires a server-only Supabase service/secret key.")
+      return NextResponse.json({ error: "Payment was received, but secure order confirmation is not configured. Contact Timora support with your order reference." }, { status: 503 })
+    }
+    const adminSupabase = createSupabaseAdminClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    })
+    const { data: verified, error: verifyError } = await adminSupabase.rpc("verify_razorpay_order_payment", {
       p_order_id: orderId,
       p_razorpay_order_id: razorpayOrderId,
       p_payment_id: paymentId,
