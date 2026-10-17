@@ -1498,6 +1498,34 @@ export default function CheckoutPage() {
               </Link>
             </div>
 
+            {submitted && paymentMethod === "razorpay" && orderId && (
+              <section
+                aria-labelledby="razorpay-order-heading"
+                className="rounded-xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5 sm:p-6"
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-5 text-emerald-400" aria-hidden="true" />
+                  <h2 id="razorpay-order-heading" className="text-lg font-bold">
+                    Payment verified
+                  </h2>
+                </div>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Razorpay confirmed your payment and Timora verified it with the server. Keep this order reference for your records.
+                </p>
+                <p className="mt-3 break-all rounded-lg border border-border bg-background/70 p-3 text-sm font-semibold">
+                  Order reference: {orderId}
+                </p>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <Link href="/orders" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">
+                    <Package className="size-4" aria-hidden="true" /> Track my order
+                  </Link>
+                  <Link href="/products" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-semibold hover:border-[#d4af37]/50">
+                    Continue shopping
+                  </Link>
+                </div>
+              </section>
+            )}
+
             {submitted && paymentMethod === "upi" && (
               <section
                 aria-labelledby="upi-payment-heading"
@@ -1575,6 +1603,14 @@ export default function CheckoutPage() {
                 <p className="mt-3 text-sm leading-6">
                   Your COD order is awaiting approval by Timora admin or an authorized employee. It is not confirmed for dispatch, and no payment has been collected.
                 </p>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <Link href="/orders" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">
+                    <Package className="size-4" aria-hidden="true" /> Track my order
+                  </Link>
+                  <Link href="/products" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-border px-4 text-sm font-semibold hover:border-[#d4af37]/50">
+                    Continue shopping
+                  </Link>
+                </div>
               </section>
             )}
 
