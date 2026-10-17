@@ -554,7 +554,9 @@ export default function CheckoutPage() {
       setSubmitError(
         paymentMethod === "cod"
           ? "Please sign in before placing a COD order."
-          : "Please sign in before creating an order and continuing to UPI payment.",
+          : paymentMethod === "razorpay"
+            ? "Please sign in before starting secure Razorpay checkout."
+            : "Please sign in before creating an order and continuing to UPI payment.",
       )
       return
     }
@@ -1368,12 +1370,14 @@ export default function CheckoutPage() {
               className="min-h-12 w-full rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submittingOrder
-                ? "Creating order…"
-                : paymentMethod === "upi"
-                  ? "Create order and continue to UPI"
-                  : paymentMethod === "cod"
-                    ? "Place COD Order — Awaiting Approval"
-                    : "Create order / prepare WhatsApp"}
+                ? paymentMethod === "razorpay" ? "Opening secure checkout…" : "Creating order…"
+                : paymentMethod === "razorpay"
+                  ? "Pay securely with Razorpay"
+                  : paymentMethod === "upi"
+                    ? "Create order and continue to UPI"
+                    : paymentMethod === "cod"
+                      ? "Place COD Order — Awaiting Approval"
+                      : "Create order / prepare WhatsApp"}
             </button>
           </form>
 
