@@ -129,7 +129,12 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
         }}
         role="search"
       >
-        <div className={cn("flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors focus-within:ring-2", luxury ? "border-white/15 bg-[#11110f] text-[#f5f1e8] focus-within:border-[#d4af37] focus-within:ring-[#d4af37]/20" : "border-input bg-card focus-within:border-ring focus-within:ring-ring/30")}>
+        <div className={cn(
+          "group flex min-h-11 items-center gap-2.5 rounded-xl border px-3 py-2 transition-all duration-200 focus-within:ring-2",
+          luxury
+            ? "border-[#d4af37]/30 bg-[#11110f]/95 text-[#f5f1e8] shadow-[0_4px_18px_rgba(0,0,0,0.16)] focus-within:border-[#d4af37] focus-within:bg-[#15140f] focus-within:ring-[#d4af37]/20"
+            : "border-input bg-card focus-within:border-ring focus-within:ring-ring/30"
+        )}>
           <Search className={cn("size-4 shrink-0", luxury ? "text-white/45" : "text-muted-foreground")} aria-hidden />
           <input
             type="search"
@@ -141,7 +146,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
             aria-label="Search products"
             aria-expanded={open}
             aria-controls={suggestionsId}
-            className={cn("w-full bg-transparent text-sm outline-none", luxury ? "text-[#f5f1e8] placeholder:text-white/40" : "placeholder:text-muted-foreground")}
+            className={cn("min-w-0 w-full bg-transparent text-sm outline-none", luxury ? "text-[#f5f1e8] placeholder:text-white/45" : "placeholder:text-muted-foreground")}
           />
           {query && (
             <button
@@ -157,9 +162,14 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
       </form>
 
       {open && (
-        <div id={suggestionsId} className={cn("absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain rounded-lg border shadow-lg", luxury ? "border-[#d4af37]/25 bg-[#11110f] text-[#f5f1e8] shadow-black/40" : "border-border bg-popover")}>
+        <div id={suggestionsId} className={cn(
+          "absolute top-full z-[80] mt-2 max-h-[min(72vh,560px)] overflow-y-auto overscroll-contain rounded-2xl border shadow-[0_24px_70px_rgba(0,0,0,0.62)]",
+          luxury
+            ? "right-0 left-auto w-[min(420px,calc(100vw-24px))] border-[#d4af37]/30 bg-[#11110f] text-[#f5f1e8] ring-1 ring-white/[0.04]"
+            : "left-0 right-0 border-border bg-popover"
+        )}>
           {!query && (
-            <div className="grid gap-4 p-4 sm:grid-cols-2">
+            <div className={cn("grid gap-4 p-4 sm:grid-cols-2", luxury && "bg-gradient-to-br from-[#d4af37]/[0.06] via-transparent to-transparent")}>
               <div>
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <Clock className="size-3.5" aria-hidden /> Recent searches
@@ -170,7 +180,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
                       <button
                         type="button"
                         onMouseDown={() => submit(term)}
-                        className={cn("w-full rounded px-2 py-1.5 text-left text-sm", luxury ? "hover:bg-white/10" : "hover:bg-accent")}
+                        className={cn("w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors", luxury ? "text-white/75 hover:bg-[#d4af37]/10 hover:text-[#f5d76e]" : "hover:bg-accent")}
                       >
                         {term}
                       </button>
@@ -188,7 +198,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
                       <button
                         type="button"
                         onMouseDown={() => submit(term)}
-                        className="w-full rounded px-2 py-1.5 text-left text-sm hover:bg-accent"
+                        className={cn("w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors", luxury ? "text-white/75 hover:bg-[#d4af37]/10 hover:text-[#f5d76e]" : "hover:bg-accent")}
                       >
                         {term}
                       </button>
@@ -199,8 +209,8 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
             </div>
           )}
 
-          <div className={cn("border-t p-2", luxury ? "border-white/10" : "border-border")}>
-            <p className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <div className={cn("border-t p-3", luxury ? "border-white/10 bg-[#0d0d0b]/70" : "border-border")}>
+            <p className={cn("px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em]", luxury ? "text-[#d4af37]" : "text-muted-foreground")}>
               {query ? "Live catalogue matches" : "Recently added products"}
             </p>
             {loading ? (
@@ -224,10 +234,10 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
                       <Link
                         href={`/product/${product.slug}`}
                         onMouseDown={() => setOpen(false)}
-                        className={cn("flex items-center gap-3 rounded px-2 py-2", luxury ? "hover:bg-white/10" : "hover:bg-accent")}
+                        className={cn("flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition-colors", luxury ? "hover:bg-white/[0.06]" : "hover:bg-accent")}
                       >
-                        <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded bg-secondary">
-                          <Image src={image} alt="" width={40} height={40} unoptimized className="size-10 object-contain" />
+                        <div className={cn("grid size-12 shrink-0 place-items-center overflow-hidden rounded-xl border", luxury ? "border-white/10 bg-[#1b1913]" : "border-border bg-secondary")}>
+                          <Image src={image} alt="" width={48} height={48} unoptimized className="size-12 object-contain p-1" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">{product.name}</p>
@@ -253,7 +263,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
                   key={category.slug}
                   href={`/products?category=${encodeURIComponent(category.slug)}`}
                   onMouseDown={() => setOpen(false)}
-                  className={cn("rounded-full border px-3 py-1 text-xs font-medium", luxury ? "border-white/15 hover:bg-white/10" : "border-border hover:bg-accent")}
+                  className={cn("rounded-full border px-3 py-1.5 text-xs font-medium transition-colors", luxury ? "border-[#d4af37]/25 bg-white/[0.02] text-white/75 hover:border-[#d4af37]/60 hover:bg-[#d4af37]/10 hover:text-[#f5d76e]" : "border-border hover:bg-accent")}
                 >
                   {category.name}
                 </Link>
