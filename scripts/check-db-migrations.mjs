@@ -81,4 +81,10 @@ assert.doesNotMatch(proxy, /NextResponse\.redirect\(loginUrl\)/i, "The checkout 
 assert.match(returnGuards, /when 'requested' then new\.status in \('under_review', 'rejected'\)/i, "Return request initial transitions must be guarded.");
 assert.match(adminReturns, /requested: \["under_review", "rejected"\]/i, "Admin return controls must match the database transition guard.");
 
+
+const advertisingViews = read("supabase/migrations/20261017085000_harden_advertising_views.sql");
+assert.match(advertisingViews, /security_invoker = true/i, "Advertising views must use invoker security.");
+assert.match(advertisingViews, /grant select \(id, advertiser_id, campaign_type, placement, headline, description,/i, "Anonymous advertising access must use a column-limited grant.");
+assert.match(advertisingViews, /Public may read live campaign rows[\s\S]*?timora_campaign_is_public\(id\)/i, "Public campaign rows must be filtered by the publication guard.");
+
 console.log("Timora database migration contract checks passed.");
