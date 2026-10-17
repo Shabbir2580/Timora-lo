@@ -11,6 +11,16 @@ const KEY = "timora-compare-v1"
 const UPDATED_EVENT = "timora:compare-updated"
 const MAX_COMPARE = 4
 
+function writeCompareItems(items: CompareItem[]): boolean {
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(items))
+    window.dispatchEvent(new Event(UPDATED_EVENT))
+    return true
+  } catch {
+    return false
+  }
+}
+
 function readCompareItems(): CompareItem[] {
   try {
     const value: unknown = JSON.parse(window.localStorage.getItem(KEY) || "[]")
@@ -66,10 +76,12 @@ export function ProductCompareTray({ products }: { products: Product[] }) {
       const exists = current.some((item) => item.id === id)
       if (exists) {
         const next = current.filter((item) => item.id !== id)
-        window.localStorage.setItem(KEY, JSON.stringify(next))
+        if (!writeCompareItems(next)) {
+          setNotice("Comparison could not be saved in this browser.")
+          return
+        }
         setItems(next)
         setNotice("")
-        window.dispatchEvent(new Event(UPDATED_EVENT))
         return
       }
       if (current.length >= MAX_COMPARE) {
@@ -77,10 +89,12 @@ export function ProductCompareTray({ products }: { products: Product[] }) {
         return
       }
       const next = [...current, toCompareItem(product)]
-      window.localStorage.setItem(KEY, JSON.stringify(next))
+      if (!writeCompareItems(next)) {
+        setNotice("Comparison could not be saved in this browser.")
+        return
+      }
       setItems(next)
       setNotice("")
-      window.dispatchEvent(new Event(UPDATED_EVENT))
     }
     window.addEventListener("timora:compare-toggle", handleToggle)
     return () => {
@@ -92,17 +106,21 @@ export function ProductCompareTray({ products }: { products: Product[] }) {
 
   function removeItem(id: string) {
     const next = items.filter((item) => item.id !== id)
-    window.localStorage.setItem(KEY, JSON.stringify(next))
+    if (!writeCompareItems(next)) {
+      setNotice("Comparison could not be saved in this browser.")
+      return
+    }
     setItems(next)
-    window.dispatchEvent(new Event(UPDATED_EVENT))
   }
 
   function clearItems() {
-    window.localStorage.setItem(KEY, "[]")
+    if (!writeCompareItems([])) {
+      setNotice("Comparison could not be cleared in this browser.")
+      return
+    }
     setItems([])
     setNotice("")
     setOpen(false)
-    window.dispatchEvent(new Event(UPDATED_EVENT))
   }
 
   if (!selected.length) return null
