@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { SmartImage } from "@/components/store/smart-image"
 import { AdPlacement } from "@/components/store/ad-placement"
+import { SearchBar } from "@/components/store/search-bar"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import type { User } from "@supabase/supabase-js"
@@ -213,37 +214,7 @@ export default function HomePage() {
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <form
-              role="search"
-              onSubmit={(event) => {
-                event.preventDefault()
-                const query = search.trim()
-                if (query) router.push(`/products?q=${encodeURIComponent(query)}`)
-                else router.push("/products")
-              }}
-              className="hidden items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 focus-within:border-[#c9a96e] md:flex"
-            >
-              <Search size={15} className="text-white/45" aria-hidden="true" />
-              <input
-                aria-label="Search all products"
-                type="search"
-                value={search}
-                onChange={(event) => {
-                  // Keep typing stable: scrolling on every keystroke makes the page
-                  // jump between the header and featured products while the input is focused.
-                  setSearch(event.target.value)
-                }}
-                placeholder="Search collection"
-                className="w-32 bg-transparent text-xs outline-none placeholder:text-white/35 lg:w-40"
-              />
-              <button
-                type="submit"
-                aria-label="Search catalogue"
-                className="rounded-full p-1 text-white/60 transition hover:text-[#dfc797] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a96e]"
-              >
-                <ArrowRight size={15} aria-hidden="true" />
-              </button>
-            </form>
+            <SearchBar className="hidden w-40 md:block lg:w-52" luxury />
 
             <Link
               href="/orders"
@@ -297,34 +268,9 @@ export default function HomePage() {
 
         {mobileMenuOpen && (
           <nav className="border-t border-white/10 bg-[#11110f] px-5 py-5 lg:hidden">
-            <form
-              role="search"
-              onSubmit={(event) => {
-                event.preventDefault()
-                const query = search.trim()
-                if (query) router.push(`/products?q=${encodeURIComponent(query)}`)
-                else router.push("/products")
-                setMobileMenuOpen(false)
-              }}
-              className="mb-4 flex items-center gap-2 rounded-xl border border-white/15 px-3 py-3 focus-within:border-[#c9a96e]"
-            >
-              <Search size={17} className="shrink-0 text-white/50" aria-hidden="true" />
-              <input
-                aria-label="Search all products"
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search the collection..."
-                className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-white/40"
-              />
-              <button
-                type="submit"
-                aria-label="Search catalogue"
-                className="shrink-0 rounded-full p-1 text-white/70 transition hover:text-[#dfc797] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a96e]"
-              >
-                <ArrowRight size={17} aria-hidden="true" />
-              </button>
-            </form>
+            <div className="mb-4">
+              <SearchBar className="w-full" luxury />
+            </div>
             <div className="flex flex-col">
               {[
                 ...(user ? [["My Account", "/orders"]] : [["Login / Sign Up", "/login"]]),
