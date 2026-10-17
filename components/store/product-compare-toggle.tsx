@@ -1,46 +1,77 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { GitCompareArrows } from "lucide-react"
 
 export type CompareItem = { id: string; slug: string; name: string; category: string; price: number; mrp: number; image: string; description: string; stockCount: number }
 const KEY = "timora-compare-v1"
+const UPDATED_EVENT = "timora:compare-updated"
+const MAX_COMPARE = 4
+
+function readCompareItems(): CompareItem[] {
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(KEY) || "[]")
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((entry): entry is CompareItem =>
+      Boolean(entry) && typeof entry === "object" &&
+      typeof (entry as CompareItem).id === "string" &&
+      typeof (entry as CompareItem).slug === "string" &&
+      typeof (entry as CompareItem).name === "string" &&
+      typeof (entry as CompareItem).price === "number"
+    ).slice(0, MAX_COMPARE)
+  } catch {
+    return []
+  }
+}
 
 export function ProductCompareToggle({ item }: { item: CompareItem }) {
   const [items, setItems] = useState<CompareItem[]>([])
   const [notice, setNotice] = useState("")
 
+  const sync = useCallback(() => setItems(readCompareItems()), [])
+
   useEffect(() => {
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem(KEY) || "[]") as unknown
-      if (Array.isArray(parsed)) setItems(parsed.filter((entry): entry is CompareItem =>
-        Boolean(entry) && typeof entry === "object" &&
-        typeof (entry as CompareItem).id === "string" &&
-        typeof (entry as CompareItem).slug === "string" &&
-        typeof (entry as CompareItem).name === "string" &&
-        typeof (entry as CompareItem).price === "number"
-      ).slice(0, 4))
-    } catch { setItems([]) }
-  }, [])
+    sync()
+    window.addEventListener(UPDATED_EVENT, sync)
+    window.addEventListener("storage", sync)
+    return () => {
+      window.removeEventListener(UPDATED_EVENT, sync)
+      window.removeEventListener("storage", sync)
+    }
+  }, [sync])
 
   function toggle() {
-    const exists = items.some((entry) => entry.id === item.id)
+    const current = readCompareItems()
+    const exists = current.some((entry) => entry.id === item.id)
     if (exists) {
-      const next = items.filter((entry) => entry.id !== item.id)
+      const next = current.filter((entry) => entry.id !== item.id)
+      try {
+        window.localStorage.setItem(KEY, JSON.stringify(next))
+      } catch {
+        setNotice("Comparison could not be saved in this browser.")
+        return
+      }
       setItems(next)
-      window.localStorage.setItem(KEY, JSON.stringify(next))
       setNotice("Removed from comparison.")
+      window.dispatchEvent(new Event(UPDATED_EVENT))
       return
     }
-    if (items.length >= 4) {
+    if (current.length >= MAX_COMPARE) {
+      setItems(current)
       setNotice("Compare up to four products at a time. Remove one first.")
       return
     }
-    const next = [...items, item]
+    const next = [...current, item]
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify(next))
+    } catch {
+      setNotice("Comparison could not be saved in this browser.")
+      return
+    }
     setItems(next)
-    window.localStorage.setItem(KEY, JSON.stringify(next))
     setNotice("Added to comparison.")
+    window.dispatchEvent(new Event(UPDATED_EVENT))
   }
 
   const selected = items.some((entry) => entry.id === item.id)
