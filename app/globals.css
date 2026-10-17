@@ -262,6 +262,32 @@
 }
 
 
+/* Luxury product-card edge: gold appears on hover and keyboard focus, never on touch-only devices. */
+.timora-product-card {
+  isolation: isolate;
+  transition: transform 260ms cubic-bezier(0.2, 0.75, 0.25, 1), border-color 260ms ease, box-shadow 260ms ease;
+}
+.timora-product-card::after {
+  content: "";
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  border: 1px solid rgba(245, 215, 110, 0.95);
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.25), inset 0 0 26px rgba(212, 175, 55, 0.07), 0 0 18px rgba(212, 175, 55, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .timora-product-card:hover::after { opacity: 1; }
+}
+.timora-product-card:focus-within::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .timora-product-card,
+  .timora-product-card::after { transition: none; }
+}
+
 /* Timora design-system polish shared by every route. Keep effects subtle and touch-friendly. */
 :root {
   --timora-gold: #d4af37;
