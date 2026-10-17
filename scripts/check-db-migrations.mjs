@@ -14,6 +14,7 @@ const reviewAccess = read("supabase/migrations/202610170012_restrict_anonymous_r
 const triggerAccess = read("supabase/migrations/202610170013_restrict_trigger_function_execution.sql");
 const foreignKeyIndexes = read("supabase/migrations/202610170014_add_missing_foreign_key_indexes.sql");
 const rlsPerformance = read("supabase/migrations/202610170015_optimize_staff_rls_auth_checks.sql");
+const anonymousTableAccess = read("supabase/migrations/202610170016_revoke_anonymous_sensitive_table_access.sql");
 const notifications = read("supabase/migrations/202610170007_order_status_notifications.sql");
 const returnGuards = read("supabase/migrations/202610170006_return_lifecycle_guards.sql");
 assert.match(returnGuards, /security definer\s+set search_path\s*=\s*''/i, "Return lifecycle SECURITY DEFINER trigger must use an empty search_path.");
@@ -40,6 +41,7 @@ assert.doesNotMatch(notifications, /['\"]order_update['\"]/i, "Notification migr
 assert.doesNotMatch(notifications, /create trigger/i, "Notification migration must not add duplicate order notification triggers.");
 assert.match(rlsPerformance, /replace\([\s\S]*?auth\.uid\(\)[\s\S]*?\(select auth\.uid\(\)\)/i, "Staff RLS policy optimization must cache auth.uid() per statement.");
 assert.match(rlsPerformance, /return_request_staff_notes[\s\S]*?employee_tasks[\s\S]*?staff_permissions[\s\S]*?ad_campaigns[\s\S]*?business_expenses[\s\S]*?staff_audit_log/i, "RLS optimization must cover all tables identified by the advisor.");
+assert.match(anonymousTableAccess, /revoke all privileges on table[\\s\\S]*?public\\.addresses[\\s\\S]*?public\\.ad_events[\\s\\S]*?public\\.advertisers[\\s\\S]*?public\\.business_expenses[\\s\\S]*?public\\.coupons[\\s\\S]*?public\\.employee_tasks[\\s\\S]*?public\\.marketing_content[\\s\\S]*?public\\.order_items[\\s\\S]*?public\\.orders[\\s\\S]*?public\\.return_request_staff_notes[\\s\\S]*?public\\.return_requests[\\s\\S]*?public\\.staff_audit_log[\\s\\S]*?public\\.staff_permissions[\\s\\S]*?public\\.staff_roles[\\s\\S]*?from anon/i, "Sensitive customer, order, staff, and marketing tables must not grant direct privileges to anonymous users.");
 const expectedForeignKeyIndexes = [
   "idx_ad_campaigns_approved_by",
   "idx_ad_campaigns_created_by",
