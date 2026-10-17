@@ -12,6 +12,7 @@ const checkout = read("supabase/migrations/202610170010_fix_checkout_coupon_vali
 const cancellation = read("supabase/migrations/202610170011_restore_coupon_usage_on_cancel.sql");
 const reviewAccess = read("supabase/migrations/202610170012_restrict_anonymous_review_rpcs.sql");
 const triggerAccess = read("supabase/migrations/202610170013_restrict_trigger_function_execution.sql");
+const foreignKeyIndexes = read("supabase/migrations/202610170014_add_missing_foreign_key_indexes.sql");
 const notifications = read("supabase/migrations/202610170007_order_status_notifications.sql");
 const returnGuards = read("supabase/migrations/202610170006_return_lifecycle_guards.sql");
 assert.match(returnGuards, /security definer\s+set search_path\s*=\s*''/i, "Return lifecycle SECURITY DEFINER trigger must use an empty search_path.");
