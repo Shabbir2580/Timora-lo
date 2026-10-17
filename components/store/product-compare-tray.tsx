@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ArrowLeftRight, Check, X } from "lucide-react"
+import { ArrowLeftRight, X } from "lucide-react"
 import type { Product } from "@/lib/data"
 import { formatINR } from "@/lib/format"
 
