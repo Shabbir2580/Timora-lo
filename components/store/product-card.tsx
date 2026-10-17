@@ -30,7 +30,19 @@ export function ProductCard({ product }: { product: Product }) {
   }
 
   return (
-    <article className="timora-product-card group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d4af37]/45 hover:shadow-lg hover:shadow-[#d4af37]/[0.08] focus-within:border-[#f5d76e]/70">
+    <article
+      className="timora-product-card group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#d4af37]/45 hover:shadow-lg hover:shadow-[#d4af37]/[0.08] focus-within:border-[#f5d76e]/70"
+      onPointerMove={(event) => {
+        if (event.pointerType !== "mouse") return
+        const rect = event.currentTarget.getBoundingClientRect()
+        event.currentTarget.style.setProperty("--spotlight-x", `${event.clientX - rect.left}px`)
+        event.currentTarget.style.setProperty("--spotlight-y", `${event.clientY - rect.top}px`)
+      }}
+      onPointerLeave={(event) => {
+        event.currentTarget.style.removeProperty("--spotlight-x")
+        event.currentTarget.style.removeProperty("--spotlight-y")
+      }}
+    >
       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-secondary via-secondary to-background">
         <Link href={`/product/${product.slug}`} className="relative block size-full" aria-label={`View ${product.name}`}>
           <SmartImage
@@ -129,7 +141,7 @@ export function ProductCard({ product }: { product: Product }) {
           disabled={outOfStock || isPreview}
           aria-live="polite"
           className={cn(
-            "mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50",
+            "timora-gold-cta mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50",
             added
               ? "border border-success/40 bg-success/10 text-foreground"
               : "bg-primary text-primary-foreground hover:opacity-90",
