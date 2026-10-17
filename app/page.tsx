@@ -229,11 +229,9 @@ export default function HomePage() {
                 type="search"
                 value={search}
                 onChange={(event) => {
+                  // Keep typing stable: scrolling on every keystroke makes the page
+                  // jump between the header and featured products while the input is focused.
                   setSearch(event.target.value)
-                  document.getElementById("featured-products")?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  })
                 }}
                 placeholder="Search collection"
                 className="w-32 bg-transparent text-xs outline-none placeholder:text-white/35 lg:w-40"
