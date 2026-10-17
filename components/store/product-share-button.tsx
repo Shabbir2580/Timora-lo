@@ -38,7 +38,7 @@ export function ProductShareButton({ name, url }: { name: string; url: string })
         type="button"
         onClick={() => void shareProduct()}
         disabled={busy}
-        className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 px-3.5 text-xs text-white/65 transition hover:border-[#c9a96e]/50 hover:text-[#dfc797] disabled:opacity-50"
+        className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 px-3.5 text-xs text-white/65 transition hover:border-[#d4af37]/50 hover:text-[#f5d76e] disabled:opacity-50"
       >
         {message === "Product link copied." ? <Check size={14} /> : message === "Product shared." ? <Check size={14} /> : <Share2 size={14} />}
         {busy ? "Preparing…" : message === "Product link copied." ? "Link copied" : message === "Product shared." ? "Shared" : "Share product"}
