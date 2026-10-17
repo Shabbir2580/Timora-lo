@@ -1,8 +1,12 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import assert from "node:assert/strict";
 
 const read = (path) => readFileSync(join(process.cwd(), path), "utf8");
+const migrationDirectory = join(process.cwd(), "supabase/migrations");
+const migrationFiles = readdirSync(migrationDirectory).filter((name) => /^\\d+_.+\\.sql$/.test(name));
+const migrationVersions = migrationFiles.map((name) => name.split("_", 1)[0]);
+assert.equal(new Set(migrationVersions).size, migrationVersions.length, "Supabase migration version prefixes must be unique.");
 const adminDeleteAccess = read("supabase/migrations/202610170009_revoke_anon_admin_delete_order.sql");
 const checkout = read("supabase/migrations/202610170010_fix_checkout_coupon_validation.sql");
 const cancellation = read("supabase/migrations/202610170011_restore_coupon_usage_on_cancel.sql");
