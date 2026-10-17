@@ -73,19 +73,28 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
 
         let found: SearchProduct[]
         if (term) {
-          // Search both product names and category labels in the live catalogue.
-          const escapedTerm = term.replace(/[%_\\]/g, "\\$&")
-          const [nameResult, categoryResult] = await Promise.all([
-            baseQuery().ilike("name", `%${escapedTerm}%`),
-            baseQuery().ilike("category", `%${escapedTerm}%`),
-          ])
-          if (nameResult.error) throw nameResult.error
-          if (categoryResult.error) throw categoryResult.error
-          const unique = new Map<string, SearchProduct>()
-          for (const product of [...(nameResult.data ?? []), ...(categoryResult.data ?? [])]) {
-            unique.set(product.id, product as SearchProduct)
-          }
-          found = [...unique.values()].slice(0, 5)
+          // Match multi-word searches using the same all-words rule as the catalogue.
+          const terms = term.split(/\s+/).filter(Boolean).slice(0, 5)
+          const escapedTerms = terms.map((word) => word.replace(/[%_\\]/g, "\\$&"))
+          const matchesByWord = await Promise.all(escapedTerms.map(async (word) => {
+            const pattern = `%${word}%`
+            const [nameResult, categoryResult] = await Promise.all([
+              baseQuery().ilike("name", pattern),
+              baseQuery().ilike("category", pattern),
+            ])
+            if (nameResult.error) throw nameResult.error
+            if (categoryResult.error) throw categoryResult.error
+            return new Set([...(nameResult.data ?? []), ...(categoryResult.data ?? [])].map((product) => (product as SearchProduct).id))
+          }))
+          const { data: candidateRows, error: candidateError } = await supabase
+            .from("products")
+            .select("id,name,slug,category,image_url,images")
+            .eq("is_active", true)
+            .order("created_at", { ascending: false })
+            .limit(100)
+          if (candidateError) throw candidateError
+          const candidateProducts = (candidateRows ?? []) as SearchProduct[]
+          found = candidateProducts.filter((product) => matchesByWord.every((ids) => ids.has(product.id))).slice(0, 5)
         } else {
           const { data, error } = await baseQuery()
           if (error) throw error
