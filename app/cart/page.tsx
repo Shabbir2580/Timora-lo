@@ -239,6 +239,36 @@ export default function CartPage() {
           <aside className="h-fit rounded-2xl border border-border bg-card p-5 sm:p-6 lg:sticky lg:top-24">
             <h2 className="text-lg font-bold">Order summary</h2>
 
+            <section aria-label="Free shipping progress" className="mt-4 rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/[0.045] p-3.5">
+              {subtotal >= freeShippingThreshold ? (
+                <p className="flex items-center gap-2 text-sm font-semibold text-[#dfc797]">
+                  <ShieldCheck className="size-4 shrink-0" aria-hidden="true" />
+                  You’ve unlocked free shipping!
+                </p>
+              ) : (
+                <p className="text-sm leading-5 text-muted-foreground">
+                  Add <span className="font-semibold text-foreground">{formatINR(amountToFreeShipping)}</span> more to unlock free shipping.
+                </p>
+              )}
+              <div
+                className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"
+                role="progressbar"
+                aria-label="Free shipping threshold progress"
+                aria-valuemin={0}
+                aria-valuemax={freeShippingThreshold}
+                aria-valuenow={Math.min(subtotal, freeShippingThreshold)}
+              >
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#a78328] via-[#d4af37] to-[#f5d76e] transition-[width] duration-500 ease-out"
+                  style={{ width: `${shippingProgress}%` }}
+                />
+              </div>
+              <div className="mt-1.5 flex justify-between text-[10px] text-muted-foreground">
+                <span>{formatINR(Math.min(subtotal, freeShippingThreshold))} reached</span>
+                <span>{formatINR(freeShippingThreshold)} threshold</span>
+              </div>
+            </section>
+
             <div className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">
