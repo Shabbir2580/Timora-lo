@@ -290,7 +290,7 @@ set search_path = ''
 as $setref$
 begin
   if auth.uid() is null then raise exception 'authentication required'; end if;
-  if p_razorpay_order_id is null or p_razorpay_order_id !~ '^order_[A-Za-z0-9]+ then raise exception 'invalid Razorpay order ID'; end if;
+  if p_razorpay_order_id is null or left(p_razorpay_order_id, 6) <> 'order_' or length(p_razorpay_order_id) < 10 then raise exception 'invalid Razorpay order ID'; end if;
   update public.orders
     set payment_reference = p_razorpay_order_id, updated_at = now()
     where id = p_order_id and customer_id = auth.uid()
@@ -317,7 +317,7 @@ set search_path = ''
 as $verify$
 begin
   if auth.uid() is null then raise exception 'authentication required'; end if;
-  if coalesce(p_payment_id, '') !~ '^pay_[A-Za-z0-9]+ then raise exception 'invalid Razorpay payment ID'; end if;
+  if coalesce(p_payment_id, '') not like 'pay_%' or length(p_payment_id) < 8 then raise exception 'invalid Razorpay payment ID'; end if;
   update public.orders
     set payment_status = 'paid',
         order_status = 'confirmed',
