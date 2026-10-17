@@ -87,9 +87,9 @@ with checkout_function as (
 )
 select
   coalesce(proconfig @> array['search_path=""'], false) as empty_search_path,
-  definition ~* 'v_shipping\\s*:=\\s*case\\s+when\\s+v_subtotal\\s*>=\\s*99900\\s+then\\s+0\\s+else\\s+8000' as correct_shipping_threshold,
-  definition ~* 'from\\s+public\\.coupons\\s+c\\s+where\\s+c\\.code\\s*=\\s*v_coupon_code\\s+for\\s+update' as coupon_row_locked,
-  definition ~* 'usage_count\\s*=\\s*usage_count\\s*\\+\\s*1' as coupon_usage_counted,
-  definition ~* 'v_coupon\\.usage_count\\s*>=\\s*v_coupon\\.usage_limit' as coupon_limit_enforced,
+  definition ~* 'v_shipping\s*:=\s*case\s+when\s+v_subtotal\s*>=\s*99900\s+then\s+0\s+else\s+8000' as correct_shipping_threshold,
+  definition ~* 'from\s+public\.coupons\s+c\s+where\s+c\.code\s*=\s*v_coupon_code\s+for\s+update' as coupon_row_locked,
+  definition ~* 'usage_count\s*=\s*usage_count\s*\+\s*1' as coupon_usage_counted,
+  definition ~* 'v_coupon\.usage_count\s*>=\s*v_coupon\.usage_limit' as coupon_limit_enforced,
   definition ~* 'v_product_active' as inactive_product_checked
 from checkout_function;
