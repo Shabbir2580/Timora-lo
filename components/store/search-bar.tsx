@@ -18,12 +18,13 @@ type SearchProduct = {
   images: string[] | null
 }
 
-const recent = ["wireless headphones", "smartwatch", "mechanical keyboard"]
+const RECENT_SEARCHES_KEY = "timora-recent-searches-v1"
 const popular = ["noise cancelling", "earbuds under 5000", "gaming laptop", "bluetooth speaker"]
 
 export function SearchBar({ className, initialQuery = "", luxury = false }: { className?: string; initialQuery?: string; luxury?: boolean }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState(initialQuery)
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [matches, setMatches] = useState<SearchProduct[]>([])
   const [loading, setLoading] = useState(false)
   const [searchError, setSearchError] = useState(false)
@@ -34,6 +35,19 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
   useEffect(() => {
     setQuery(initialQuery)
   }, [initialQuery])
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(RECENT_SEARCHES_KEY)
+      if (!stored) return
+      const parsed: unknown = JSON.parse(stored)
+      if (Array.isArray(parsed)) {
+        setRecentSearches(parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0).slice(0, 5))
+      }
+    } catch {
+      // Search still works when browser storage is unavailable or blocked.
+    }
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -115,9 +129,17 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
   }, [open, query])
 
   function submit(term: string) {
-    if (!term.trim()) return
+    const normalized = term.trim().replace(/\s+/g, " ").slice(0, 120)
+    if (!normalized) return
+    const nextRecent = [normalized, ...recentSearches.filter((item) => item.toLowerCase() !== normalized.toLowerCase())].slice(0, 5)
+    setRecentSearches(nextRecent)
+    try {
+      window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(nextRecent))
+    } catch {
+      // A blocked storage write should never prevent a customer from searching.
+    }
     setOpen(false)
-    router.push(`/products?q=${encodeURIComponent(term.trim())}`)
+    router.push(`/products?q=${encodeURIComponent(normalized)}`)
   }
 
   return (
@@ -175,7 +197,7 @@ export function SearchBar({ className, initialQuery = "", luxury = false }: { cl
                   <Clock className="size-3.5" aria-hidden /> Recent searches
                 </p>
                 <ul className="space-y-1">
-                  {recent.map((term) => (
+                  {(recentSearches.length ? recentSearches : ["watches", "headphones", "attar"]).map((term) => (
                     <li key={term}>
                       <button
                         type="button"
