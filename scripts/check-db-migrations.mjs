@@ -25,6 +25,12 @@ const adminReturns = read("app/admin/returns/page.tsx");
 
 assert.match(adminDeleteAccess, /revoke execute on function public\.admin_delete_order\(uuid\) from public, anon/i, "Admin-only order deletion must revoke PUBLIC and anonymous execution.");
 assert.match(checkout, /set search_path\s*=\s*''/i, "Checkout SECURITY DEFINER RPC must use an empty search_path.");
+assert.match(checkout, /if not coalesce\(v_product_active, false\)/i, "Checkout must reject inactive products.");
+assert.match(checkout, /v_coupon\.is_active/i, "Checkout must reject inactive coupons.");
+assert.match(checkout, /v_coupon\.starts_at[\s\S]*?v_coupon\.expires_at/i, "Checkout must enforce coupon start and expiry dates.");
+assert.match(checkout, /v_coupon\.usage_count >= v_coupon\.usage_limit/i, "Checkout must enforce coupon usage limits.");
+assert.match(checkout, /v_coupon\.minimum_order_paise/i, "Checkout must enforce coupon minimum order values.");
+assert.match(checkout, /v_coupon\.max_discount_paise/i, "Checkout must enforce coupon maximum discounts.");
 assert.match(checkout, /v_subtotal\s*>=\s*99900/i, "Free-shipping threshold must remain ₹999.");
 assert.match(checkout, /v_shipping\s*:=\s*case\s+when\s+v_subtotal\s*>=\s*99900\s+then\s+0\s+else\s+8000/i, "Checkout must charge ₹80 below ₹999.");
 assert.match(checkout, /from public\.coupons c where c\.code = v_coupon_code for update/i, "Coupon usage-limit checks must lock the coupon row.");
