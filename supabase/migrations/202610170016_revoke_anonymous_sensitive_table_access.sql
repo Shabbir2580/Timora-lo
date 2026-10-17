@@ -22,4 +22,10 @@ revoke all privileges on table
   public.staff_roles
 from anon;
 
+-- Products and reviews remain publicly readable through RLS, but anonymous
+-- clients must never mutate inventory or submit/moderate reviews directly.
+revoke insert, update, delete, truncate, references, trigger, maintain
+  on table public.products, public.product_reviews
+  from anon;
+
 commit;
