@@ -1,8 +1,8 @@
 "use client"
 
 import Image from "next/image"
-import { useEffect, useMemo, useState } from "react"
-import { Play } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { ChevronLeft, ChevronRight, Play } from "lucide-react"
 
 type ProductGalleryProps = {
   images: string[]
@@ -33,6 +33,14 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
 
   const [activeKey, setActiveKey] = useState(galleryItems[0]?.key ?? "image:/placeholder.svg")
   const activeItem = galleryItems.find((item) => item.key === activeKey) ?? galleryItems[0]
+  const touchStartX = useRef<number | null>(null)
+  const activeIndex = Math.max(0, galleryItems.findIndex((item) => item.key === activeItem?.key))
+
+  function moveGallery(direction: -1 | 1) {
+    if (galleryItems.length < 2) return
+    const nextIndex = (activeIndex + direction + galleryItems.length) % galleryItems.length
+    setActiveKey(galleryItems[nextIndex].key)
+  }
 
   useEffect(() => {
     if (!galleryItems.some((item) => item.key === activeKey)) {
@@ -51,7 +59,26 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
 
   return (
     <section aria-label={`${productName} media gallery`} className="min-w-0">
-      <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-[#f1eee7]">
+      <div
+        className="group/gallery relative aspect-square w-full overflow-hidden rounded-2xl border border-white/10 bg-[#f1eee7] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a96e]"
+        onTouchStart={(event) => { touchStartX.current = event.touches[0]?.clientX ?? null }}
+        onTouchEnd={(event) => {
+          if (touchStartX.current === null || activeItem?.type !== "image") {
+            touchStartX.current = null
+            return
+          }
+          const endX = event.changedTouches[0]?.clientX
+          const delta = typeof endX === "number" ? endX - touchStartX.current : 0
+          if (Math.abs(delta) >= 48) moveGallery(delta < 0 ? 1 : -1)
+          touchStartX.current = null
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowRight") { event.preventDefault(); moveGallery(1) }
+          if (event.key === "ArrowLeft") { event.preventDefault(); moveGallery(-1) }
+        }}
+        tabIndex={galleryItems.length > 1 ? 0 : undefined}
+        aria-label={galleryItems.length > 1 ? "Product gallery. Swipe or use arrow keys to change media." : undefined}
+      >
         {activeItem?.type === "video" ? (
           isDrivePreview(activeItem.src) ? (
             <iframe
@@ -86,6 +113,20 @@ export function ProductGallery({ images, videos = [], productName }: ProductGall
             sizes="(max-width: 768px) 100vw, 50vw"
             className="object-contain p-8 sm:p-14"
           />
+        )}
+
+        {galleryItems.length > 1 && (
+          <>
+            <button type="button" onClick={() => moveGallery(-1)} aria-label="Previous product image" className="absolute left-3 top-1/2 z-10 grid size-10 -translate-y-1/2 place-items-center rounded-full border border-black/10 bg-white/85 text-[#17130c] shadow-md backdrop-blur transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a96e] sm:opacity-0 sm:group-hover/gallery:opacity-100">
+              <ChevronLeft className="size-5" aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => moveGallery(1)} aria-label="Next product image" className="absolute right-3 top-1/2 z-10 grid size-10 -translate-y-1/2 place-items-center rounded-full border border-black/10 bg-white/85 text-[#17130c] shadow-md backdrop-blur transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#c9a96e] sm:opacity-0 sm:group-hover/gallery:opacity-100">
+              <ChevronRight className="size-5" aria-hidden="true" />
+            </button>
+            <span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur" aria-live="polite">
+              {activeIndex + 1} / {galleryItems.length}
+            </span>
+          </>
         )}
       </div>
 
