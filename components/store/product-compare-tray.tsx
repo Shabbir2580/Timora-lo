@@ -143,10 +143,10 @@ export function ProductCompareTray({ products }: { products: Product[] }) {
                     <p className="text-lg font-bold text-[#f5d76e]">{formatINR(product.price)}</p>
                     <dl className="space-y-2 text-xs">
                       <div className="border-t border-white/10 pt-2"><dt className="text-white/45">Category</dt><dd className="mt-0.5 text-white/85">{product.category}</dd></div>
-                      <div className="border-t border-white/10 pt-2"><dt className="text-white/45">Availability</dt><dd className={product.stock === "out_of_stock" ? "mt-0.5 text-red-300" : "mt-0.5 text-emerald-300"}>{product.stock === "out_of_stock" ? "Out of stock" : product.stock === "low_stock" ? \`Low stock\${typeof product.stockCount === "number" ? \` · \${product.stockCount} left\` : ""}\` : "In stock"}</dd></div>
-                      <div className="border-t border-white/10 pt-2"><dt className="text-white/45">Listed offer</dt><dd className="mt-0.5 text-white/85">{product.badges.includes("SALE") && product.mrp > product.price ? \`\${Math.round((1 - product.price / product.mrp) * 100)}% off\` : "No offer listed"}</dd></div>
+                      <div className="border-t border-white/10 pt-2"><dt className="text-white/45">Availability</dt><dd className={product.stock === "out_of_stock" ? "mt-0.5 text-red-300" : "mt-0.5 text-emerald-300"}>{product.stock === "out_of_stock" ? "Out of stock" : product.stock === "low_stock" ? `Low stock${typeof product.stockCount === "number" ? ` · ${product.stockCount} left` : ""}` : "In stock"}</dd></div>
+                      <div className="border-t border-white/10 pt-2"><dt className="text-white/45">Listed offer</dt><dd className="mt-0.5 text-white/85">{product.badges.includes("SALE") && product.mrp > product.price ? `${Math.round((1 - product.price / product.mrp) * 100)}% off` : "No offer listed"}</dd></div>
                     </dl>
-                    <Link href={\`/product/\${product.slug}\`} className="inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-[#d4af37]/40 px-2 text-center text-xs font-semibold text-[#f5d76e] hover:bg-[#d4af37]/10">View product</Link>
+                    <Link href={`/product/${product.slug}`} className="inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-[#d4af37]/40 px-2 text-center text-xs font-semibold text-[#f5d76e] hover:bg-[#d4af37]/10">View product</Link>
                     <button type="button" onClick={() => removeItem(product.id)} className="inline-flex min-h-9 w-full items-center justify-center gap-1 text-xs text-white/50 hover:text-red-200"><X className="size-3" /> Remove</button>
                   </div>
                 </article>
