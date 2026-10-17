@@ -24,6 +24,13 @@ export default function CartPage() {
     clearCart,
   } = useCart()
 
+  // Keep the cart estimate aligned with the server checkout rule: free shipping at ₹999,
+  // otherwise ₹80. Checkout remains authoritative for the final amount.
+  const freeShippingThreshold = 999
+  const estimatedShipping = subtotal >= freeShippingThreshold ? 0 : 80
+  const amountToFreeShipping = Math.max(0, freeShippingThreshold - subtotal)
+  const shippingProgress = Math.min(100, (subtotal / freeShippingThreshold) * 100)
+
   return (
     <main className="mx-auto min-h-[60vh] max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="mb-7">
@@ -241,10 +248,34 @@ export default function CartPage() {
               </div>
 
               <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Shipping</span>
-                <span className="text-muted-foreground">
-                  Calculated later
+                <span className="text-muted-foreground">Estimated shipping</span>
+                <span className={estimatedShipping === 0 ? "font-semibold text-emerald-500" : "text-foreground"}>
+                  {estimatedShipping === 0 ? "FREE" : formatINR(estimatedShipping)}
                 </span>
+              </div>
+
+              <div className="space-y-2 rounded-xl border border-[#d4af37]/20 bg-[#d4af37]/[0.05] p-3">
+                <div className="flex items-start justify-between gap-3 text-xs leading-5">
+                  <span className="text-muted-foreground">
+                    {estimatedShipping === 0
+                      ? "You unlocked free shipping!"
+                      : `Add ${formatINR(amountToFreeShipping)} for free shipping`}
+                  </span>
+                  <span className="shrink-0 font-semibold text-[#d4af37]">₹999+</span>
+                </div>
+                <div
+                  role="progressbar"
+                  aria-label="Progress toward free shipping"
+                  aria-valuemin={0}
+                  aria-valuemax={999}
+                  aria-valuenow={Math.min(subtotal, 999)}
+                  className="h-1.5 overflow-hidden rounded-full bg-secondary"
+                >
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-[#d4af37] to-[#f5d76e] transition-[width] duration-300"
+                    style={{ width: `${shippingProgress}%` }}
+                  />
+                </div>
               </div>
 
               <div className="border-t border-border pt-4">
@@ -252,6 +283,9 @@ export default function CartPage() {
                   <span>Subtotal</span>
                   <span>{formatINR(subtotal)}</span>
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Estimated total before any coupon: {formatINR(subtotal + estimatedShipping)}. Final shipping and discounts are confirmed at checkout.
+                </p>
               </div>
             </div>
 
