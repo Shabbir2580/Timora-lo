@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { SmartImage } from "@/components/store/smart-image"
-import { ArrowLeftRight, ArrowRight, Check, Eye, Heart, ShoppingCart, Truck, X } from "lucide-react"
+import { ArrowRight, Check, Eye, Heart, ShoppingCart, Truck, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Product } from "@/lib/data"
 import { useCart } from "@/lib/cart-context"
@@ -96,15 +96,6 @@ export function ProductCard({ product }: { product: Product }) {
           <Heart className={cn("size-4", wished && "fill-sale text-sale")} aria-hidden />
         </button>
 
-        <button
-          type="button"
-          onClick={() => window.dispatchEvent(new CustomEvent("timora:compare-toggle", { detail: { id: product.id } }))}
-          aria-label={`Add ${product.name} to product comparison`}
-          className="absolute bottom-14 right-2 grid size-9 place-items-center rounded-full border border-[#d4af37]/40 bg-[#0b0b0a]/90 text-[#f5d76e] shadow-sm backdrop-blur transition hover:bg-[#d4af37] hover:text-[#17130c]"
-          title="Compare product"
-        >
-          <ArrowLeftRight className="size-4" aria-hidden />
-        </button>
         <button
           type="button"
           onClick={() => setQuickViewOpen(true)}
