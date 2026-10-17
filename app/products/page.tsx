@@ -7,6 +7,7 @@ import {
   type StockState,
 } from "@/lib/data"
 import { ProductCard } from "@/components/store/product-card"
+import { ProductCompareTray } from "@/components/store/product-compare-tray"
 import { SearchBar } from "@/components/store/search-bar"
 import { AdPlacement } from "@/components/store/ad-placement"
 import { createClient } from "@/lib/supabase/server"
@@ -317,6 +318,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           </div>
           <p className="text-xs text-muted-foreground">Prices shown in INR</p>
         </div>
+
+        <ProductCompareTray products={sortedProducts} />
 
         {sortedProducts.length > 0 ? (
           <section aria-label="Products" className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5">
