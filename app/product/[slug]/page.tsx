@@ -12,6 +12,7 @@ import { RecentlyViewedProducts } from "@/components/store/recently-viewed-produ
 import { ProductCompareToggle } from "@/components/store/product-compare-toggle"
 import { PriceStockAlertButton } from "@/components/store/price-stock-alert-button"
 import { PincodeDeliveryChecker } from "@/components/store/pincode-delivery-checker"
+import { ProductShareButton } from "@/components/store/product-share-button"
 
 export const dynamic = "force-dynamic"
 
@@ -320,6 +321,7 @@ export default async function ProductDetailPage({
             </p>
 
             <ProductActions product={product} />
+            <ProductShareButton name={product.name} url={`/product/${product.slug}`} />
             <ProductCompareToggle item={{
               id: product.id,
               slug: product.slug,
