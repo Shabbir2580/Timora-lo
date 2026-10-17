@@ -4,7 +4,9 @@
 
 begin;
 
-create or replace function public.cancel_my_pending_order(p_order_id uuid)
+drop function if exists public.cancel_my_pending_order(uuid);
+
+create function public.cancel_my_pending_order(p_order_id uuid)
 returns jsonb
 language plpgsql
 security definer
