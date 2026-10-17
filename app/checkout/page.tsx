@@ -1581,8 +1581,13 @@ export default function CheckoutPage() {
 
                 <p className="mt-2 text-center text-xs text-muted-foreground">
                   After payment, send your order details to arrange
-                  confirmation.
+                  confirmation. This QR payment is not automatically verified.
                 </p>
+                {orderId && (
+                  <Link href="/orders" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-[#d4af37]/40 px-4 text-sm font-semibold hover:bg-[#d4af37]/[0.08]">
+                    <Package className="size-4" aria-hidden="true" /> View my orders
+                  </Link>
+                )}
               </section>
             )}
 
@@ -1651,6 +1656,11 @@ export default function CheckoutPage() {
                   confirmation. Timora must confirm product availability,
                   shipping charges, and payment instructions.
                 </p>
+                {orderId && (
+                  <Link href="/orders" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold hover:border-[#d4af37]/50">
+                    <Package className="size-4" aria-hidden="true" /> View my orders
+                  </Link>
+                )}
               </section>
             )}
           </aside>
