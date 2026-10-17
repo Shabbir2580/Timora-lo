@@ -3,7 +3,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Heart,
   ShoppingCart,
@@ -16,6 +16,15 @@ import { useCart } from "@/lib/cart-context"
 import { SearchBar } from "./search-bar"
 import { AccountMenu } from "./account-menu"
 
+const announcementMessages = [
+  "A little luxury, thoughtfully chosen for every day.",
+  "Find your signature piece with Timora.",
+  "Explore watches, fragrance, audio and more.",
+  "Your next favourite might be just one click away.",
+  "Timeless details. Modern essentials. The Timora edit.",
+  "Discover something that feels unmistakably you.",
+]
+
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/products", label: "Shop All" },
@@ -26,12 +35,19 @@ const navLinks = [
 export function Navbar() {
   const { count, wishlist } = useCart()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [announcementIndex, setAnnouncementIndex] = useState(0)
+
+  useEffect(() => {
+    setAnnouncementIndex(Math.floor(Math.random() * announcementMessages.length))
+  }, [])
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#c9a96e]/20 bg-[#0b0b0a]/95 text-[#f5f1e8] shadow-lg shadow-black/10 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-[#d4af37]/20 bg-[#0b0b0a]/95 text-[#f5f1e8] shadow-lg shadow-black/10 backdrop-blur-xl">
       {/* Announcement strip */}
-      <div className="border-b border-[#c9a96e]/15 bg-[#11110f] px-3 py-2 text-center text-[9px] font-medium uppercase tracking-[0.17em] text-[#d8bc88] sm:text-[10px]">
-        Discover your next favourite · Welcome to Timora
+      <div className="border-b border-[#d4af37]/20 bg-[#11110f] px-3 py-2 text-center text-[9px] font-medium uppercase tracking-[0.12em] text-[#f5d76e] sm:text-[10px] sm:tracking-[0.17em]">
+        <span key={announcementIndex} className="inline-block animate-in fade-in duration-300">
+          {announcementMessages[announcementIndex]}
+        </span>
       </div>
 
       {/* Desktop navigation */}
@@ -53,7 +69,7 @@ export function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-full px-3 py-2.5 text-xs font-medium text-white/65 transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797] xl:px-4"
+              className="rounded-full px-3 py-2.5 text-xs font-medium text-white/65 transition hover:bg-[#d4af37]/10 hover:text-[#f5d76e] xl:px-4"
             >
               {link.label}
             </Link>
@@ -67,7 +83,7 @@ export function Navbar() {
         <div className="flex shrink-0 items-center gap-1">
           <Link
             href="/orders"
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c9a96e]/30 px-3 text-sm font-medium text-white/80 transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#d4af37]/30 px-3 text-sm font-medium text-white/80 transition hover:bg-[#d4af37]/10 hover:text-[#f5d76e]"
           >
             <Package className="size-[18px]" aria-hidden="true" />
             <span>My Orders</span>
@@ -75,12 +91,12 @@ export function Navbar() {
           <Link
             href="/wishlist"
             aria-label={`Wishlist${wishlist.length ? `, ${wishlist.length} items` : ""}`}
-            className="relative inline-flex min-h-10 items-center gap-2 rounded-full border border-transparent px-3 text-sm text-white/75 transition hover:border-[#c9a96e]/30 hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
+            className="relative inline-flex min-h-10 items-center gap-2 rounded-full border border-transparent px-3 text-sm text-white/75 transition hover:border-[#d4af37]/30 hover:bg-[#d4af37]/10 hover:text-[#f5d76e]"
           >
             <span className="relative">
               <Heart className="size-[18px]" aria-hidden="true" />
               {wishlist.length > 0 && (
-                <span className="absolute -right-2 -top-2 grid size-4 place-items-center rounded-full bg-[#c9a96e] text-[9px] font-bold text-[#17130c]">
+                <span className="absolute -right-2 -top-2 grid size-4 place-items-center rounded-full bg-[#d4af37] text-[9px] font-bold text-[#17130c]">
                   {wishlist.length > 9 ? "9+" : wishlist.length}
                 </span>
               )}
@@ -91,7 +107,7 @@ export function Navbar() {
           <Link
             href="/cart"
             aria-label={`Shopping cart${count ? `, ${count} items` : ""}`}
-            className="relative inline-flex min-h-10 items-center gap-2 rounded-full bg-[#c9a96e] px-3 text-sm font-medium text-[#17130c] transition hover:bg-[#dfc797]"
+            className="relative inline-flex min-h-10 items-center gap-2 rounded-full bg-[#d4af37] px-3 text-sm font-medium text-[#17130c] transition hover:bg-[#f5d76e]"
           >
             <span className="relative">
               <ShoppingCart className="size-[18px]" aria-hidden="true" />
@@ -118,7 +134,7 @@ export function Navbar() {
             aria-label={mobileMenuOpen ? "Close navigation" : "Open navigation"}
             aria-expanded={mobileMenuOpen}
             onClick={() => setMobileMenuOpen((open) => !open)}
-            className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 text-white/80 transition hover:border-[#c9a96e]/50 hover:text-[#dfc797]"
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 text-white/80 transition hover:border-[#d4af37]/50 hover:text-[#f5d76e]"
           >
             {mobileMenuOpen ? (
               <X className="size-5" />
@@ -141,18 +157,18 @@ export function Navbar() {
               href="/orders"
               aria-label="My Orders"
               title="My Orders"
-              className="grid size-10 place-items-center rounded-full border border-[#c9a96e]/30 text-white/80 transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
+              className="grid size-10 place-items-center rounded-full border border-[#d4af37]/30 text-white/80 transition hover:bg-[#d4af37]/10 hover:text-[#f5d76e]"
             >
               <Package className="size-[19px]" aria-hidden="true" />
             </Link>
             <Link
               href="/wishlist"
               aria-label={`Wishlist${wishlist.length ? `, ${wishlist.length} items` : ""}`}
-              className="relative grid size-10 place-items-center rounded-full text-white/80 transition hover:bg-[#c9a96e]/10 hover:text-[#dfc797]"
+              className="relative grid size-10 place-items-center rounded-full text-white/80 transition hover:bg-[#d4af37]/10 hover:text-[#f5d76e]"
             >
               <Heart className="size-[19px]" aria-hidden="true" />
               {wishlist.length > 0 && (
-                <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-[#c9a96e] text-[9px] font-bold text-[#17130c]">
+                <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-[#d4af37] text-[9px] font-bold text-[#17130c]">
                   {wishlist.length > 9 ? "9+" : wishlist.length}
                 </span>
               )}
@@ -161,7 +177,7 @@ export function Navbar() {
             <Link
               href="/cart"
               aria-label={`Shopping cart${count ? `, ${count} items` : ""}`}
-              className="relative grid size-10 place-items-center rounded-full bg-[#c9a96e] text-[#17130c] transition hover:bg-[#dfc797]"
+              className="relative grid size-10 place-items-center rounded-full bg-[#d4af37] text-[#17130c] transition hover:bg-[#f5d76e]"
             >
               <ShoppingCart className="size-[19px]" aria-hidden="true" />
               {count > 0 && (
@@ -182,7 +198,7 @@ export function Navbar() {
         {mobileMenuOpen && (
           <nav
             aria-label="Mobile navigation"
-            className="border-t border-[#c9a96e]/20 bg-[#10100e] px-4 py-3 sm:px-5"
+            className="border-t border-[#d4af37]/20 bg-[#10100e] px-4 py-3 sm:px-5"
           >
             <div className="flex flex-col">
               {navLinks.map((link) => (
@@ -190,10 +206,10 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex min-h-12 items-center justify-between border-b border-white/[0.07] px-2 text-sm text-white/75 transition hover:text-[#dfc797]"
+                  className="flex min-h-12 items-center justify-between border-b border-white/[0.07] px-2 text-sm text-white/75 transition hover:text-[#f5d76e]"
                 >
                   {link.label}
-                  <ChevronDown className="size-4 -rotate-90 text-[#c9a96e]/70" />
+                  <ChevronDown className="size-4 -rotate-90 text-[#d4af37]/70" />
                 </Link>
               ))}
               
