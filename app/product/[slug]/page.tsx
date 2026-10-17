@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, ShieldCheck, Truck } from "lucide-react"
+import { ArrowLeft, ExternalLink, Search, ShieldCheck, Truck } from "lucide-react"
+import type { Metadata } from "next"
 import type { Product, ProductBadge, StockState } from "@/lib/data"
 import { createClient } from "@/lib/supabase/server"
 import { ProductActions } from "./product-actions"
@@ -13,6 +14,46 @@ import { PriceStockAlertButton } from "@/components/store/price-stock-alert-butt
 import { PincodeDeliveryChecker } from "@/components/store/pincode-delivery-checker"
 
 export const dynamic = "force-dynamic"
+
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://timora-by-sk.vercel.app").replace(/\/$/, "")
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("products")
+    .select("name,slug,description,price,compare_at_price,image_url,images,category,is_active")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle()
+
+  if (!data) return { title: "Product not found | Timora", robots: { index: false, follow: false } }
+
+  const title = `${data.name} | Buy Online at Timora`
+  const description = (data.description || `Explore ${data.name} at Timora. Check product details, availability and delivery information.`).slice(0, 160)
+  const image = data.image_url || data.images?.[0]
+  const url = `${siteUrl}/product/${data.slug}`
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      url,
+      siteName: "Timora",
+      ...(image ? { images: [{ url: image, alt: data.name }] } : {}),
+    },
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(image ? { images: [image] } : {}),
+    },
+  }
+}
 
 type DatabaseProduct = {
   id: string
@@ -155,6 +196,31 @@ export default async function ProductDetailPage({
 
   return (
     <main className="min-h-screen bg-[#0b0b0a] text-[#f5f1e8]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            description: product.description,
+            sku: product.id,
+            category: product.category,
+            image: product.images.map((image) => image.startsWith("http") ? image : `${siteUrl}${image}`),
+            brand: { "@type": "Brand", name: "Timora" },
+            url: `${siteUrl}/product/${product.slug}`,
+            offers: {
+              "@type": "Offer",
+              url: `${siteUrl}/product/${product.slug}`,
+              priceCurrency: "INR",
+              price: product.price.toFixed(2),
+              availability: product.stock === "out_of_stock" ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+              itemCondition: "https://schema.org/NewCondition",
+              seller: { "@type": "Organization", name: "Timora" },
+            },
+          }).replace(/</g, "\\u003c"),
+        }}
+      />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <Link
           href="/products"
@@ -179,6 +245,29 @@ export default async function ProductDetailPage({
             <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
               {product.name}
             </h1>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href={`https://www.google.com/search?q=${encodeURIComponent(`${product.name} ${product.category} Timora`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#c9a96e]/40 px-3.5 text-xs text-[#dfc797] transition hover:border-[#c9a96e] hover:bg-[#c9a96e]/10"
+                aria-label={`Search Google for ${product.name}`}
+              >
+                <Search size={14} /> Search Google
+                <ExternalLink size={12} />
+              </a>
+              <a
+                href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(`${product.name} ${product.category}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-10 items-center gap-2 rounded-full border border-white/10 px-3.5 text-xs text-white/65 transition hover:border-white/25 hover:text-white"
+                aria-label={`Compare ${product.name} on Google Shopping`}
+              >
+                Compare on Google Shopping
+                <ExternalLink size={12} />
+              </a>
+            </div>
 
             <p className="mt-5 text-3xl font-semibold">
               {new Intl.NumberFormat("en-IN", {
