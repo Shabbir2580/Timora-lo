@@ -7,11 +7,11 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/products", "/product/", "/category/", "/contact", "/shippings", "/shipping", "/returns", "/privacy", "/terms"],
-        disallow: ["/admin", "/api/", "/checkout", "/orders", "/login", "/register", "/forgot-password", "/reset-password", "/auth/"],
+        // Prevent crawling and indexing across the site while it is private.
+        disallow: ["/"],
       },
     ],
-    sitemap: `${siteUrl.replace(/\/$/, "")}/sitemap.xml`,
+    sitemap: undefined,
     host: siteUrl,
   }
 }
