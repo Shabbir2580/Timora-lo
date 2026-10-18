@@ -117,7 +117,7 @@ const dashboard = read("app/admin/page.tsx");
 assert.match(adminOrders, /review_cod_order/i, "COD order review must use the guarded database RPC.");
 assert.match(adminOrders, /verify_order_payment/i, "Manual payment verification must use the guarded database RPC.");
 assert.match(adminOrders, /update_order_delivery/i, "Delivery updates must use the guarded database RPC.");
-assert.match(adminOrders, /order\.order_status !== "cancelled" \|\| order\.payment_status === "paid" \|\| order\.payment_provider === "razorpay"/i, "Order deletion must protect active, paid, and Razorpay orders.");
+assert.match(adminOrders, /if \(!deletablePending && !deletableCancelled\)/i, "Order deletion must protect paid, active fulfilment, and Razorpay orders.");
 assert.match(adminOrders, /Only an administrator can permanently delete orders/i, "Permanent order deletion must remain admin-only.");
 assert.match(adminOrders, /"cancelled"/i, "Order management must expose a cancelled-orders filter so eligible cancelled orders remain reachable.");
 assert.match(adminOrders, /order\.order_status === "pending_payment" && order\.payment_status === "pending" && order\.payment_provider !== "razorpay"/i, "Admins must see the delete action for eligible unpaid pending non-Razorpay orders.");
