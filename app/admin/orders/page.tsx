@@ -65,7 +65,7 @@ export default function AdminOrdersPage() {
   const [workingId, setWorkingId] = useState<string | null>(null)
   const [rejectingOrder, setRejectingOrder] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState("")
-  const [filter, setFilter] = useState<"awaiting" | "all" | "cod" | "payment">("all")
+  const [filter, setFilter] = useState<"awaiting" | "all" | "cod" | "payment" | "cancelled">("all")
   const [search, setSearch] = useState("")
   const [trackingNumber, setTrackingNumber] = useState("")
   const [courierName, setCourierName] = useState("")
@@ -251,8 +251,10 @@ export default function AdminOrdersPage() {
   }
 
   async function deleteOrder(order: CodOrder) {
-    if (order.order_status !== "cancelled" || order.payment_status === "paid" || order.payment_provider === "razorpay") {
-      setError("Only cancelled, unpaid orders that were not paid through Razorpay can be deleted. Active orders must remain in order history.");
+    const deletablePending = order.order_status === "pending_payment" && order.payment_status === "pending" && order.payment_provider !== "razorpay"
+    const deletableCancelled = order.order_status === "cancelled" && order.payment_status !== "paid" && order.payment_provider !== "razorpay"
+    if (!deletablePending && !deletableCancelled) {
+      setError("Only unpaid pending or cancelled orders that were not paid through Razorpay can be deleted. Paid orders and active fulfilment orders must remain in order history.");
       return;
     }
 
@@ -262,7 +264,7 @@ export default function AdminOrdersPage() {
     }
 
     const confirmed = window.confirm(
-      `Permanently delete order #${order.id.slice(0, 8).toUpperCase()} for ${order.customer_name} (${money(order.total_paise)})? This removes the order and its items and cannot be undone. Paid order records should normally be retained for accounting.`
+      `Permanently delete order #${order.id.slice(0, 8).toUpperCase()} for ${order.customer_name} (${money(order.total_paise)})? This cannot be undone. If it is still pending, the database will restore its reserved stock and coupon usage before removing it. Paid order records must be retained for accounting.`
     )
     if (!confirmed) return
 
@@ -345,11 +347,12 @@ export default function AdminOrdersPage() {
   }).length
 
   const query = search.trim().toLowerCase()
-  const visibleOrders = orders.filter((order) => order.order_status !== "cancelled").filter((order) => {
+  const visibleOrders = orders.filter((order) => {
     const matchesFilter = filter === "all"
       || (filter === "awaiting" && order.order_status === "pending_payment" && order.payment_status === "pending")
       || (filter === "cod" && order.payment_provider === "cod")
       || (filter === "payment" && order.payment_status !== "paid" && order.order_status !== "cancelled")
+      || (filter === "cancelled" && order.order_status === "cancelled")
     const matchesSearch = !query || [order.id, order.customer_name, order.customer_email, order.customer_phone, order.pincode, order.tracking_number ?? ""].join(" ").toLowerCase().includes(query)
     return matchesFilter && matchesSearch
   })
@@ -455,7 +458,7 @@ export default function AdminOrdersPage() {
             return <article key={order.id} className="overflow-hidden rounded-2xl border border-white/10 bg-[#11110f]">
               <div className="flex flex-col gap-3 border-b border-white/[0.08] p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                 <div><div className="flex flex-wrap items-center gap-2"><h2 className="font-semibold">Order #{order.id.slice(0, 8).toUpperCase()}</h2><span className={`rounded-full px-2.5 py-1 text-[10px] ${awaiting ? "bg-amber-300/10 text-amber-200" : order.order_status === "cancelled" ? "bg-red-400/10 text-red-300" : "bg-emerald-400/10 text-emerald-300"}`}>{awaiting ? "Awaiting approval" : order.order_status.replaceAll("_", " ")}</span><span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/55">{(order.payment_provider || "unknown").replaceAll("_", " ")}</span><span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/55">Payment: {order.payment_status}</span></div><p className="mt-2 text-xs text-white/40">Placed {new Date(order.created_at).toLocaleString("en-IN")}</p></div>
-                <div className="flex flex-col items-start gap-3 sm:items-end"><div className="text-left sm:text-right"><p className="text-xl font-semibold text-[#e4c878]">{money(order.total_paise)}</p><p className="mt-1 text-xs text-white/45">Subtotal {money(order.subtotal_paise)} · Discount {money(order.discount_paise || 0)} · Shipping {money(order.shipping_paise)}{order.coupon_code ? ` · ${order.coupon_code}` : ""}</p></div><div className="flex flex-wrap items-center gap-2"><InvoiceButton order={order} admin />{role === "admin" && order.order_status === "cancelled" && order.payment_status !== "paid" && order.payment_provider !== "razorpay" && <button type="button" onClick={() => void deleteOrder(order)} disabled={workingId === order.id} aria-label={`Delete order ${order.id.slice(0, 8)}`} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-red-400/30 px-3 text-xs text-red-200 hover:bg-red-400/10 disabled:opacity-50"><Trash2 className="size-4"/>{workingId === order.id ? "Deleting..." : "Delete order"}</button>}</div></div>
+                <div className="flex flex-col items-start gap-3 sm:items-end"><div className="text-left sm:text-right"><p className="text-xl font-semibold text-[#e4c878]">{money(order.total_paise)}</p><p className="mt-1 text-xs text-white/45">Subtotal {money(order.subtotal_paise)} · Discount {money(order.discount_paise || 0)} · Shipping {money(order.shipping_paise)}{order.coupon_code ? ` · ${order.coupon_code}` : ""}</p></div><div className="flex flex-wrap items-center gap-2"><InvoiceButton order={order} admin />{role === "admin" && ((order.order_status === "cancelled" && order.payment_status !== "paid" && order.payment_provider !== "razorpay") || (order.order_status === "pending_payment" && order.payment_status === "pending" && order.payment_provider !== "razorpay")) && <button type="button" onClick={() => void deleteOrder(order)} disabled={workingId === order.id} aria-label={`Delete order ${order.id.slice(0, 8)}`} title="Delete unpaid pending or cancelled test orders" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-red-400/30 px-3 text-xs text-red-200 hover:bg-red-400/10 disabled:opacity-50"><Trash2 className="size-4"/>{workingId === order.id ? "Deleting..." : "Delete order"}</button>}</div></div>
               </div>
               <div className="grid gap-5 p-4 sm:grid-cols-2 sm:p-5">
                 <div><h3 className="text-xs font-semibold uppercase tracking-wider text-[#d4af37]">Customer & delivery</h3><p className="mt-3 text-sm font-medium">{order.customer_name}</p><p className="mt-1 break-all text-xs text-white/60">{order.customer_email}</p><p className="mt-1 text-xs text-white/60">{order.customer_phone}</p><p className="mt-3 text-sm leading-6 text-white/75">{order.address}{order.landmark ? `, ${order.landmark}` : ""}<br />{order.city}, {order.state} — {order.pincode}</p>{order.delivery_note && <p className="mt-2 text-xs text-white/45">Note: {order.delivery_note}</p>}</div>
