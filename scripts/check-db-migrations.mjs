@@ -98,4 +98,12 @@ assert.match(campaignDelete, /delete from public\.ad_events[\s\S]*?delete from p
 assert.match(campaignDelete, /revoke all on function public\.delete_ad_campaign\(uuid\) from public, anon/i, "Campaign deletion RPC must not be executable by anonymous callers.");
 assert.match(advertisingAdmin, /rpc\("delete_ad_campaign"/i, "Advertising UI must call the secure campaign deletion RPC.");
 
+
+const productsAdmin = read("app/admin/products/page.tsx");
+assert.match(productsAdmin, /if \(role !== "admin"\)[\s\S]*?Only an administrator can permanently delete products/i, "Only admins may permanently delete products.");
+assert.match(productsAdmin, /from\("order_items"\)[\s\S]*?eq\("product_id", product\.id\)/i, "Product deletion must check order history before removing a product.");
+assert.match(productsAdmin, /if \(linkedItems\?\.length\)[\s\S]*?is_active: false[\s\S]*?from\("products"\)[\s\S]*?\.delete\(\)/i, "Products with order history must be archived instead of deleted.");
+assert.match(productsAdmin, /Each product can have up to 2 videos/i, "Product video upload must enforce the two-video limit.");
+assert.match(productsAdmin, /The video must be 100 MB or smaller/i, "Product video upload must enforce the file-size limit.");
+
 console.log("Timora database migration contract checks passed.");
