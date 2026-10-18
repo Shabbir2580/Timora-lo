@@ -21,6 +21,8 @@ const returnGuards = read("supabase/migrations/202610170006_return_lifecycle_gua
 assert.match(returnGuards, /security definer\s+set search_path\s*=\s*''/i, "Return lifecycle SECURITY DEFINER trigger must use an empty search_path.");
 const checkoutPage = read("app/checkout/page.tsx");
 const orderApi = read("app/api/orders/route.ts");
+const razorpayVerify = read("app/api/razorpay/verify/route.ts");
+const razorpayWebhook = read("app/api/razorpay/webhook/route.ts");
 const proxy = read("proxy.ts");
 const adminReturns = read("app/admin/returns/page.tsx");
 
@@ -119,5 +121,15 @@ assert.match(adminOrders, /Only an administrator can permanently delete orders/i
 assert.match(dashboard, /\.eq\("payment_status", "paid"\)/i, "Revenue metrics must be based on paid orders only.");
 assert.match(dashboard, /row\.payment_provider === "cod" \? row\.cod_collected_at : row\.payment_verified_at/i, "Revenue must use actual COD collection or payment verification timestamps.");
 assert.match(dashboard, /\.neq\("order_status", "cancelled"\)/i, "Active-order dashboard counts must exclude cancelled orders.");
+
+assert.match(razorpayVerify, /timingSafeEqual\(expectedBuffer, receivedBuffer\)/i, "Browser payment verification must compare the Razorpay signature in constant time.");
+assert.match(razorpayVerify, /payment\.status !== "captured"/i, "Browser verification must not confirm an uncaptured payment.");
+assert.match(razorpayVerify, /payment\.amount !== Number\(order\.total_paise\)/i, "Browser verification must compare the gateway amount with the stored order total.");
+assert.match(razorpayVerify, /rpc\("verify_razorpay_order_payment"/i, "Browser verification must finalize payments through the guarded database RPC.");
+assert.match(razorpayWebhook, /x-razorpay-signature/i, "Webhook must require Razorpay's signature header.");
+assert.match(razorpayWebhook, /createHmac\("sha256", secret\)\.update\(rawBody\)/i, "Webhook must verify the signature against the raw request body.");
+assert.match(razorpayWebhook, /Number\(order\.total_paise\) !== payment\.amount/i, "Webhook must reject payment amount mismatches.");
+assert.match(razorpayWebhook, /rpc\("verify_razorpay_order_payment"/i, "Webhook must use the same guarded payment finalization RPC.");
+assert.match(razorpayWebhook, /finalizeError[\s\S]*?status: 500/i, "Webhook must request a retry if payment finalization fails.");
 
 console.log("Timora database migration contract checks passed.");
