@@ -471,7 +471,7 @@ export default function AdminAdvertisingPage() {
       return
     }
     const confirmed = window.confirm(
-      `Permanently delete "${campaign.campaign_name}"? This cannot be undone. Campaigns with analytics history must be archived instead.`,
+      `Permanently delete "${campaign.campaign_name}" and its campaign analytics? This cannot be undone.`,
     )
     if (!confirmed) return
     setBusyCampaign(campaign.id)
@@ -479,24 +479,16 @@ export default function AdminAdvertisingPage() {
     setNotice("")
     try {
       const supabase = createClient()
-      const { data, error: deleteError } = await supabase
-        .from("ad_campaigns")
-        .delete()
-        .eq("id", campaign.id)
-        .select("id")
-        .maybeSingle()
-      if (deleteError) {
-        if (deleteError.code === "23503") {
-          throw new Error("This campaign has analytics history, so it cannot be permanently deleted. Use Archive to keep its reporting history and remove it from active work.")
-        }
-        throw deleteError
-      }
-      if (!data) throw new Error("No campaign was deleted. Check your staff permissions or refresh the campaign list.")
+      const { error: deleteError } = await supabase.rpc("delete_ad_campaign", {
+        p_campaign_id: campaign.id,
+      })
+      if (deleteError) throw deleteError
       setCampaigns((current) => current.filter((item) => item.id !== campaign.id))
       if (editingCampaignId === campaign.id) setEditingCampaignId(null)
-      setNotice("Campaign permanently deleted.")
+      setNotice("Campaign and its analytics permanently deleted.")
     } catch (err) {
-      setError(`Could not delete campaign. ${friendlyError(err)}`)
+      const detail = friendlyError(err)
+      setError(`Could not delete campaign. ${detail}`)
     } finally {
       setBusyCampaign(null)
     }
