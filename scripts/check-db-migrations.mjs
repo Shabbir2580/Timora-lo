@@ -101,6 +101,12 @@ assert.match(campaignDelete, /v_status in \('live', 'scheduled', 'approved'\)/i,
 assert.match(campaignDelete, /delete from public\.ad_events[\s\S]*?delete from public\.ad_campaigns/i, "Campaign deletion must handle linked analytics before deleting the campaign.");
 assert.match(campaignDelete, /revoke all on function public\.delete_ad_campaign\(uuid\) from public, anon/i, "Campaign deletion RPC must not be executable by anonymous callers.");
 assert.match(advertisingAdmin, /rpc\("delete_ad_campaign"/i, "Advertising UI must call the secure campaign deletion RPC.");
+assert.match(advertisingAdmin, /normalizeDatabaseDestination\(destinationUrl\)/i, "Campaign destinations must be normalized to the database-supported format before saving.");
+assert.match(advertisingAdmin, /databaseValidDestination\(normalizedDestination\)/i, "Campaign destination validation must match the database constraint.");
+assert.match(advertisingAdmin, /Could not save campaign draft\.\s*\$\{detail\}/i, "Campaign draft save failures must expose actionable Supabase error details.");
+assert.match(advertisingAdmin, /\.from\("ad_campaigns"\)[\s\S]*?\.insert\(\{\s*\.\.\.campaignPayload,\s*status: "draft",\s*created_by: userId\s*\}\)[\s\S]*?\.select\("id"\)[\s\S]*?\.single\(\)/i, "New campaign drafts must be inserted with an explicit draft status and confirmed by the database.");
+assert.match(advertisingAdmin, /\.from\("ad_campaigns"\)[\s\S]*?\.update\(campaignPayload\)[\s\S]*?\.eq\("id", editingCampaignId\)[\s\S]*?\.select\("id"\)[\s\S]*?\.maybeSingle\(\)/i, "Editing a campaign must confirm that a matching row was updated.");
+
 
 
 const productsAdmin = read("app/admin/products/page.tsx");
