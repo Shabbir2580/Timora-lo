@@ -122,6 +122,16 @@ const safeExternalUrl = (value: string) => {
     return false
   }
 }
+const normalizeDatabaseDestination = (value: string) => {
+  const trimmed = value.trim()
+  if (/^https:\/\//i.test(trimmed)) return trimmed
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return trimmed
+  // The live PostgreSQL CHECK constraint permits only this exact character set
+  // for internal paths. Percent-encode characters outside it before submission.
+  return trimmed.replace(/[^A-Za-z0-9/_?&=.%#-]/g, (character) =>
+    encodeURIComponent(character),
+  )
+}
 const databaseValidDestination = (value: string) =>
   /^https:\/\//.test(value) || /^\/[A-Za-z0-9/_?&=.%#-]*$/.test(value)
 
@@ -341,7 +351,7 @@ export default function AdminAdvertisingPage() {
       setError("Upload a creative or enter a valid HTTPS media URL.")
       return
     }
-    const normalizedDestination = destinationUrl.trim()
+    const normalizedDestination = normalizeDatabaseDestination(destinationUrl)
     const isInternalDestination = normalizedDestination.startsWith("/") && !normalizedDestination.startsWith("//")
     if (!databaseValidDestination(normalizedDestination)) {
       setError("Destination is not in the format accepted by Timora. Use a simple internal path such as /products/watch?ref=homepage, or a full HTTPS URL such as https://example.com.")
