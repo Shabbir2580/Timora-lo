@@ -87,4 +87,15 @@ assert.match(advertisingViews, /security_invoker = true/i, "Advertising views mu
 assert.match(advertisingViews, /grant select \(id, advertiser_id, campaign_type, placement, headline, description,/i, "Anonymous advertising access must use a column-limited grant.");
 assert.match(advertisingViews, /Public may read live campaign rows[\s\S]*?timora_campaign_is_public\(id\)/i, "Public campaign rows must be filtered by the publication guard.");
 
+
+const campaignDelete = read("supabase/migrations/20261018080000_secure_delete_ad_campaign_rpc.sql");
+const advertisingAdmin = read("app/admin/advertising/page.tsx");
+assert.match(campaignDelete, /create or replace function public\\.delete_ad_campaign\\(p_campaign_id uuid\\)/i, "Campaign deletion must use the guarded database RPC.");
+assert.match(campaignDelete, /security definer\\s+set search_path\\s*=\\s*''/i, "Campaign deletion SECURITY DEFINER function must use an empty search_path.");
+assert.match(campaignDelete, /timora_has_staff_permission\\('manage_advertisements'\\)/i, "Campaign deletion must require admin or explicit advertising permission.");
+assert.match(campaignDelete, /v_status in \\('live', 'scheduled', 'approved'\\)/i, "Campaign deletion must protect active and approved campaigns.");
+assert.match(campaignDelete, /delete from public\\.ad_events[\\s\\S]*?delete from public\\.ad_campaigns/i, "Campaign deletion must handle linked analytics before deleting the campaign.");
+assert.match(campaignDelete, /revoke all on function public\\.delete_ad_campaign\\(uuid\\) from public, anon/i, "Campaign deletion RPC must not be executable by anonymous callers.");
+assert.match(advertisingAdmin, /rpc\\("delete_ad_campaign"/i, "Advertising UI must call the secure campaign deletion RPC.");
+
 console.log("Timora database migration contract checks passed.");
