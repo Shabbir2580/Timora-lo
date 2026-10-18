@@ -81,7 +81,7 @@ export function AdPlacement({ placement, className = "" }: Props) {
         const supabase = createClient()
         const { data, error } = await supabase
           .from("ad_public_campaigns")
-          .select("id,campaign_type,placement,headline,description,image_url,destination_url,product_id,starts_at,ends_at,advertiser_type,media_type")
+          .select("id,campaign_type,placement,headline,description,image_url,destination_url,product_id,starts_at,ends_at,advertiser_type")
           .eq("placement", placement)
           .limit(1)
         if (error) throw error
@@ -91,7 +91,12 @@ export function AdPlacement({ placement, className = "" }: Props) {
           (!item.starts_at || new Date(item.starts_at).getTime() <= now) &&
           (!item.ends_at || new Date(item.ends_at).getTime() > now)
         )
-        setCampaign(eligible ?? null)
+        // The public-safe database view intentionally omits media_type in the current
+        // migration. Infer video creatives from their stored file extension so that
+        // selecting a missing view column cannot make every ad disappear.
+        const mediaPath = eligible?.image_url?.split("?")[0]?.toLowerCase() ?? ""
+        const inferredMediaType = /\.(mp4|webm|mov|ogv|ogg)$/.test(mediaPath) ? "video" : "image"
+        setCampaign(eligible ? { ...eligible, media_type: eligible.media_type ?? inferredMediaType } : null)
       } catch {
         // Advertising is an optional storefront enhancement. A missing migration or
         // unavailable campaign service must not break the shopping experience.
