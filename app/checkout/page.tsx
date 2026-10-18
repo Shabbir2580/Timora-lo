@@ -198,6 +198,29 @@ export default function CheckoutPage() {
     setAddressMessage("")
   }
 
+  async function lookupPinAndFill(value: string) {
+    const pincode = value.replace(/\D/g, "").slice(0, 6)
+    updateField("pincode", pincode)
+    if (pincode.length !== 6 || orderId) return
+    try {
+      const response = await fetch("/api/address/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pincode }),
+      })
+      const result = await response.json().catch(() => ({})) as { valid?: boolean; city?: string; state?: string; error?: string }
+      if (!response.ok || !result.valid) {
+        setAddressMessage(result.error || "We couldn't find that PIN code. Please check it.")
+        return
+      }
+      setForm(previous => ({ ...previous, pincode, city: result.city || previous.city, state: result.state || previous.state }))
+      setAddressMessage("PIN code found. Please confirm the city and state before placing your order.")
+      setSubmitError("")
+    } catch {
+      setAddressMessage("PIN lookup is temporarily unavailable. You can retry or check the PIN code manually.")
+    }
+  }
+
   async function verifyCoupon() {
     setCouponError("")
     setCouponMessage("")
@@ -1139,12 +1162,7 @@ export default function CheckoutPage() {
                       inputMode="numeric"
                       autoComplete="postal-code"
                       value={form.pincode}
-                      onChange={(event) =>
-                        updateField(
-                          "pincode",
-                          event.target.value.replace(/\D/g, "").slice(0, 6),
-                        )
-                      }
+                      onChange={(event) => void lookupPinAndFill(event.target.value)}
                       placeholder="6-digit PIN code"
                       pattern="[0-9]{6}"
                       title="Enter a 6-digit PIN code"
