@@ -90,7 +90,7 @@ export default function AddressesPage() {
         setError(result.error || "We couldn't find that PIN code. Please check it.")
         return
       }
-      setForm(previous => ({ ...previous, pincode, city: result.city || previous.city, state: result.state || previous.state }))
+      setForm(previous => previous.pincode !== pincode ? previous : ({ ...previous, pincode, city: result.city || previous.city, state: result.state || previous.state }))
       setError("")
       setNotice("PIN code found. Please confirm the city and state before saving.")
     } catch {
