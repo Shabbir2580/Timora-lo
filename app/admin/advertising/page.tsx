@@ -124,16 +124,27 @@ const safeExternalUrl = (value: string) => {
 }
 const normalizeDatabaseDestination = (value: string) => {
   const trimmed = value.trim()
-  if (/^https:\/\//i.test(trimmed)) return trimmed
+  // PostgreSQL's constraint is case-sensitive, while URL schemes are not.
+  // Canonicalize HTTPS URLs before sending them to Supabase.
+  if (/^https:\/\//i.test(trimmed)) {
+    try {
+      const url = new URL(trimmed)
+      return url.protocol === "https:" ? url.toString() : trimmed
+    } catch {
+      return trimmed
+    }
+  }
   if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return trimmed
   // The live PostgreSQL CHECK constraint permits only this exact character set
-  // for internal paths. Percent-encode characters outside it before submission.
-  return trimmed.replace(/[^A-Za-z0-9/_?&=.%#-]/g, (character) =>
+  // for internal paths. The Unicode flag keeps emoji/non-BMP characters intact
+  // so encodeURIComponent never receives an isolated UTF-16 surrogate.
+  return trimmed.replace(/[^A-Za-z0-9/_?&=.%#-]/gu, (character) =>
     encodeURIComponent(character),
   )
 }
 const databaseValidDestination = (value: string) =>
-  /^https:\/\//.test(value) || /^\/[A-Za-z0-9/_?&=.%#-]*$/.test(value)
+  (/^https:\/\//i.test(value) && safeExternalUrl(value)) ||
+  /^\/[A-Za-z0-9/_?&=.%#-]*$/.test(value)
 
 export default function AdminAdvertisingPage() {
   const router = useRouter()
