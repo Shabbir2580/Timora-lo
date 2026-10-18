@@ -7,11 +7,26 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        // Prevent crawling and indexing across the site while it is private.
-        disallow: ["/"],
+        allow: ["/"],
+        disallow: [
+          "/admin",
+          "/admin/",
+          "/api/",
+          "/checkout",
+          "/orders",
+          "/login",
+          "/register",
+          "/forgot-password",
+          "/reset-password",
+          "/auth/",
+          "/account",
+          "/account/",
+          "/addresses",
+          "/addresses/",
+        ],
       },
     ],
-    sitemap: undefined,
+    sitemap: `${siteUrl}/sitemap.xml`,
     host: siteUrl,
   }
 }
