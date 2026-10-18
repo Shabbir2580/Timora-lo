@@ -75,6 +75,29 @@ export default function AddressesPage() {
   }
   function change(field: keyof AddressForm, value: string) { setForm(previous => ({ ...previous, [field]: value })) }
 
+  async function lookupPinAndFill(value: string) {
+    const pincode = value.replace(/\D/g, "").slice(0, 6)
+    change("pincode", pincode)
+    if (pincode.length !== 6) return
+    try {
+      const response = await fetch("/api/address/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pincode }),
+      })
+      const result = await response.json().catch(() => ({})) as { valid?: boolean; city?: string; state?: string; error?: string }
+      if (!response.ok || !result.valid) {
+        setError(result.error || "We couldn't find that PIN code. Please check it.")
+        return
+      }
+      setForm(previous => ({ ...previous, pincode, city: result.city || previous.city, state: result.state || previous.state }))
+      setError("")
+      setNotice("PIN code found. Please confirm the city and state before saving.")
+    } catch {
+      setError("PIN lookup is temporarily unavailable. You can retry or check the PIN code manually.")
+    }
+  }
+
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setNotice("")
     const phone = form.phone.replace(/\D/g, "")
@@ -172,7 +195,7 @@ export default function AddressesPage() {
           <label className="text-xs text-white/60 sm:col-span-2">Landmark (optional)<input maxLength={200} value={form.landmark} onChange={e=>change("landmark",e.target.value)} className={input} placeholder="Nearby landmark"/></label>
           <label className="text-xs text-white/60">City *<input required maxLength={100} value={form.city} onChange={e=>change("city",e.target.value)} className={input}/></label>
           <label className="text-xs text-white/60">State *<input required maxLength={100} value={form.state} onChange={e=>change("state",e.target.value)} className={input}/></label>
-          <label className="text-xs text-white/60">PIN code *<input required inputMode="numeric" maxLength={6} value={form.pincode} onChange={e=>change("pincode",e.target.value)} className={input} placeholder="6-digit PIN code"/></label>
+          <label className="text-xs text-white/60">PIN code *<input required inputMode="numeric" maxLength={6} value={form.pincode} onChange={e=>void lookupPinAndFill(e.target.value)} className={input} placeholder="6-digit PIN code"/></label>
           <label className="text-xs text-white/60">Delivery instructions (optional)<input maxLength={300} value={form.delivery_note} onChange={e=>change("delivery_note",e.target.value)} className={input} placeholder="Gate code, preferred time…"/></label>
         </div>
         <label className="mt-5 flex cursor-pointer items-start gap-3 text-sm text-white/70"><input type="checkbox" checked={makeDefault} onChange={e=>setMakeDefault(e.target.checked)} className="mt-1 accent-[#c9a96e]"/><span>Set as my default delivery address<span className="mt-1 block text-xs text-white/35">You can change this any time.</span></span></label>
