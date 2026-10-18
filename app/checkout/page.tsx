@@ -548,6 +548,22 @@ export default function CheckoutPage() {
       return
     }
 
+    try {
+      const verifyResponse = await fetch("/api/address/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pincode: form.pincode.trim(), city: form.city.trim(), state: form.state.trim() }),
+      })
+      const verification = await verifyResponse.json().catch(() => ({})) as { valid?: boolean; error?: string }
+      if (!verifyResponse.ok || !verification.valid) {
+        setSubmitError(verification.error || "Your city, state and PIN code do not match. Please correct the delivery address.")
+        return
+      }
+    } catch {
+      setSubmitError("We couldn't verify your PIN code right now. Please try again.")
+      return
+    }
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setSubmitError("Enter a valid email address.")
       return
