@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createSupabaseAdminClient } from "@supabase/supabase-js"
 import { products as sampleProducts } from "@/lib/data"
+import { lookupIndianPin, validateCityAndState } from "@/lib/indian-pin"
 
 export const runtime = "nodejs"
 
@@ -62,6 +63,16 @@ export async function POST(request: Request) {
     if (!customerName || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail) || !/^\d{10}$/.test(customerPhone) || !address || !city || !state || !/^\d{6}$/.test(pincode)) {
       return errorResponse("Please check your name, email, 10-digit phone number, address and 6-digit PIN code.")
     }
+    try {
+      const postalLookup = await lookupIndianPin(pincode)
+      if (!postalLookup) return errorResponse("This PIN code was not found in the Indian postal directory. Please check your delivery address.", 422)
+      const addressValidation = validateCityAndState(postalLookup, city, state)
+      if (!addressValidation.valid) return errorResponse(addressValidation.message || "Your city, state and PIN code do not match.", 422)
+    } catch (postalError) {
+      console.error("Order address verification unavailable:", postalError)
+      return errorResponse("We couldn't verify your delivery PIN code right now. Please try again in a moment.", 503)
+    }
+
     if (!(["upi_qr", "whatsapp", "cod", "razorpay"] as string[]).includes(paymentProvider)) {
       return errorResponse("Please select a valid payment method.")
     }
