@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const city = typeof body?.city === "string" ? body.city.trim() : ""
     const state = typeof body?.state === "string" ? body.state.trim() : ""
 
-    if (!/^\\d{6}$/.test(pincode)) {
+    if (!/^\d{6}$/.test(pincode)) {
       return NextResponse.json({ valid: false, error: "Enter a valid 6-digit Indian PIN code." }, { status: 400 })
     }
 
