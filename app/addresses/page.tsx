@@ -81,8 +81,19 @@ export default function AddressesPage() {
     if (form.full_name.trim().length < 2) { setError("Enter the recipient's full name."); return }
     if (!/^[6-9]\d{9}$/.test(phone)) { setError("Enter a valid 10-digit Indian mobile number."); return }
     if (!/^\d{6}$/.test(form.pincode.trim())) { setError("Enter a valid 6-digit PIN code."); return }
+    if (!form.address.trim() || !form.city.trim() || !form.state.trim()) { setError("Complete your street address, city and state."); return }
     setSaving(true)
     try {
+      const verifyResponse = await fetch("/api/address/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pincode: form.pincode.trim(), city: form.city.trim(), state: form.state.trim() }),
+      })
+      const verification = await verifyResponse.json().catch(() => ({})) as { valid?: boolean; error?: string }
+      if (!verifyResponse.ok || !verification.valid) {
+        setError(verification.error || "Your city, state and PIN code do not match. Please correct the address.")
+        return
+      }
       const keepExistingDefault = Boolean(editingId && !makeDefault && addresses.some(address => address.id === editingId && address.is_default))
       const payload = {
         user_id: userId, full_name: form.full_name.trim(), phone, address: form.address.trim(),
