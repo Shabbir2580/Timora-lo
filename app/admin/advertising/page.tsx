@@ -122,6 +122,8 @@ const safeExternalUrl = (value: string) => {
     return false
   }
 }
+const databaseValidDestination = (value: string) =>
+  /^https:\/\//.test(value) || /^\/[A-Za-z0-9/_?&=.%#-]*$/.test(value)
 
 export default function AdminAdvertisingPage() {
   const router = useRouter()
@@ -339,9 +341,14 @@ export default function AdminAdvertisingPage() {
       setError("Upload a creative or enter a valid HTTPS media URL.")
       return
     }
-    const isInternalDestination = destinationUrl.startsWith("/") && !destinationUrl.startsWith("//")
-    if (!isInternalDestination && !safeExternalUrl(destinationUrl)) {
-      setError("Destination must be a same-site path or an HTTPS URL.")
+    const normalizedDestination = destinationUrl.trim()
+    const isInternalDestination = normalizedDestination.startsWith("/") && !normalizedDestination.startsWith("//")
+    if (!databaseValidDestination(normalizedDestination)) {
+      setError("Destination is not in the format accepted by Timora. Use a simple internal path such as /products/watch?ref=homepage, or a full HTTPS URL such as https://example.com.")
+      return
+    }
+    if (!isInternalDestination && !safeExternalUrl(normalizedDestination)) {
+      setError("External destinations must be a valid HTTPS URL.")
       return
     }
     const selectedAdvertiser = advertisers.find((item) => item.id === advertiserId)
@@ -357,7 +364,7 @@ export default function AdminAdvertisingPage() {
       setError("Timora promotions must use the Timora advertiser profile.")
       return
     }
-    if (campaignType === "external_ad" && !safeExternalUrl(destinationUrl.trim())) {
+    if (campaignType === "external_ad" && !safeExternalUrl(normalizedDestination)) {
       setError("External advertisements must link to a valid HTTPS destination.")
       return
     }
@@ -365,7 +372,7 @@ export default function AdminAdvertisingPage() {
       setError("Choose a Timora product for a featured product campaign.")
       return
     }
-    if (campaignType === "featured_product" && selectedAdvertiser.advertiser_type === "external" && !safeExternalUrl(destinationUrl.trim())) {
+    if (campaignType === "featured_product" && selectedAdvertiser.advertiser_type === "external" && !safeExternalUrl(normalizedDestination)) {
       setError("An external sponsored product card must link to the advertiser's HTTPS destination.")
       return
     }
@@ -387,7 +394,7 @@ export default function AdminAdvertisingPage() {
         description: description.trim() || null,
         image_url: imageUrl.trim(),
         media_type: mediaType,
-        destination_url: destinationUrl.trim(),
+        destination_url: normalizedDestination,
         product_id: productId || null,
         starts_at: startsAt ? new Date(startsAt).toISOString() : null,
         ends_at: endsAt ? new Date(endsAt).toISOString() : null,
