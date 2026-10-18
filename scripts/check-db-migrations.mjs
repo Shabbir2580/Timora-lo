@@ -106,4 +106,16 @@ assert.match(productsAdmin, /if \(linkedItems\?\.length\)[\s\S]*?is_active: fals
 assert.match(productsAdmin, /Each product can have up to 2 videos/i, "Product video upload must enforce the two-video limit.");
 assert.match(productsAdmin, /The video must be 100 MB or smaller/i, "Product video upload must enforce the file-size limit.");
 
+
+const adminOrders = read("app/admin/orders/page.tsx");
+const dashboard = read("app/admin/page.tsx");
+assert.match(adminOrders, /review_cod_order/i, "COD order review must use the guarded database RPC.");
+assert.match(adminOrders, /verify_order_payment/i, "Manual payment verification must use the guarded database RPC.");
+assert.match(adminOrders, /update_order_delivery/i, "Delivery updates must use the guarded database RPC.");
+assert.match(adminOrders, /order\.order_status !== "cancelled" \|\| order\.payment_status === "paid" \|\| order\.payment_provider === "razorpay"/i, "Order deletion must protect active, paid, and Razorpay orders.");
+assert.match(adminOrders, /Only an administrator can permanently delete orders/i, "Permanent order deletion must remain admin-only.");
+assert.match(dashboard, /\.eq\("payment_status", "paid"\)/i, "Revenue metrics must be based on paid orders only.");
+assert.match(dashboard, /row\.payment_provider === "cod" \? row\.cod_collected_at : row\.payment_verified_at/i, "Revenue must use actual COD collection or payment verification timestamps.");
+assert.match(dashboard, /\.neq\("order_status", "cancelled"\)/i, "Active-order dashboard counts must exclude cancelled orders.");
+
 console.log("Timora database migration contract checks passed.");
