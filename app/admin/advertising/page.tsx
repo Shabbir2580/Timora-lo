@@ -94,7 +94,16 @@ const statusStyles: Record<string, string> = {
   archived: "border-white/10 bg-white/5 text-white/40",
 }
 const friendlyError = (error: unknown) => {
-  if (error && typeof error === "object" && "message" in error) return String((error as { message: unknown }).message)
+  if (error && typeof error === "object") {
+    const value = error as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown }
+    const parts = [
+      typeof value.message === "string" ? value.message : "",
+      typeof value.code === "string" ? `Code: ${value.code}` : "",
+      typeof value.details === "string" ? value.details : "",
+      typeof value.hint === "string" ? `Hint: ${value.hint}` : "",
+    ].filter(Boolean)
+    if (parts.length) return parts.join(" — ")
+  }
   return "Something went wrong. Please try again."
 }
 const formatDate = (value: string | null) => value ? new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : "Not scheduled"
@@ -310,11 +319,23 @@ export default function AdminAdvertisingPage() {
 
   async function createCampaign(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!userId || !advertiserId) {
-      setError("Create or select an advertiser first.")
+    if (!userId) {
+      setError("Your staff session could not be verified. Sign out, sign back in, and try again.")
       return
     }
-    if (!imageUrl || !safeExternalUrl(imageUrl)) {
+    if (!campaignName.trim()) {
+      setError("Enter a campaign name before saving the draft.")
+      return
+    }
+    if (!advertiserId) {
+      setError("No advertiser is selected. Create the Timora advertiser in the Advertiser section below, save it, then select it here.")
+      setShowAdvertiserForm(true)
+      setAdvertiserName("Timora")
+      setAdvertiserType("timora")
+      document.getElementById("campaign-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
+      return
+    }
+    if (!imageUrl.trim() || !safeExternalUrl(imageUrl.trim())) {
       setError("Upload a creative or enter a valid HTTPS media URL.")
       return
     }
@@ -364,17 +385,31 @@ export default function AdminAdvertisingPage() {
         placement,
         headline: headline.trim() || null,
         description: description.trim() || null,
-        image_url: imageUrl,
+        image_url: imageUrl.trim(),
         media_type: mediaType,
         destination_url: destinationUrl.trim(),
         product_id: productId || null,
         starts_at: startsAt ? new Date(startsAt).toISOString() : null,
         ends_at: endsAt ? new Date(endsAt).toISOString() : null,
       }
-      const result = editingCampaignId
-        ? await supabase.from("ad_campaigns").update(campaignPayload).eq("id", editingCampaignId)
-        : await supabase.from("ad_campaigns").insert({ ...campaignPayload, status: "draft", created_by: userId })
-      if (result.error) throw result.error
+      if (editingCampaignId) {
+        const { data, error: updateError } = await supabase
+          .from("ad_campaigns")
+          .update(campaignPayload)
+          .eq("id", editingCampaignId)
+          .select("id")
+          .maybeSingle()
+        if (updateError) throw updateError
+        if (!data) throw new Error("No campaign was updated. Your staff permissions may have changed, or the campaign no longer exists.")
+      } else {
+        const { data, error: insertError } = await supabase
+          .from("ad_campaigns")
+          .insert({ ...campaignPayload, status: "draft", created_by: userId })
+          .select("id")
+          .single()
+        if (insertError) throw insertError
+        if (!data?.id) throw new Error("Supabase did not confirm that the campaign draft was created.")
+      }
       setEditingCampaignId(null)
       setCampaignName("")
       setHeadline("")
@@ -388,7 +423,8 @@ export default function AdminAdvertisingPage() {
       setNotice("Campaign draft saved. Submit it for approval or publish it if your permission allows.")
       await loadData()
     } catch (err) {
-      setError(`Could not save campaign: ${friendlyError(err)}`)
+      const detail = friendlyError(err)
+      setError(`Could not save campaign draft. ${detail}`)
     } finally {
       setSaving(false)
     }
@@ -542,7 +578,7 @@ export default function AdminAdvertisingPage() {
                 <label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Campaign type</span><select value={campaignType} onChange={(e) => setCampaignType(e.target.value as Campaign["campaign_type"])} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111] px-3 text-sm"><option value="timora_promotion">Timora promotion</option><option value="featured_product">Featured product</option><option value="external_ad">External advertisement</option></select></label>
                 <label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Placement</span><select value={placement} onChange={(e) => setPlacement(e.target.value as Campaign["placement"])} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111] px-3 text-sm">{Object.entries(placementLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
               </div>
-              <label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Advertiser</span><select required value={advertiserId} onChange={(e) => setAdvertiserId(e.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111] px-3 text-sm"><option value="">Choose advertiser</option>{advertisers.filter((a) => a.status === "active").map((a) => <option key={a.id} value={a.id}>{a.business_name} · {a.advertiser_type === "timora" ? "Timora" : "External"}</option>)}</select>{canManageAdvertisers && <button type="button" onClick={() => setShowAdvertiserForm((value) => !value)} className="mt-2 text-xs text-[#e4c878] hover:underline">{showAdvertiserForm ? "Hide advertiser form" : "+ Add advertiser"}</button>}</label>
+              <label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Advertiser</span><select required value={advertiserId} onChange={(e) => setAdvertiserId(e.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111] px-3 text-sm"><option value="">Choose advertiser</option>{advertisers.filter((a) => a.status === "active").map((a) => <option key={a.id} value={a.id}>{a.business_name} · {a.advertiser_type === "timora" ? "Timora" : "External"}</option>)}</select>{advertisers.filter((a) => a.status === "active").length === 0 && <span className="mt-2 block rounded-lg border border-amber-300/20 bg-amber-300/[0.06] p-3 text-xs leading-5 text-amber-100">No active advertiser exists yet, so a draft cannot be saved. Create the Timora advertiser below first.</span>}{canManageAdvertisers && <button type="button" onClick={() => { setShowAdvertiserForm((value) => !value); if (!showAdvertiserForm && !advertiserName) { setAdvertiserName("Timora"); setAdvertiserType("timora") } }} className="mt-2 text-xs text-[#e4c878] hover:underline">{showAdvertiserForm ? "Hide advertiser form" : advertisers.length === 0 ? "+ Create Timora advertiser (required first)" : "+ Add advertiser"}</button>}</label>
               {showAdvertiserForm && canManageAdvertisers && <div className="space-y-3 rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-sm font-medium">New advertiser</p><div className="grid gap-3 sm:grid-cols-2"><label className="block"><span className="mb-1 block text-xs text-white/50">Business name</span><input value={advertiserName} onChange={(e) => setAdvertiserName(e.target.value)} required maxLength={160} className="min-h-10 w-full rounded-lg border border-white/10 bg-black/30 px-3 text-sm" /></label><label className="block"><span className="mb-1 block text-xs text-white/50">Type</span><select value={advertiserType} onChange={(e) => setAdvertiserType(e.target.value as "timora" | "external")} className="min-h-10 w-full rounded-lg border border-white/10 bg-[#111] px-3 text-sm"><option value="timora">Timora</option><option value="external">External business</option></select></label></div><div className="grid gap-3 sm:grid-cols-2"><label className="block"><span className="mb-1 block text-xs text-white/50">Contact name (optional)</span><input value={advertiserContact} onChange={(e) => setAdvertiserContact(e.target.value)} className="min-h-10 w-full rounded-lg border border-white/10 bg-black/30 px-3 text-sm" /></label><label className="block"><span className="mb-1 block text-xs text-white/50">Contact email (optional)</span><input type="email" value={advertiserEmail} onChange={(e) => setAdvertiserEmail(e.target.value)} className="min-h-10 w-full rounded-lg border border-white/10 bg-black/30 px-3 text-sm" /></label></div><label className="block"><span className="mb-1 block text-xs text-white/50">Website HTTPS URL (optional)</span><input type="url" value={advertiserWebsite} onChange={(e) => setAdvertiserWebsite(e.target.value)} placeholder="https://example.com" className="min-h-10 w-full rounded-lg border border-white/10 bg-black/30 px-3 text-sm" /></label><button type="button" onClick={() => void createAdvertiser()} disabled={saving || !advertiserName.trim()} className="min-h-10 rounded-lg bg-white/10 px-4 text-xs font-medium hover:bg-white/15 disabled:opacity-50">Save advertiser</button></div>}
               <div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Headline (optional)</span><input maxLength={160} value={headline} onChange={(e) => setHeadline(e.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-black/25 px-3 text-sm" /></label><label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Featured product (optional)</span><select value={productId} onChange={(e) => setProductId(e.target.value)} className="min-h-11 w-full rounded-xl border border-white/10 bg-[#111] px-3 text-sm"><option value="">No product linked</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
               <label className="block"><span className="mb-2 block text-xs font-medium text-white/60">Description (optional)</span><textarea rows={2} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm" /></label>
