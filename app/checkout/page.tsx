@@ -213,7 +213,7 @@ export default function CheckoutPage() {
         setAddressMessage(result.error || "We couldn't find that PIN code. Please check it.")
         return
       }
-      setForm(previous => ({ ...previous, pincode, city: result.city || previous.city, state: result.state || previous.state }))
+      setForm(previous => previous.pincode !== pincode ? previous : ({ ...previous, pincode, city: result.city || previous.city, state: result.state || previous.state }))
       setAddressMessage("PIN code found. Please confirm the city and state before placing your order.")
       setSubmitError("")
     } catch {
