@@ -112,12 +112,16 @@ assert.match(productsAdmin, /The video must be 100 MB or smaller/i, "Product vid
 
 
 const adminOrders = read("app/admin/orders/page.tsx");
+const adminOrderDeletionMigration = read("supabase/migrations/202610160006_guard_admin_order_deletion.sql");
 const dashboard = read("app/admin/page.tsx");
 assert.match(adminOrders, /review_cod_order/i, "COD order review must use the guarded database RPC.");
 assert.match(adminOrders, /verify_order_payment/i, "Manual payment verification must use the guarded database RPC.");
 assert.match(adminOrders, /update_order_delivery/i, "Delivery updates must use the guarded database RPC.");
 assert.match(adminOrders, /order\.order_status !== "cancelled" \|\| order\.payment_status === "paid" \|\| order\.payment_provider === "razorpay"/i, "Order deletion must protect active, paid, and Razorpay orders.");
 assert.match(adminOrders, /Only an administrator can permanently delete orders/i, "Permanent order deletion must remain admin-only.");
+assert.match(adminOrders, /"cancelled"/i, "Order management must expose a cancelled-orders filter so eligible cancelled orders remain reachable.");
+assert.match(adminOrders, /order\.order_status === "pending_payment" && order\.payment_status === "pending" && order\.payment_provider !== "razorpay"/i, "Admins must see the delete action for eligible unpaid pending non-Razorpay orders.");
+assert.match(adminOrderDeletionMigration, /if v_order\.order_status = 'pending_payment' then[\s\S]*?set stock = stock \+ v_item\.quantity[\s\S]*?usage_count = greatest\(0, usage_count - 1\)/i, "Deleting an unpaid pending order must restore reserved stock and coupon usage transactionally.");
 assert.match(dashboard, /\.eq\("payment_status", "paid"\)/i, "Revenue metrics must be based on paid orders only.");
 assert.match(dashboard, /row\.payment_provider === "cod" \? row\.cod_collected_at : row\.payment_verified_at/i, "Revenue must use actual COD collection or payment verification timestamps.");
 assert.match(dashboard, /\.neq\("order_status", "cancelled"\)/i, "Active-order dashboard counts must exclude cancelled orders.");
