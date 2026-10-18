@@ -18,11 +18,11 @@ type PostalApiOffice = {
 type PostalApiResult = { Status?: string; Message?: string; PostOffice?: PostalApiOffice[] | null }
 
 function normalize(value: string) {
-  return value.normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
+  return value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()
 }
 
 export async function lookupIndianPin(pincode: string): Promise<IndianPinLookup | null> {
-  if (!/^\\d{6}$/.test(pincode)) return null
+  if (!/^\d{6}$/.test(pincode)) return null
   const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(5000),
