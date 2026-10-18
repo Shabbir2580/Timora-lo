@@ -288,6 +288,9 @@ export default function HomePage() {
         )}
       </header>
 
+      {/* Paid/owned campaign slot: this placement is now connected to the storefront. */}
+      <AdPlacement placement="homepage_hero" className="pt-5 sm:pt-7" />
+
       {/* Editorial hero — asymmetric, image-led and responsive */}
       <section className="relative isolate overflow-hidden border-b border-white/[0.08] bg-[#0b0b0a]">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_76%_32%,rgba(201,169,110,0.16),transparent_36%),linear-gradient(115deg,transparent_42%,rgba(201,169,110,0.035)_100%)]" />
@@ -410,6 +413,7 @@ export default function HomePage() {
         </div>
       </section>
 
+      <AdPlacement placement="category_banner" className="py-4" />
       <AdPlacement placement="homepage_secondary" className="pb-4" />
 
       {/* Featured products */}
