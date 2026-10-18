@@ -418,7 +418,7 @@ export default function AdminOrdersPage() {
           <div><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#d4af37]">Order management</p><h1 className="mt-2 text-3xl font-medium sm:text-4xl">All Orders</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">Showing all orders by default. The summary cards count every order in the database; use the filters to narrow the list. Delete unwanted test orders to remove them from all order views.</p></div>
           <div className="flex flex-wrap gap-2">
             {role === "admin" && <button type="button" onClick={exportVisibleOrders} disabled={visibleOrders.length === 0} className="min-h-10 rounded-full border border-emerald-300/25 px-4 text-xs font-medium text-emerald-200 transition hover:bg-emerald-300/10 disabled:cursor-not-allowed disabled:opacity-40">Export CSV ({visibleOrders.length})</button>}
-            {([ ["awaiting","Awaiting review"], ["payment","Unpaid active orders"], ["cod","COD orders"], ["all","All orders"] ] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`min-h-10 rounded-full px-4 text-xs font-medium ${filter === value ? "bg-[#d4af37] text-[#17130c]" : "border border-white/15 text-white/65"}`}>{label}</button>)}
+            {([ ["awaiting","Awaiting review"], ["payment","Unpaid active orders"], ["cod","COD orders"], ["cancelled","Cancelled"], ["all","All orders"] ] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`min-h-10 rounded-full px-4 text-xs font-medium ${filter === value ? "bg-[#d4af37] text-[#17130c]" : "border border-white/15 text-white/65"}`}>{label}</button>)}
           </div>
         </div>
 
