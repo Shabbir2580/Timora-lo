@@ -125,7 +125,9 @@ assert.match(adminOrders, /verify_order_payment/i, "Manual payment verification 
 assert.match(adminOrders, /update_order_delivery/i, "Delivery updates must use the guarded database RPC.");
 const recentDeliveredDeletion = read("supabase/migrations/20261018130000_allow_recent_delivered_order_deletion.sql");
 assert.match(adminOrders, /if \(!deletablePending && !deletableCancelled && !deletableDelivered\)/i, "Order deletion must be limited to eligible pending, cancelled, and recently delivered orders.");
-assert.match(adminOrders, /deletableDelivered[\s\S]*?delivered_at[\s\S]*?7 \* 24 \* 60 \* 60 \* 1000/i, "The admin UI must limit delivered-order deletion to the last seven days.");
+assert.match(adminOrders, /function isRecentlyDelivered[\s\S]*?Number\.isFinite\(deliveredAt\)[\s\S]*?RECENT_DELIVERY_DELETE_WINDOW_MS/i, "The admin UI must reject invalid/future delivery timestamps and limit deletion to seven days.");
+assert.match(adminOrders, /\["delivered","Delivered \(7 days\)"\]/i, "The admin order page must expose a dedicated recent-delivered filter.");
+assert.match(adminOrders, /20261018130000_allow_recent_delivered_order_deletion\.sql/i, "Order deletion errors must reference the actual delivered-order migration.");
 assert.match(recentDeliveredDeletion, /v_order\.order_status = 'delivered'[\s\S]*?v_order\.delivered_at >= now\(\) - interval '7 days'[\s\S]*?v_order\.delivered_at <= now\(\)/i, "The database must enforce the same seven-day delivered-order deletion window.");
 assert.match(recentDeliveredDeletion, /if v_order\.order_status = 'pending_payment' then[\s\S]*?set stock = stock \+ v_item\.quantity[\s\S]*?usage_count = greatest\(0, usage_count - 1\)/i, "Pending-order deletion must restore reserved stock and coupon usage.");
 assert.match(recentDeliveredDeletion, /delete from public\.order_items[\s\S]*?delete from public\.orders/i, "Order deletion must remove order items before deleting the order.");
