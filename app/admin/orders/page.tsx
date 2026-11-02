@@ -273,7 +273,7 @@ export default function AdminOrdersPage() {
     }
 
     const confirmed = window.confirm(
-      `Permanently delete order #${order.id.slice(0, 8).toUpperCase()} for ${order.customer_name} (${money(order.total_paise)})? This cannot be undone. If it is still pending, the database will restore its reserved stock and coupon usage before removing it. Paid order records must be retained for accounting.`
+      `Permanently delete order #${order.id.slice(0, 8).toUpperCase()} for ${order.customer_name} (${money(order.total_paise)})? This cannot be undone. Export or save the invoice and accounting details first. Deleting a delivered order will not change stock or coupon usage.`
     )
     if (!confirmed) return
 
