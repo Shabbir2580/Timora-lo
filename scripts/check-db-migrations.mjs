@@ -24,7 +24,10 @@ const orderApi = read("app/api/orders/route.ts");
 const razorpayVerify = read("app/api/razorpay/verify/route.ts");
 const razorpayWebhook = read("app/api/razorpay/webhook/route.ts");
 const proxy = read("proxy.ts");
+const sitemap = read("app/sitemap.ts");
 const adminReturns = read("app/admin/returns/page.tsx");
+assert.match(sitemap, /const pageSize = 500[\s\S]*?\.range\(offset, offset \+ pageSize - 1\)/i, "Product sitemap generation must paginate beyond the default PostgREST row cap.");
+assert.match(sitemap, /Number\.isFinite\(updatedAt\.getTime\(\)\)/i, "Sitemap last-modified dates must be valid before being emitted.");
 
 assert.match(adminDeleteAccess, /revoke execute on function public\.admin_delete_order\(uuid\) from public, anon/i, "Admin-only order deletion must revoke PUBLIC and anonymous execution.");
 assert.match(checkout, /set search_path\s*=\s*''/i, "Checkout SECURITY DEFINER RPC must use an empty search_path.");
