@@ -52,6 +52,14 @@ type CodOrder = {
   order_items?: OrderItem[]
 }
 
+const RECENT_DELIVERY_DELETE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+function isRecentlyDelivered(order: Pick<CodOrder, "order_status" | "delivered_at">, now = Date.now()) {
+  if (order.order_status !== "delivered" || !order.delivered_at) return false
+  const deliveredAt = new Date(order.delivered_at).getTime()
+  return Number.isFinite(deliveredAt) && deliveredAt <= now && now - deliveredAt <= RECENT_DELIVERY_DELETE_WINDOW_MS
+}
+
 const money = (paise: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(Number(paise || 0) / 100)
 
@@ -65,7 +73,7 @@ export default function AdminOrdersPage() {
   const [workingId, setWorkingId] = useState<string | null>(null)
   const [rejectingOrder, setRejectingOrder] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState("")
-  const [filter, setFilter] = useState<"awaiting" | "all" | "cod" | "payment" | "cancelled">("all")
+  const [filter, setFilter] = useState<"awaiting" | "all" | "cod" | "payment" | "cancelled" | "delivered">("all")
   const [search, setSearch] = useState("")
   const [trackingNumber, setTrackingNumber] = useState("")
   const [courierName, setCourierName] = useState("")
@@ -253,7 +261,7 @@ export default function AdminOrdersPage() {
   async function deleteOrder(order: CodOrder) {
     const deletablePending = order.order_status === "pending_payment" && order.payment_status === "pending" && order.payment_provider !== "razorpay"
     const deletableCancelled = order.order_status === "cancelled" && order.payment_status !== "paid" && order.payment_provider !== "razorpay"
-    const deletableDelivered = order.order_status === "delivered" && Boolean(order.delivered_at) && Date.now() - new Date(order.delivered_at as string).getTime() <= 7 * 24 * 60 * 60 * 1000
+    const deletableDelivered = isRecentlyDelivered(order)
     if (!deletablePending && !deletableCancelled && !deletableDelivered) {
       setError("You can delete unpaid pending/cancelled orders, or delivered orders delivered within the last 7 days. Other orders are protected.");
       return;
@@ -296,7 +304,7 @@ export default function AdminOrdersPage() {
       if (deleteError) {
         const message = deleteError.message || "Unknown database error."
         if (message.includes("admin_delete_order") && (message.includes("schema cache") || message.includes("Could not find the function"))) {
-          throw new Error("Order deletion is not enabled in the database yet. Apply supabase/migrations/202610160006_guard_admin_order_deletion.sql in the Timora Supabase SQL Editor, then try again.")
+          throw new Error("Order deletion is not enabled in the database yet. Apply supabase/migrations/20261018130000_allow_recent_delivered_order_deletion.sql in the Timora Supabase SQL Editor, then try again.")
         }
         throw new Error(message)
       }
@@ -354,6 +362,7 @@ export default function AdminOrdersPage() {
       || (filter === "cod" && order.payment_provider === "cod")
       || (filter === "payment" && order.payment_status !== "paid" && order.order_status !== "cancelled")
       || (filter === "cancelled" && order.order_status === "cancelled")
+      || (filter === "delivered" && isRecentlyDelivered(order))
     const matchesSearch = !query || [order.id, order.customer_name, order.customer_email, order.customer_phone, order.pincode, order.tracking_number ?? ""].join(" ").toLowerCase().includes(query)
     return matchesFilter && matchesSearch
   })
@@ -419,7 +428,7 @@ export default function AdminOrdersPage() {
           <div><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#d4af37]">Order management</p><h1 className="mt-2 text-3xl font-medium sm:text-4xl">All Orders</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">Showing all orders by default. The summary cards count every order in the database; use the filters to narrow the list. Delete unwanted test orders to remove them from all order views.</p></div>
           <div className="flex flex-wrap gap-2">
             {role === "admin" && <button type="button" onClick={exportVisibleOrders} disabled={visibleOrders.length === 0} className="min-h-10 rounded-full border border-emerald-300/25 px-4 text-xs font-medium text-emerald-200 transition hover:bg-emerald-300/10 disabled:cursor-not-allowed disabled:opacity-40">Export CSV ({visibleOrders.length})</button>}
-            {([ ["awaiting","Awaiting review"], ["payment","Unpaid active orders"], ["cod","COD orders"], ["cancelled","Cancelled"], ["all","All orders"] ] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`min-h-10 rounded-full px-4 text-xs font-medium ${filter === value ? "bg-[#d4af37] text-[#17130c]" : "border border-white/15 text-white/65"}`}>{label}</button>)}
+            {([ ["awaiting","Awaiting review"], ["payment","Unpaid active orders"], ["cod","COD orders"], ["delivered","Delivered (7 days)"], ["cancelled","Cancelled"], ["all","All orders"] ] as const).map(([value,label]) => <button key={value} type="button" onClick={() => setFilter(value)} className={`min-h-10 rounded-full px-4 text-xs font-medium ${filter === value ? "bg-[#d4af37] text-[#17130c]" : "border border-white/15 text-white/65"}`}>{label}</button>)}
           </div>
         </div>
 
@@ -459,7 +468,7 @@ export default function AdminOrdersPage() {
             return <article key={order.id} className="overflow-hidden rounded-2xl border border-white/10 bg-[#11110f]">
               <div className="flex flex-col gap-3 border-b border-white/[0.08] p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                 <div><div className="flex flex-wrap items-center gap-2"><h2 className="font-semibold">Order #{order.id.slice(0, 8).toUpperCase()}</h2><span className={`rounded-full px-2.5 py-1 text-[10px] ${awaiting ? "bg-amber-300/10 text-amber-200" : order.order_status === "cancelled" ? "bg-red-400/10 text-red-300" : "bg-emerald-400/10 text-emerald-300"}`}>{awaiting ? "Awaiting approval" : order.order_status.replaceAll("_", " ")}</span><span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/55">{(order.payment_provider || "unknown").replaceAll("_", " ")}</span><span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] text-white/55">Payment: {order.payment_status}</span></div><p className="mt-2 text-xs text-white/40">Placed {new Date(order.created_at).toLocaleString("en-IN")}</p></div>
-                <div className="flex flex-col items-start gap-3 sm:items-end"><div className="text-left sm:text-right"><p className="text-xl font-semibold text-[#e4c878]">{money(order.total_paise)}</p><p className="mt-1 text-xs text-white/45">Subtotal {money(order.subtotal_paise)} · Discount {money(order.discount_paise || 0)} · Shipping {money(order.shipping_paise)}{order.coupon_code ? ` · ${order.coupon_code}` : ""}</p></div><div className="flex flex-wrap items-center gap-2"><InvoiceButton order={order} admin />{role === "admin" && ((order.order_status === "cancelled" && order.payment_status !== "paid" && order.payment_provider !== "razorpay") || (order.order_status === "pending_payment" && order.payment_status === "pending" && order.payment_provider !== "razorpay") || (order.order_status === "delivered" && Boolean(order.delivered_at) && Date.now() - new Date(order.delivered_at).getTime() <= 7 * 24 * 60 * 60 * 1000)) && <button type="button" onClick={() => void deleteOrder(order)} disabled={workingId === order.id} aria-label={`Delete order ${order.id.slice(0, 8)}`} title="Delete eligible pending, cancelled, or recently delivered orders" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-red-400/30 px-3 text-xs text-red-200 hover:bg-red-400/10 disabled:opacity-50"><Trash2 className="size-4"/>{workingId === order.id ? "Deleting..." : "Delete order"}</button>}</div></div>
+                <div className="flex flex-col items-start gap-3 sm:items-end"><div className="text-left sm:text-right"><p className="text-xl font-semibold text-[#e4c878]">{money(order.total_paise)}</p><p className="mt-1 text-xs text-white/45">Subtotal {money(order.subtotal_paise)} · Discount {money(order.discount_paise || 0)} · Shipping {money(order.shipping_paise)}{order.coupon_code ? ` · ${order.coupon_code}` : ""}</p></div><div className="flex flex-wrap items-center gap-2"><InvoiceButton order={order} admin />{role === "admin" && ((order.order_status === "cancelled" && order.payment_status !== "paid" && order.payment_provider !== "razorpay") || (order.order_status === "pending_payment" && order.payment_status === "pending" && order.payment_provider !== "razorpay") || isRecentlyDelivered(order)) && <button type="button" onClick={() => void deleteOrder(order)} disabled={workingId === order.id} aria-label={`Delete order ${order.id.slice(0, 8)}`} title="Delete eligible pending, cancelled, or recently delivered orders" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full border border-red-400/30 px-3 text-xs text-red-200 hover:bg-red-400/10 disabled:opacity-50"><Trash2 className="size-4"/>{workingId === order.id ? "Deleting..." : "Delete order"}</button>}</div></div>
               </div>
               <div className="grid gap-5 p-4 sm:grid-cols-2 sm:p-5">
                 <div><h3 className="text-xs font-semibold uppercase tracking-wider text-[#d4af37]">Customer & delivery</h3><p className="mt-3 text-sm font-medium">{order.customer_name}</p><p className="mt-1 break-all text-xs text-white/60">{order.customer_email}</p><p className="mt-1 text-xs text-white/60">{order.customer_phone}</p><p className="mt-3 text-sm leading-6 text-white/75">{order.address}{order.landmark ? `, ${order.landmark}` : ""}<br />{order.city}, {order.state} — {order.pincode}</p>{order.delivery_note && <p className="mt-2 text-xs text-white/45">Note: {order.delivery_note}</p>}</div>
