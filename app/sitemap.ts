@@ -30,24 +30,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const supabase = createSupabaseClient(supabaseUrl, supabaseKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     })
-    const { data, error } = await supabase
-      .from("products")
-      .select("slug,updated_at")
-      .eq("is_active", true)
+    const products: { slug: string; updated_at: string | null }[] = []
+    const pageSize = 500
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await supabase
+        .from("products")
+        .select("slug,updated_at")
+        .eq("is_active", true)
+        .order("slug", { ascending: true })
+        .range(offset, offset + pageSize - 1)
 
-    if (error) {
-      console.error("Sitemap product lookup failed:", error.message)
-      return staticRoutes
+      if (error) {
+        console.error("Sitemap product lookup failed:", error.message)
+        return staticRoutes
+      }
+
+      const page = (data ?? []) as { slug: string; updated_at: string | null }[]
+      products.push(...page)
+      if (page.length < pageSize) break
     }
 
-    const productRoutes: MetadataRoute.Sitemap = (data ?? [])
-      .filter((product) => typeof product.slug === "string" && product.slug.trim())
-      .map((product) => ({
-        url: `${siteUrl}/product/${encodeURIComponent(product.slug)}`,
-        lastModified: product.updated_at ? new Date(product.updated_at) : now,
-        changeFrequency: "weekly" as const,
-        priority: 0.7,
-      }))
+    const uniqueProducts = new Map<string, { slug: string; updated_at: string | null }>()
+    for (const product of products) {
+      if (typeof product.slug === "string" && product.slug.trim()) {
+        uniqueProducts.set(product.slug, product)
+      }
+    }
+
+    const productRoutes: MetadataRoute.Sitemap = [...uniqueProducts.values()]
+      .map((product) => {
+        const updatedAt = product.updated_at ? new Date(product.updated_at) : null
+        return {
+          url: `${siteUrl}/product/${encodeURIComponent(product.slug)}`,
+          lastModified: updatedAt && Number.isFinite(updatedAt.getTime()) ? updatedAt : now,
+          changeFrequency: "weekly" as const,
+          priority: 0.7,
+        }
+      })
 
     return [...staticRoutes, ...productRoutes]
   } catch (error) {
